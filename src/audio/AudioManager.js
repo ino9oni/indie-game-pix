@@ -94,6 +94,14 @@ class AudioManager {
     seq.forEach((f, i) => this._note(f, t0 + i * 0.16, 0.14, 0.01, 0.9))
   }
 
+  playGameOver() {
+    if (!this.enabled || !this.ctx) return
+    // Gentle descending closure
+    const t0 = this.ctx.currentTime + 0.02
+    const seq = [784, 659, 523, 392] // G5 E5 C5 G4
+    seq.forEach((f, i) => this._note(f, t0 + i * 0.22, 0.18, 0.01, 0.6))
+  }
+
   startPlayMusic() {
     if (!this.enabled || !this.ctx) return
     this.stopPlayMusic()
@@ -152,4 +160,3 @@ class AudioManager {
 
 const audio = new AudioManager()
 export default audio
-

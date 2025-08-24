@@ -5,7 +5,7 @@ export const LEVELS = ['easy', 'middle', 'high']
 const E = true
 const _ = false
 
-// 5x5 puzzles (easy)
+// 5x5 puzzles (easy) — 5 puzzles
 const EASY = [
   // Heart
   [
@@ -49,7 +49,7 @@ const EASY = [
   ],
 ]
 
-// 10x10 puzzles (middle)
+// 10x10 puzzles (middle) — 5 puzzles
 const MIDDLE = [
   // Space Invader
   [
@@ -118,7 +118,7 @@ const MIDDLE = [
   ],
 ]
 
-// 15x15 puzzles (high)
+// 15x15 puzzles (high) — 5 puzzles
 const HIGH = [
   // Big Heart
   [
@@ -213,4 +213,3 @@ const HIGH = [
 ]
 
 export const PUZZLES = { easy: EASY, middle: MIDDLE, high: HIGH }
-

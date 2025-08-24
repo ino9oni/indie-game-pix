@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import Opening from './components/Opening.jsx'
 import LevelSelect from './components/LevelSelect.jsx'
 import PuzzleSelect from './components/PuzzleSelect.jsx'
 import GameBoard from './components/GameBoard.jsx'
 import Timer from './components/Timer.jsx'
 import ResultModal from './components/ResultModal.jsx'
 import LevelClear from './components/LevelClear.jsx'
+import GameOver from './components/GameOver.jsx'
 import { PUZZLES, LEVELS } from './game/puzzles.js'
 import { computeClues, emptyGrid, equalsSolution } from './game/utils.js'
 import audio from './audio/AudioManager.js'
@@ -12,7 +14,7 @@ import audio from './audio/AudioManager.js'
 const GAME_SECONDS = 20 * 60 // 20 minutes
 
 export default function App() {
-  const [screen, setScreen] = useState('level') // 'level' | 'puzzle' | 'game' | 'result' | 'levelClear'
+  const [screen, setScreen] = useState('opening') // 'opening' | 'level' | 'puzzle' | 'game' | 'result' | 'levelClear' | 'gameover'
   const [level, setLevel] = useState('easy')
   const [puzzleIndex, setPuzzleIndex] = useState(0)
   const [grid, setGrid] = useState([])
@@ -22,9 +24,22 @@ export default function App() {
   const [soundOn, setSoundOn] = useState(false)
   const spedUpRef = useRef(false)
   const [progress, setProgress] = useState(() => {
+    const desired = Object.fromEntries(LEVELS.map((l) => [l, Array(PUZZLES[l].length).fill(false)]))
     const saved = localStorage.getItem('picrossProgress')
-    if (saved) return JSON.parse(saved)
-    return { easy: [false, false, false, false, false], middle: [false, false, false, false, false], high: [false, false, false, false, false] }
+    if (!saved) return desired
+    try {
+      const parsed = JSON.parse(saved)
+      const normalized = {}
+      for (const l of LEVELS) {
+        const arr = Array.isArray(parsed?.[l]) ? parsed[l] : []
+        const need = PUZZLES[l].length
+        normalized[l] = arr.slice(0, need)
+        while (normalized[l].length < need) normalized[l].push(false)
+      }
+      return normalized
+    } catch {
+      return desired
+    }
   })
 
   useEffect(() => {
@@ -111,7 +126,9 @@ export default function App() {
 
   function handleCloseResult() {
     // If all solved at this level, show level clear
-    const allSolved = progress[level].every(Boolean) || (result?.status === 'clear' && progress[level].filter(Boolean).length + 1 === 5)
+    const total = PUZZLES[level].length
+    const solved = progress[level].filter(Boolean).length
+    const allSolved = progress[level].every(Boolean) || (result?.status === 'clear' && solved + 1 === total)
     if (allSolved) {
       setScreen('levelClear')
       return
@@ -142,13 +159,17 @@ export default function App() {
           >
             Sound: {soundOn ? 'On' : 'Off'}
           </button>
-          {screen !== 'level' && (
+          {screen !== 'level' && screen !== 'opening' && (
             <button className="ghost" onClick={() => setScreen('level')}>
               Levels
             </button>
           )}
         </nav>
       </header>
+
+      {screen === 'opening' && (
+        <Opening onStart={() => setScreen('level')} />
+      )}
 
       {screen === 'level' && (
         <LevelSelect
@@ -193,7 +214,8 @@ export default function App() {
         <ResultModal
           status={result?.status}
           onClose={handleCloseResult}
-          onRetry={() => startGame(level, puzzleIndex)}
+          onRetry={() => setScreen('puzzle')}
+          onExit={() => setScreen('gameover')}
         />
       )}
 
@@ -212,6 +234,10 @@ export default function App() {
             }
           }}
         />
+      )}
+
+      {screen === 'gameover' && (
+        <GameOver onRestart={() => setScreen('opening')} />
       )}
     </div>
   )

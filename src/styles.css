@@ -125,3 +125,10 @@ button { color: var(--text); background: #131a3a; border: 1px solid #2b2f55; bor
   .timer .bar { width: 160px; }
 }
 
+/* Opening & GameOver */
+.opening { display: grid; gap: 16px; place-items: center; text-align: center; }
+.opening-hero { display: grid; gap: 8px; place-items: center; }
+.opening-image { max-width: 540px; width: 100%; height: auto; border-radius: 14px; border: 1px solid #2b2f55; box-shadow: 0 12px 40px #0008; }
+.opening-title { font-size: 40px; margin: 10px 0 0; }
+.gameover { text-align: center; }
+.note { color: var(--muted); }
