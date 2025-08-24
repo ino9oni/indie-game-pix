@@ -1,0 +1,155 @@
+// Simple Web Audio manager for SFX/BGM without external assets
+class AudioManager {
+  constructor() {
+    this.ctx = null
+    this.enabled = false
+    this.master = null
+    this.sfxGain = null
+    this.bgmGain = null
+    this.playTimer = null
+    this.playRate = 1
+    this._nextStep = 0
+    this._seqIndex = 0
+  }
+
+  init() {
+    if (this.ctx) return
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const master = ctx.createGain()
+    master.gain.value = 0.8
+    master.connect(ctx.destination)
+
+    const sfx = ctx.createGain()
+    sfx.gain.value = 0.9
+    sfx.connect(master)
+
+    const bgm = ctx.createGain()
+    bgm.gain.value = 0.3
+    bgm.connect(master)
+
+    this.ctx = ctx
+    this.master = master
+    this.sfxGain = sfx
+    this.bgmGain = bgm
+  }
+
+  async enable() {
+    this.init()
+    if (!this.ctx) return
+    await this.ctx.resume()
+    this.enabled = true
+  }
+
+  async disable() {
+    if (!this.ctx) return
+    this.stopPlayMusic()
+    await this.ctx.suspend()
+    this.enabled = false
+  }
+
+  // --- SFX ---
+  playFill() {
+    if (!this.enabled || !this.ctx) return
+    this._beep(660, 0.06, 0.015)
+  }
+
+  playMark() {
+    if (!this.enabled || !this.ctx) return
+    this._beep(360, 0.06, 0.005)
+  }
+
+  _beep(freq, dur = 0.08, attack = 0.01) {
+    const { ctx, sfxGain } = this
+    const t0 = ctx.currentTime
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = 'triangle'
+    osc.frequency.setValueAtTime(freq, t0)
+    gain.gain.setValueAtTime(0.0, t0)
+    gain.gain.linearRampToValueAtTime(1.0, t0 + attack)
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur)
+    osc.connect(gain)
+    gain.connect(sfxGain)
+    osc.start(t0)
+    osc.stop(t0 + dur + 0.02)
+    osc.onended = () => {
+      osc.disconnect()
+      gain.disconnect()
+    }
+  }
+
+  // --- Music ---
+  playOpening() {
+    if (!this.enabled || !this.ctx) return
+    // Simple rising arpeggio to signal start
+    const t0 = this.ctx.currentTime + 0.02
+    const notes = [392, 523, 659, 784] // G4 C5 E5 G5
+    notes.forEach((f, i) => this._note(f, t0 + i * 0.18, 0.14, 0.02, 0.6))
+  }
+
+  playClearFanfare() {
+    if (!this.enabled || !this.ctx) return
+    const t0 = this.ctx.currentTime + 0.02
+    const seq = [523, 659, 784, 1047] // C5 E5 G5 C6
+    seq.forEach((f, i) => this._note(f, t0 + i * 0.16, 0.14, 0.01, 0.9))
+  }
+
+  startPlayMusic() {
+    if (!this.enabled || !this.ctx) return
+    this.stopPlayMusic()
+    this.playRate = 1
+    this._seqIndex = 0
+    this._nextStep = this.ctx.currentTime
+    // Use a light-weight scheduler with setInterval
+    this.playTimer = setInterval(() => this._scheduleLoop(), 60)
+  }
+
+  stopPlayMusic() {
+    if (this.playTimer) {
+      clearInterval(this.playTimer)
+      this.playTimer = null
+    }
+  }
+
+  setPlayRate(rate) {
+    this.playRate = Math.max(0.5, Math.min(2.0, rate || 1))
+  }
+
+  _note(freq, start, dur = 0.18, attack = 0.01, vol = 0.5) {
+    const osc = this.ctx.createOscillator()
+    osc.type = 'sawtooth'
+    osc.frequency.setValueAtTime(freq, start)
+    const g = this.ctx.createGain()
+    g.gain.setValueAtTime(0.0001, start)
+    g.gain.linearRampToValueAtTime(vol, start + attack)
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur)
+    osc.connect(g)
+    g.connect(this.bgmGain)
+    osc.start(start)
+    osc.stop(start + dur + 0.05)
+    osc.onended = () => { osc.disconnect(); g.disconnect() }
+  }
+
+  _scheduleLoop() {
+    if (!this.enabled || !this.ctx) return
+    const now = this.ctx.currentTime
+    const lookAhead = 0.3 // seconds to schedule ahead
+    const beat = 0.4 / this.playRate // base tempo
+    while (this._nextStep < now + lookAhead) {
+      // A simple 8-step pattern over a minor chord
+      const pattern = [0, 3, 5, 7, 5, 3, 0, -2]
+      const base = 261.63 // C4
+      const minor = [0, 3, 7, 10] // Cmin7
+      const degree = pattern[this._seqIndex % pattern.length]
+      const chord = minor[this._seqIndex % minor.length]
+      const freq = base * Math.pow(2, (degree + chord) / 12)
+      this._note(freq, this._nextStep, 0.18 / this.playRate, 0.01, 0.35)
+      this._seqIndex += 1
+      this._nextStep += beat
+    }
+  }
+}
+
+const audio = new AudioManager()
+export default audio
+

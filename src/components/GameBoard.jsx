@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import Clues from './Clues.jsx'
 import { toggleCell } from '../game/utils.js'
+import audio from '../audio/AudioManager.js'
 
 export default function GameBoard({ size, grid, setGrid, clues }) {
   const [paintMode, setPaintMode] = useState('fill') // 'fill' | 'cross'
@@ -9,6 +10,8 @@ export default function GameBoard({ size, grid, setGrid, clues }) {
     e.preventDefault()
     const mode = e.type === 'contextmenu' ? 'cross' : paintMode
     setGrid((g) => toggleCell(g, r, c, mode))
+    if (mode === 'fill') audio.playFill()
+    else audio.playMark()
   }
 
   return (
@@ -35,4 +38,3 @@ export default function GameBoard({ size, grid, setGrid, clues }) {
     </div>
   )
 }
-

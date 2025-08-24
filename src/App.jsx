@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import LevelSelect from './components/LevelSelect.jsx'
 import PuzzleSelect from './components/PuzzleSelect.jsx'
 import GameBoard from './components/GameBoard.jsx'
@@ -7,6 +7,7 @@ import ResultModal from './components/ResultModal.jsx'
 import LevelClear from './components/LevelClear.jsx'
 import { PUZZLES, LEVELS } from './game/puzzles.js'
 import { computeClues, emptyGrid, equalsSolution } from './game/utils.js'
+import audio from './audio/AudioManager.js'
 
 const GAME_SECONDS = 20 * 60 // 20 minutes
 
@@ -18,6 +19,8 @@ export default function App() {
   const [startedAt, setStartedAt] = useState(null)
   const [remaining, setRemaining] = useState(GAME_SECONDS)
   const [result, setResult] = useState(null) // { status: 'clear' | 'gameover' }
+  const [soundOn, setSoundOn] = useState(false)
+  const spedUpRef = useRef(false)
   const [progress, setProgress] = useState(() => {
     const saved = localStorage.getItem('picrossProgress')
     if (saved) return JSON.parse(saved)
@@ -48,6 +51,28 @@ export default function App() {
     }
   }, [screen])
 
+  // Ensure BGM runs only on game screen when sound is enabled
+  useEffect(() => {
+    if (!soundOn) return
+    if (screen === 'game') {
+      audio.startPlayMusic()
+    } else {
+      audio.stopPlayMusic()
+    }
+    // Cleanup on unmount
+    return () => audio.stopPlayMusic()
+  }, [screen, soundOn])
+
+  // Speed up BGM when under 3 minutes remaining (only during game)
+  useEffect(() => {
+    if (screen === 'game') {
+      if (!spedUpRef.current && remaining <= 180) {
+        audio.setPlayRate(1.5)
+        spedUpRef.current = true
+      }
+    }
+  }, [remaining, screen])
+
   function startGame(selLevel, selIndex) {
     setLevel(selLevel)
     setPuzzleIndex(selIndex)
@@ -56,6 +81,9 @@ export default function App() {
     setRemaining(GAME_SECONDS)
     setResult(null)
     setScreen('game')
+    spedUpRef.current = false
+    audio.setPlayRate(1)
+    if (soundOn) audio.startPlayMusic()
   }
 
   function handleSubmit() {
@@ -68,8 +96,15 @@ export default function App() {
         return next
       })
       setResult({ status: 'clear' })
+      if (soundOn) {
+        audio.stopPlayMusic()
+        audio.playClearFanfare()
+      }
     } else {
       setResult({ status: 'gameover' })
+      if (soundOn) {
+        audio.stopPlayMusic()
+      }
     }
     setScreen('result')
   }
@@ -92,6 +127,21 @@ export default function App() {
           <span className="title">Picross Neo</span>
         </div>
         <nav className="top-actions">
+          <button
+            className="ghost"
+            onClick={async () => {
+              if (!soundOn) {
+                await audio.enable()
+                audio.playOpening()
+                setSoundOn(true)
+              } else {
+                await audio.disable()
+                setSoundOn(false)
+              }
+            }}
+          >
+            Sound: {soundOn ? 'On' : 'Off'}
+          </button>
           {screen !== 'level' && (
             <button className="ghost" onClick={() => setScreen('level')}>
               Levels
@@ -166,4 +216,3 @@ export default function App() {
     </div>
   )
 }
-
