@@ -1,0 +1,26 @@
+{
+  "name": "picross-react",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host --port 15173",
+    "build": "vite build",
+    "preview": "vite preview --host --port 15173",
+    "lint": "eslint --ext .js,.jsx src",
+    "fmt": "prettier --write .",
+    "test": "echo 'No tests yet' && exit 0"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.0",
+    "prettier": "^3.3.3",
+    "vite": "^5.3.1"
+  }
+}
+
