@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Opening from './components/Opening.jsx'
+import Background from './components/Background.jsx'
 import LevelSelect from './components/LevelSelect.jsx'
 import PuzzleSelect from './components/PuzzleSelect.jsx'
 import GameBoard from './components/GameBoard.jsx'
@@ -138,6 +139,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <Background />
       <header className="app-header">
         <div className="brand">
           <span className="logo">▦</span>
