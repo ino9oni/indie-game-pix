@@ -7,25 +7,19 @@ const modules = import.meta.glob('../../assets/img/*.{png,jpg,jpeg,webp,gif}', {
   as: 'url',
 })
 
-export default function Background() {
+export default function Background({ seed = 0 }) {
   const urls = useMemo(() => Object.values(modules), [])
   const [idx, setIdx] = useState(0)
 
   useEffect(() => {
     if (!urls.length) return
-    const key = 'picrossBgIdx'
-    const saved = localStorage.getItem(key)
-    if (saved != null) {
-      const n = parseInt(saved, 10)
-      if (!Number.isNaN(n)) {
-        setIdx(n % urls.length)
-        return
-      }
-    }
-    const rand = Math.floor(Math.random() * urls.length)
-    setIdx(rand)
-    localStorage.setItem(key, String(rand))
-  }, [urls.length])
+    setIdx((prev) => {
+      if (urls.length === 1) return 0
+      let r = Math.floor(Math.random() * urls.length)
+      if (r === prev) r = (r + 1) % urls.length
+      return r
+    })
+  }, [urls.length, seed])
 
   if (!urls.length) return null
 
@@ -37,4 +31,3 @@ export default function Background() {
     />
   )
 }
-

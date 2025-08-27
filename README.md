@@ -2,7 +2,7 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: 0.3.0
+Current release: 0.3.1
 
 ## Quickstart
 
@@ -28,7 +28,7 @@ Current release: 0.3.0
 - Code: `src/` (components, game logic)
 - Public: `public/` (index.html)
   - Add `public/title.png` for the Opening screen hero image.
-  - Optional background images: place files under `assets/img/` (png/jpg/webp/gif). One will be shown behind the UI at random. If none exist, the gradient background is used.
+  - Optional background images: place files under `assets/img/` (png/jpg/webp/gif). One will be shown behind the UI at random, and it changes each time you start a puzzle play. If none exist, the gradient background is used.
 - Config: `.env.example`, `vite.config.js`
 - Scripts: `Makefile`
 - Tests: `tests/` (none yet)

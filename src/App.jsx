@@ -22,6 +22,7 @@ export default function App() {
   const [startedAt, setStartedAt] = useState(null)
   const [remaining, setRemaining] = useState(GAME_SECONDS)
   const [result, setResult] = useState(null) // { status: 'clear' | 'gameover' }
+  const [bgSeed, setBgSeed] = useState(0)
   const [soundOn, setSoundOn] = useState(false)
   const spedUpRef = useRef(false)
   const [progress, setProgress] = useState(() => {
@@ -100,6 +101,8 @@ export default function App() {
     spedUpRef.current = false
     audio.setPlayRate(1)
     if (soundOn) audio.startPlayMusic()
+    // bump background seed to rotate background image per play
+    setBgSeed((s) => s + 1)
   }
 
   function handleSubmit() {
@@ -139,7 +142,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Background />
+      <Background seed={bgSeed} />
       <header className="app-header">
         <div className="brand">
           <span className="logo">▦</span>
