@@ -199,19 +199,23 @@ export default function App() {
 
       {screen === 'game' && (
         <div className="game-screen">
-          <div className="hud">
-            <Timer total={GAME_SECONDS} remaining={remaining} />
-            <div className="hud-actions">
+          <div className="game-topbar">
+            <div className="top-left">
+              <Timer total={GAME_SECONDS} remaining={remaining} />
+            </div>
+            <div className="top-right hud-actions">
               <button className="ghost" onClick={() => setGrid(emptyGrid(size))}>Reset</button>
               <button className="primary" onClick={handleSubmit}>Submit</button>
             </div>
           </div>
-          <GameBoard
-            size={size}
-            grid={grid}
-            setGrid={setGrid}
-            clues={clues}
-          />
+          <div className="game-center">
+            <GameBoard
+              size={size}
+              grid={grid}
+              setGrid={setGrid}
+              clues={clues}
+            />
+          </div>
         </div>
       )}
 

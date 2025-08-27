@@ -38,8 +38,11 @@
 #### 背景画像
 
 - お題選択状態
+    - assets/img/* からランダムな画像を表示
 - ピクロス開始状態
+    - assets/img/* からランダムな画像を表示
 - ピクロス終了状態
+    - assets/img/* からランダムな画像を表示
 
 ### Game sound
 #### Sound Effect
