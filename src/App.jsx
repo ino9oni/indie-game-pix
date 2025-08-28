@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Opening from './components/Opening.jsx'
 import Background from './components/Background.jsx'
+import StrudelBackground from './components/StrudelBackground.jsx'
 import LevelSelect from './components/LevelSelect.jsx'
 import PuzzleSelect from './components/PuzzleSelect.jsx'
 import GameBoard from './components/GameBoard.jsx'
@@ -68,15 +69,10 @@ export default function App() {
     }
   }, [screen])
 
-  // Ensure BGM runs only on game screen when sound is enabled
+  // Disable internal BGM (Strudel provides background music)
   useEffect(() => {
     if (!soundOn) return
-    if (screen === 'game') {
-      audio.startPlayMusic()
-    } else {
-      audio.stopPlayMusic()
-    }
-    // Cleanup on unmount
+    audio.stopPlayMusic()
     return () => audio.stopPlayMusic()
   }, [screen, soundOn])
 
@@ -100,7 +96,6 @@ export default function App() {
     setScreen('game')
     spedUpRef.current = false
     audio.setPlayRate(1)
-    if (soundOn) audio.startPlayMusic()
     // bump background seed to rotate background image per play
     setBgSeed((s) => s + 1)
   }
@@ -164,6 +159,7 @@ export default function App() {
           >
             Sound: {soundOn ? 'On' : 'Off'}
           </button>
+          
           {screen !== 'level' && screen !== 'opening' && (
             <button className="ghost" onClick={() => setScreen('level')}>
               Levels
@@ -248,6 +244,18 @@ export default function App() {
       {screen === 'gameover' && (
         <GameOver onRestart={() => setScreen('opening')} />
       )}
+
+      <StrudelBackground
+        active={Boolean(soundOn)}
+        code={`setcps(1)
+n("<0 1 2 3 4>*8").scale('G4 minor')
+.s("gm_lead_6_voice")
+.clip(sine.range(.2,.8).slow(8))
+.jux(rev)
+.room(2)
+.sometimes(add(note("12")))
+.lpf(perlin.range(200,20000).slow(4))`}
+      />
     </div>
   )
 }
