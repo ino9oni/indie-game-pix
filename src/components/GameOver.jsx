@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import audio from '../audio/AudioManager.js'
 
-export default function GameOver({ onRestart }) {
+export default function GameOver({ onContinue, onQuit }) {
   useEffect(() => {
     audio.stopPlayMusic()
     audio.playGameOver()
@@ -12,9 +12,9 @@ export default function GameOver({ onRestart }) {
       <h1 className="headline">Game Over</h1>
       <p className="sub">時間切れ、または解答が一致しませんでした。</p>
       <div className="actions">
-        <button className="primary" onClick={onRestart}>Back to Title</button>
+        <button className="ghost" onClick={onContinue}>Continue</button>
+        <button className="primary" onClick={onQuit}>Quit</button>
       </div>
     </main>
   )
 }
-

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Opening from './components/Opening.jsx'
 import Prologue from './components/Prologue.jsx'
 import NameEntry from './components/NameEntry.jsx'
+import GameStart from './components/GameStart.jsx'
 import RouteMap from './components/RouteMap.jsx'
 import Background from './components/Background.jsx'
 // Level/Puzzle selection removed in route-based flow
@@ -34,7 +35,9 @@ export default function App() {
   const resumeOnceRef = useRef(false)
   const [heroName, setHeroName] = useState(() => localStorage.getItem('heroName') || '')
   const [currentNode, setCurrentNode] = useState(() => localStorage.getItem('routeNode') || 'start')
-  const [lastNode, setLastNode] = useState('')
+  const [lastNode, setLastNode] = useState('') // previous node to prevent backtracking
+  const [pendingNode, setPendingNode] = useState(null) // target node chosen to battle
+  const [battleNode, setBattleNode] = useState(null) // last battle node (for Continue)
   function resetProgress() { /* no-op for now */ }
 
   const size = solution.length
@@ -114,6 +117,7 @@ export default function App() {
     setStartedAt(Date.now())
     setRemaining(GAME_SECONDS)
     setResult(null)
+    setBattleNode(nodeId)
     setScreen('picross')
     spedUpRef.current = false
     // bump background seed to rotate background image per state change
@@ -132,20 +136,24 @@ export default function App() {
         if (shouldFill !== isFilled) { ok = false; break }
       }
     }
-    setResult({ status: ok ? 'clear' : 'gameover' })
-    if (ok && soundOn) audio.playClearFanfare()
-    setScreen('result')
+    if (ok) {
+      setResult({ status: 'clear' })
+      if (soundOn) audio.playClearFanfare()
+      setScreen('result')
+    } else {
+      // Failed -> go directly to Game Over per spec
+      setResult({ status: 'gameover' })
+      setScreen('gameover')
+    }
   }
 
   function handleCloseResult() {
-    // Route flow: on clear, advance to next node; otherwise return to route
-    if (result?.status === 'clear') {
-      const options = ROUTE.edges.filter((e) => e.from === currentNode)
-      const nextId = options.length === 1 ? options[0].to : null
-      if (nextId) {
-        setCurrentNode(nextId)
-        localStorage.setItem('routeNode', nextId)
-      }
+    // On clear, move to the selected pending node; otherwise just go back to route
+    if (result?.status === 'clear' && pendingNode) {
+      setLastNode(currentNode)
+      setCurrentNode(pendingNode)
+      localStorage.setItem('routeNode', pendingNode)
+      setPendingNode(null)
     }
     setScreen('route')
   }
@@ -189,7 +197,7 @@ export default function App() {
 
       {screen === 'opening' && (
         <Opening
-          onStart={async () => { try { await bgm.resume() } catch {} ; setScreen('route') }}
+          onStart={async () => { try { await bgm.resume() } catch {} ; setScreen('gamestart') }}
           onNewGame={async () => {
             const ok = window.confirm('本当に削除してもよいですか？')
             if (!ok) return
@@ -200,13 +208,11 @@ export default function App() {
       )}
 
       {screen === 'gamestart' && (
-        <div className="screen dialog">
-          <div className="dialog-window">
-            <p>ここに一人の人間の若き旅人がいた。[Enter]</p>
-            <p>その名を…[Enter]</p>
-            <div className="actions"><button className="primary" onClick={() => setScreen('name')}>名前を決める</button></div>
-          </div>
-        </div>
+        <GameStart
+          heroName={heroName}
+          onSetName={(n) => { setHeroName(n); localStorage.setItem('heroName', n) }}
+          onDone={() => setScreen('route')}
+        />
       )}
 
       {screen === 'name' && (
@@ -221,7 +227,12 @@ export default function App() {
         <RouteMap
           graph={ROUTE}
           current={currentNode}
-          onNode={(id) => { if (id === currentNode && CHARACTERS[id]) beginPicrossForNode(id) }}
+          last={lastNode}
+          onArrive={(id) => {
+            // Only allow neighbor clicks (RouteMap already enforces), set pending and start battle
+            setPendingNode(id)
+            if (CHARACTERS[id]) beginPicrossForNode(id)
+          }}
         />
       )}
 
@@ -253,7 +264,10 @@ export default function App() {
       )}
 
       {screen === 'gameover' && (
-        <GameOver onRestart={() => setScreen('opening')} />
+        <GameOver
+          onContinue={() => { if (battleNode) beginPicrossForNode(battleNode) }}
+          onQuit={() => setScreen('opening')}
+        />
       )}
     </div>
   )
