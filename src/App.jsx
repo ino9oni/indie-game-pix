@@ -4,16 +4,15 @@ import Prologue from './components/Prologue.jsx'
 import NameEntry from './components/NameEntry.jsx'
 import RouteMap from './components/RouteMap.jsx'
 import Background from './components/Background.jsx'
-import LevelSelect from './components/LevelSelect.jsx'
-import PuzzleSelect from './components/PuzzleSelect.jsx'
+// Level/Puzzle selection removed in route-based flow
 import GameBoard from './components/GameBoard.jsx'
 import Timer from './components/Timer.jsx'
 import ResultModal from './components/ResultModal.jsx'
 import LevelClear from './components/LevelClear.jsx'
 import GameOver from './components/GameOver.jsx'
-import { PUZZLES, LEVELS } from './game/puzzles.js'
+// import { PUZZLES, LEVELS } from './game/puzzles.js'
 import { ROUTE, CHARACTERS } from './game/route.js'
-import { computeClues, emptyGrid, equalsSolution } from './game/utils.js'
+import { computeClues, emptyGrid } from './game/utils.js'
 import audio from './audio/AudioManager.js'
 import bgm from './audio/BgmPlayer.js'
 import { listBgmUrls } from './audio/library.js'
@@ -22,9 +21,10 @@ const GAME_SECONDS = 20 * 60 // 20 minutes
 
 export default function App() {
   const [screen, setScreen] = useState('prologue') // 'prologue' | 'opening' | 'gamestart' | 'name' | 'route' | 'picross' | 'result' | 'levelClear' | 'gameover'
-  const [level, setLevel] = useState('easy')
+  const [level, setLevel] = useState('easy') // internal only
   const [puzzleIndex, setPuzzleIndex] = useState(0)
   const [grid, setGrid] = useState([])
+  const [solution, setSolution] = useState([])
   const [startedAt, setStartedAt] = useState(null)
   const [remaining, setRemaining] = useState(GAME_SECONDS)
   const [result, setResult] = useState(null) // { status: 'clear' | 'gameover' }
@@ -35,36 +35,8 @@ export default function App() {
   const [heroName, setHeroName] = useState(() => localStorage.getItem('heroName') || '')
   const [currentNode, setCurrentNode] = useState(() => localStorage.getItem('routeNode') || 'start')
   const [lastNode, setLastNode] = useState('')
-  const [progress, setProgress] = useState(() => {
-    const desired = Object.fromEntries(LEVELS.map((l) => [l, Array(PUZZLES[l].length).fill(false)]))
-    const saved = localStorage.getItem('picrossProgress')
-    if (!saved) return desired
-    try {
-      const parsed = JSON.parse(saved)
-      const normalized = {}
-      for (const l of LEVELS) {
-        const arr = Array.isArray(parsed?.[l]) ? parsed[l] : []
-        const need = PUZZLES[l].length
-        normalized[l] = arr.slice(0, need)
-        while (normalized[l].length < need) normalized[l].push(false)
-      }
-      return normalized
-    } catch {
-      return desired
-    }
-  })
+  function resetProgress() { /* no-op for now */ }
 
-  useEffect(() => {
-    localStorage.setItem('picrossProgress', JSON.stringify(progress))
-  }, [progress])
-
-  function resetProgress() {
-    const cleared = Object.fromEntries(LEVELS.map((l) => [l, Array(PUZZLES[l].length).fill(false)]))
-    setProgress(cleared)
-    try { localStorage.removeItem('picrossProgress') } catch {}
-  }
-
-  const solution = useMemo(() => PUZZLES[level][puzzleIndex], [level, puzzleIndex])
   const size = solution.length
   const clues = useMemo(() => computeClues(solution), [solution])
 
@@ -136,6 +108,8 @@ export default function App() {
     else lvl = 'high'
     setLevel(lvl)
     setPuzzleIndex(0)
+    const sol = Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => (r === c || r + c === n - 1)))
+    setSolution(sol)
     setGrid(emptyGrid(n))
     setStartedAt(Date.now())
     setRemaining(GAME_SECONDS)
@@ -149,19 +123,17 @@ export default function App() {
   }
 
   function handleSubmit() {
-    const ok = equalsSolution(grid, solution)
-    if (ok) {
-      // mark progress
-      setProgress((p) => {
-        const next = { ...p, [level]: [...p[level]] }
-        next[level][puzzleIndex] = true
-        return next
-      })
-      setResult({ status: 'clear' })
-      if (soundOn) { audio.playClearFanfare() }
-    } else {
-      setResult({ status: 'gameover' })
+    const n = solution.length
+    let ok = true
+    for (let r = 0; r < n && ok; r++) {
+      for (let c = 0; c < n; c++) {
+        const shouldFill = solution[r][c]
+        const isFilled = grid[r][c] === 1
+        if (shouldFill !== isFilled) { ok = false; break }
+      }
     }
+    setResult({ status: ok ? 'clear' : 'gameover' })
+    if (ok && soundOn) audio.playClearFanfare()
     setScreen('result')
   }
 
@@ -185,7 +157,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Background seed={bgSeed} />
+      {screen !== 'prologue' && <Background seed={bgSeed} />}
       <header className="app-header">
         <div className="brand">
           <span className="logo">▦</span>

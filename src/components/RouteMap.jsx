@@ -7,7 +7,7 @@ export default function RouteMap({ graph, current, last, onArrive }) {
   const edges = graph.edges
   const [anim, setAnim] = useState(null) // { from, to, t }
   const rafRef = useRef(null)
-  const heroImg = '/assets/img/character/hero/000083-826608146.png'
+  const heroImg = '/assets/img/character/hero/00083-826608146.png'
 
   const adj = useMemo(() => {
     const m = {}
