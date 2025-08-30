@@ -137,6 +137,32 @@ button { color: var(--text); background: #131a3a; border: 1px solid #2b2f55; bor
 .ghost { background: transparent; }
 .primary { background: linear-gradient(135deg, #22d3ee, #7c3aed); border: none; box-shadow: 0 6px 22px #7c3aed40; }
 
+/* BGM button states */
+.bgm.on { background: #16a34a; color: white; border-color: #16a34a; }
+.bgm.off { background: #6b7280; color: white; border-color: #6b7280; }
+
+/* Prologue window styles */
+.prologue { display: grid; place-items: center; min-height: 60vh; }
+.prologue-window { width: min(800px, 90%); background: #1e3a8a; color: #fff; border: 3px solid #d1b464; border-radius: 12px; padding: 16px 18px; box-shadow: 0 12px 40px #0008; }
+
+/* Name entry */
+.name-entry { display: grid; place-items: center; }
+.name-card { background: var(--panel); border: 1px solid #2b2f55; border-radius: 12px; padding: 12px; width: min(900px, 96%); }
+.name-card .display { font-size: 24px; font-weight: 800; letter-spacing: 2px; text-align: center; margin-bottom: 8px; }
+.name-card .grid { display: grid; gap: 6px; }
+.name-card .row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.kana { padding: 6px 10px; }
+
+/* Route */
+.route-canvas { background: #0c122680; border: 1px solid #2b2f55; border-radius: 12px; padding: 8px; }
+.route-svg { width: 100%; height: 420px; display: block; }
+.route-edge { stroke: #94a3b8; stroke-width: 3px; opacity: 0.6; }
+.route-node { fill: #0ea5e9; stroke: #1f2937; stroke-width: 2px; }
+.route-node.current { fill: #22c55e; }
+.route-node.start { fill: #f59e0b; }
+.route-node.end { fill: #a78bfa; }
+.route-label { fill: #e5e7eb; font-size: 12px; }
+
 .level-clear .congrats { font-size: 40px; background: linear-gradient(90deg, #22d3ee, #7c3aed, #f59e0b); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 12px #22d3ee66); }
 
 @media (max-width: 720px) {

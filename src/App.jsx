@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Opening from './components/Opening.jsx'
+import Prologue from './components/Prologue.jsx'
+import NameEntry from './components/NameEntry.jsx'
+import RouteMap from './components/RouteMap.jsx'
 import Background from './components/Background.jsx'
 import LevelSelect from './components/LevelSelect.jsx'
 import PuzzleSelect from './components/PuzzleSelect.jsx'
@@ -9,6 +12,7 @@ import ResultModal from './components/ResultModal.jsx'
 import LevelClear from './components/LevelClear.jsx'
 import GameOver from './components/GameOver.jsx'
 import { PUZZLES, LEVELS } from './game/puzzles.js'
+import { ROUTE, CHARACTERS } from './game/route.js'
 import { computeClues, emptyGrid, equalsSolution } from './game/utils.js'
 import audio from './audio/AudioManager.js'
 import bgm from './audio/BgmPlayer.js'
@@ -17,7 +21,7 @@ import { listBgmUrls } from './audio/library.js'
 const GAME_SECONDS = 20 * 60 // 20 minutes
 
 export default function App() {
-  const [screen, setScreen] = useState('opening') // 'opening' | 'level' | 'puzzle' | 'game' | 'result' | 'levelClear' | 'gameover'
+  const [screen, setScreen] = useState('prologue') // 'prologue' | 'opening' | 'gamestart' | 'name' | 'route' | 'picross' | 'result' | 'levelClear' | 'gameover'
   const [level, setLevel] = useState('easy')
   const [puzzleIndex, setPuzzleIndex] = useState(0)
   const [grid, setGrid] = useState([])
@@ -28,6 +32,8 @@ export default function App() {
   const [soundOn, setSoundOn] = useState(false)
   const spedUpRef = useRef(false)
   const resumeOnceRef = useRef(false)
+  const [heroName, setHeroName] = useState(() => localStorage.getItem('heroName') || '')
+  const [currentNode, setCurrentNode] = useState(() => localStorage.getItem('routeNode') || 'start')
   const [progress, setProgress] = useState(() => {
     const desired = Object.fromEntries(LEVELS.map((l) => [l, Array(PUZZLES[l].length).fill(false)]))
     const saved = localStorage.getItem('picrossProgress')
@@ -62,7 +68,7 @@ export default function App() {
   const clues = useMemo(() => computeClues(solution), [solution])
 
   useEffect(() => {
-    if (screen === 'game') {
+    if (screen === 'picross') {
       const id = setInterval(() => {
         setRemaining((r) => {
           const nr = Math.max(0, r - 1)
@@ -118,14 +124,22 @@ export default function App() {
   // No tempo changes; keep marker false
   useEffect(() => { spedUpRef.current = false }, [remaining, screen])
 
-  function startGame(selLevel, selIndex) {
-    setLevel(selLevel)
-    setPuzzleIndex(selIndex)
-    setGrid(emptyGrid(PUZZLES[selLevel][selIndex].length))
+  function beginPicrossForNode(nodeId) {
+    const meta = CHARACTERS[nodeId]
+    if (!meta) return
+    const n = meta.size
+    let lvl = 'easy'
+    if (n <= 5) lvl = 'easy'
+    else if (n <= 10) lvl = 'middle'
+    else if (n <= 15) lvl = 'high'
+    else lvl = 'high'
+    setLevel(lvl)
+    setPuzzleIndex(0)
+    setGrid(emptyGrid(n))
     setStartedAt(Date.now())
     setRemaining(GAME_SECONDS)
     setResult(null)
-    setScreen('game')
+    setScreen('picross')
     spedUpRef.current = false
     // bump background seed to rotate background image per state change
     setBgSeed((s) => s + 1)
@@ -151,15 +165,16 @@ export default function App() {
   }
 
   function handleCloseResult() {
-    // If all solved at this level, show level clear
-    const total = PUZZLES[level].length
-    const solved = progress[level].filter(Boolean).length
-    const allSolved = progress[level].every(Boolean) || (result?.status === 'clear' && solved + 1 === total)
-    if (allSolved) {
-      setScreen('levelClear')
-      return
+    // Route flow: on clear, advance to next node; otherwise return to route
+    if (result?.status === 'clear') {
+      const options = ROUTE.edges.filter((e) => e.from === currentNode)
+      const nextId = options.length === 1 ? options[0].to : null
+      if (nextId) {
+        setCurrentNode(nextId)
+        localStorage.setItem('routeNode', nextId)
+      }
     }
-    setScreen('puzzle')
+    setScreen('route')
   }
 
   // Change background image on every screen change (randomized in component)
@@ -177,9 +192,8 @@ export default function App() {
         </div>
         <nav className="top-actions">
           <button
-            className="ghost"
+            className={`ghost bgm ${soundOn ? 'on' : 'off'}`}
             onClick={async () => {
-              // Toggle SFX/BGM enable
               if (!soundOn) {
                 try { await audio.enable() } catch {}
                 try { await bgm.resume() } catch {}
@@ -191,46 +205,54 @@ export default function App() {
               }
             }}
           >
-            サウンド: {soundOn ? 'On' : 'Off'}
+            BGM: {soundOn ? 'On' : 'Off'}
           </button>
-          
-          {screen !== 'level' && screen !== 'opening' && (
-            <button className="ghost" onClick={() => setScreen('level')}>
-              Levels
-            </button>
-          )}
         </nav>
       </header>
 
-      {screen === 'opening' && (
-        <Opening
-          onStart={async () => { try { await bgm.resume() } catch {} ; setScreen('level') }}
-          onNewGame={async () => { resetProgress(); try { await bgm.resume() } catch {}; setScreen('level') }}
-        />
+      {screen === 'prologue' && (
+        <Prologue onNext={() => setScreen('opening')} />
       )}
 
-      {screen === 'level' && (
-        <LevelSelect
-          levels={LEVELS}
-          progress={progress}
-          onSelect={(lvl) => {
-            setLevel(lvl)
-            setScreen('puzzle')
+      {screen === 'opening' && (
+        <Opening
+          onStart={async () => { try { await bgm.resume() } catch {} ; setScreen('route') }}
+          onNewGame={async () => {
+            const ok = window.confirm('本当に削除してもよいですか？')
+            if (!ok) return
+            resetProgress(); localStorage.removeItem('heroName'); localStorage.removeItem('routeNode'); setCurrentNode('start')
+            try { await bgm.resume() } catch {}; setScreen('gamestart')
           }}
         />
       )}
 
-      {screen === 'puzzle' && (
-        <PuzzleSelect
-          level={level}
-          puzzles={PUZZLES[level]}
-          progress={progress[level]}
-          onBack={() => setScreen('level')}
-          onSelect={(i) => startGame(level, i)}
+      {screen === 'gamestart' && (
+        <div className="screen dialog">
+          <div className="dialog-window">
+            <p>ここに一人の人間の若き旅人がいた。[Enter]</p>
+            <p>その名を…[Enter]</p>
+            <div className="actions"><button className="primary" onClick={() => setScreen('name')}>名前を決める</button></div>
+          </div>
+        </div>
+      )}
+
+      {screen === 'name' && (
+        <NameEntry
+          initial={heroName}
+          onConfirm={(n) => { setHeroName(n); localStorage.setItem('heroName', n); setScreen('route') }}
+          onCancel={() => setScreen('gamestart')}
         />
       )}
 
-      {screen === 'game' && (
+      {screen === 'route' && (
+        <RouteMap
+          graph={ROUTE}
+          current={currentNode}
+          onNode={(id) => { if (id === currentNode && CHARACTERS[id]) beginPicrossForNode(id) }}
+        />
+      )}
+
+      {screen === 'picross' && (
         <div className="game-screen">
           <div className="game-topbar">
             <div className="top-left">
@@ -238,16 +260,12 @@ export default function App() {
             </div>
             <div className="top-right hud-actions">
               <button className="ghost" onClick={() => setGrid(emptyGrid(size))}>Reset</button>
+              <button className="ghost" onClick={() => setScreen('route')}>Quit</button>
               <button className="primary" onClick={handleSubmit}>Submit</button>
             </div>
           </div>
           <div className="game-center">
-            <GameBoard
-              size={size}
-              grid={grid}
-              setGrid={setGrid}
-              clues={clues}
-            />
+            <GameBoard size={size} grid={grid} setGrid={setGrid} clues={clues} />
           </div>
         </div>
       )}
@@ -256,33 +274,14 @@ export default function App() {
         <ResultModal
           status={result?.status}
           onClose={handleCloseResult}
-          onRetry={() => setScreen('puzzle')}
+          onRetry={() => setScreen('route')}
           onExit={() => setScreen('gameover')}
-        />
-      )}
-
-      {screen === 'levelClear' && (
-        <LevelClear
-          level={level}
-          onBackToLevels={() => setScreen('level')}
-          onNextLevel={() => {
-            const idx = LEVELS.indexOf(level)
-            const nextLevel = LEVELS[idx + 1]
-            if (nextLevel) {
-              setLevel(nextLevel)
-              setScreen('puzzle')
-            } else {
-              setScreen('level')
-            }
-          }}
         />
       )}
 
       {screen === 'gameover' && (
         <GameOver onRestart={() => setScreen('opening')} />
       )}
-
-      {/* No embedded music component; BGM handled via WAV player */}
     </div>
   )
 }
