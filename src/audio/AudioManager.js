@@ -59,6 +59,30 @@ class AudioManager {
     this._beep(360, 0.06, 0.005)
   }
 
+  playMove() {
+    if (!this.enabled || !this.ctx) return
+    // Simple whoosh-like sweep
+    const { ctx, sfxGain } = this
+    const t0 = ctx.currentTime + 0.01
+    const osc = ctx.createOscillator()
+    const g = ctx.createGain()
+    const lpf = ctx.createBiquadFilter()
+    lpf.type = 'lowpass'
+    lpf.frequency.setValueAtTime(8000, t0)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(300, t0)
+    osc.frequency.exponentialRampToValueAtTime(120, t0 + 0.5)
+    g.gain.setValueAtTime(0.0001, t0)
+    g.gain.linearRampToValueAtTime(0.6, t0 + 0.05)
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5)
+    osc.connect(lpf)
+    lpf.connect(g)
+    g.connect(sfxGain)
+    osc.start(t0)
+    osc.stop(t0 + 0.6)
+    osc.onended = () => { osc.disconnect(); lpf.disconnect(); g.disconnect() }
+  }
+
   _beep(freq, dur = 0.08, attack = 0.01) {
     const { ctx, sfxGain } = this
     const t0 = ctx.currentTime

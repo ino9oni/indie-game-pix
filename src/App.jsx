@@ -34,6 +34,7 @@ export default function App() {
   const resumeOnceRef = useRef(false)
   const [heroName, setHeroName] = useState(() => localStorage.getItem('heroName') || '')
   const [currentNode, setCurrentNode] = useState(() => localStorage.getItem('routeNode') || 'start')
+  const [lastNode, setLastNode] = useState('')
   const [progress, setProgress] = useState(() => {
     const desired = Object.fromEntries(LEVELS.map((l) => [l, Array(PUZZLES[l].length).fill(false)]))
     const saved = localStorage.getItem('picrossProgress')
