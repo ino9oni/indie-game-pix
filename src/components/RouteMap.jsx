@@ -21,7 +21,7 @@ export default function RouteMap({ graph, current, last, onArrive }) {
   useEffect(() => {
     if (!anim) return
     const start = performance.now()
-    const dur = 1000
+    const dur = 1500
     const step = (now) => {
       const t = Math.min(1, (now - start) / dur)
       setAnim((a) => (a ? { ...a, t } : null))
@@ -66,25 +66,33 @@ export default function RouteMap({ graph, current, last, onArrive }) {
           {edges.map((e, i) => (
             <path key={i} d={pathD(e.from, e.to)} className="route-edge" fill="none" />
           ))}
-          {Object.entries(nodes).map(([id, n]) => (
-            <g
-              key={id}
-              onClick={() => {
-                if (!canClick(id) || anim) return
-                setAnim({ from: current, to: id, t: 0 })
-                audio.playMove()
-              }}
-              style={{ cursor: canClick(id) ? 'pointer' : 'default', opacity: canClick(id) ? 1 : 0.6 }}
-            >
-              <circle cx={n.x} cy={n.y} r={16} className={`route-node ${current === id ? 'current' : ''} ${n.type}`} />
-              <text x={n.x} y={n.y - 22} textAnchor="middle" className="route-label">
-                {n.label || id}
-              </text>
-            </g>
-          ))}
+          {Object.entries(nodes).map(([id, n]) => {
+            const label = n.label || id
+            const w = Math.max(40, (label.length || 1) * 8)
+            const h = 16
+            const rx = 6
+            const lx = n.x - w / 2
+            const ly = n.y + 22
+            return (
+              <g
+                key={id}
+                onClick={() => {
+                  if (!canClick(id) || anim) return
+                  setAnim({ from: current, to: id, t: 0 })
+                  audio.playMove()
+                }}
+                style={{ cursor: canClick(id) ? 'pointer' : 'default', opacity: canClick(id) ? 1 : 0.6 }}
+              >
+                <circle cx={n.x} cy={n.y} r={16} className={`route-node ${current === id ? 'current' : ''} ${n.type}`} />
+                {/* Label box under node */}
+                <rect x={lx} y={ly} width={w} height={h} rx={rx} ry={rx} fill="#fff" stroke="#000" strokeWidth="1" />
+                <text x={n.x} y={ly + 12} textAnchor="middle" className="route-label" fill="#000">{label}</text>
+              </g>
+            )
+          })}
           {(() => {
             const p = heroPos()
-            return <image href={heroImg} x={p.x - 5} y={p.y - 15} width="10" height="30" preserveAspectRatio="xMidYMid meet" />
+            return <image href={heroImg} x={p.x - 10} y={p.y - 30} width="20" height="60" preserveAspectRatio="xMidYMid meet" />
           })()}
         </svg>
       </div>
