@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Opening from './components/Opening.jsx'
 import Background from './components/Background.jsx'
-import StrudelBackground from './components/StrudelBackground.jsx'
 import LevelSelect from './components/LevelSelect.jsx'
 import PuzzleSelect from './components/PuzzleSelect.jsx'
 import GameBoard from './components/GameBoard.jsx'
@@ -12,6 +11,8 @@ import GameOver from './components/GameOver.jsx'
 import { PUZZLES, LEVELS } from './game/puzzles.js'
 import { computeClues, emptyGrid, equalsSolution } from './game/utils.js'
 import audio from './audio/AudioManager.js'
+import bgm from './audio/BgmPlayer.js'
+import { listBgmUrls } from './audio/library.js'
 
 const GAME_SECONDS = 20 * 60 // 20 minutes
 
@@ -26,6 +27,7 @@ export default function App() {
   const [bgSeed, setBgSeed] = useState(0)
   const [soundOn, setSoundOn] = useState(false)
   const spedUpRef = useRef(false)
+  const resumeOnceRef = useRef(false)
   const [progress, setProgress] = useState(() => {
     const desired = Object.fromEntries(LEVELS.map((l) => [l, Array(PUZZLES[l].length).fill(false)]))
     const saved = localStorage.getItem('picrossProgress')
@@ -49,6 +51,12 @@ export default function App() {
     localStorage.setItem('picrossProgress', JSON.stringify(progress))
   }, [progress])
 
+  function resetProgress() {
+    const cleared = Object.fromEntries(LEVELS.map((l) => [l, Array(PUZZLES[l].length).fill(false)]))
+    setProgress(cleared)
+    try { localStorage.removeItem('picrossProgress') } catch {}
+  }
+
   const solution = useMemo(() => PUZZLES[level][puzzleIndex], [level, puzzleIndex])
   const size = solution.length
   const clues = useMemo(() => computeClues(solution), [solution])
@@ -69,22 +77,46 @@ export default function App() {
     }
   }, [screen])
 
-  // Disable internal BGM (Strudel provides background music)
+  // Global BGM control: when Sound is On, play continuously on all screens.
+  const chosenTrackRef = useRef(null)
   useEffect(() => {
-    if (!soundOn) return
-    audio.stopPlayMusic()
-    return () => audio.stopPlayMusic()
-  }, [screen, soundOn])
-
-  // Speed up BGM when under 3 minutes remaining (only during game)
-  useEffect(() => {
-    if (screen === 'game') {
-      if (!spedUpRef.current && remaining <= 180) {
-        audio.setPlayRate(1.5)
-        spedUpRef.current = true
+    if (soundOn) {
+      if (!chosenTrackRef.current) {
+        const urls = listBgmUrls()
+        if (urls.length) {
+          const idx = Math.floor(Math.random() * urls.length)
+          chosenTrackRef.current = urls[idx]
+        }
       }
+      const url = chosenTrackRef.current
+      if (url) bgm.play(url, 'global')
+    } else {
+      bgm.stop()
+      chosenTrackRef.current = null
     }
-  }, [remaining, screen])
+  }, [soundOn])
+
+  // Keep playback rate normal
+  useEffect(() => { if (soundOn) bgm.setRate(1) }, [screen, soundOn])
+
+  // Resume BGM and SFX on any user gesture (autoplay fix)
+  useEffect(() => {
+    const handler = async () => {
+      if (resumeOnceRef.current) return
+      resumeOnceRef.current = true
+      try { await audio.enable() } catch {}
+      try { await bgm.resume() } catch {}
+    }
+    window.addEventListener('pointerdown', handler)
+    window.addEventListener('keydown', handler)
+    return () => {
+      window.removeEventListener('pointerdown', handler)
+      window.removeEventListener('keydown', handler)
+    }
+  }, [])
+
+  // No tempo changes; keep marker false
+  useEffect(() => { spedUpRef.current = false }, [remaining, screen])
 
   function startGame(selLevel, selIndex) {
     setLevel(selLevel)
@@ -95,9 +127,10 @@ export default function App() {
     setResult(null)
     setScreen('game')
     spedUpRef.current = false
-    audio.setPlayRate(1)
-    // bump background seed to rotate background image per play
+    // bump background seed to rotate background image per state change
     setBgSeed((s) => s + 1)
+    // Nudge BGM resume on user gesture
+    try { bgm.resume() } catch {}
   }
 
   function handleSubmit() {
@@ -110,15 +143,9 @@ export default function App() {
         return next
       })
       setResult({ status: 'clear' })
-      if (soundOn) {
-        audio.stopPlayMusic()
-        audio.playClearFanfare()
-      }
+      if (soundOn) { audio.playClearFanfare() }
     } else {
       setResult({ status: 'gameover' })
-      if (soundOn) {
-        audio.stopPlayMusic()
-      }
     }
     setScreen('result')
   }
@@ -135,29 +162,36 @@ export default function App() {
     setScreen('puzzle')
   }
 
+  // Change background image on every screen change (randomized in component)
+  useEffect(() => {
+    setBgSeed((s) => s + 1)
+  }, [screen])
+
   return (
     <div className="app">
       <Background seed={bgSeed} />
       <header className="app-header">
         <div className="brand">
           <span className="logo">▦</span>
-          <span className="title">Picross Neo</span>
+          <span className="title">elfpix</span>
         </div>
         <nav className="top-actions">
           <button
             className="ghost"
             onClick={async () => {
+              // Toggle SFX/BGM enable
               if (!soundOn) {
-                await audio.enable()
-                audio.playOpening()
+                try { await audio.enable() } catch {}
+                try { await bgm.resume() } catch {}
                 setSoundOn(true)
               } else {
-                await audio.disable()
+                try { await audio.disable() } catch {}
+                try { bgm.stop() } catch {}
                 setSoundOn(false)
               }
             }}
           >
-            Sound: {soundOn ? 'On' : 'Off'}
+            サウンド: {soundOn ? 'On' : 'Off'}
           </button>
           
           {screen !== 'level' && screen !== 'opening' && (
@@ -169,7 +203,10 @@ export default function App() {
       </header>
 
       {screen === 'opening' && (
-        <Opening onStart={() => setScreen('level')} />
+        <Opening
+          onStart={async () => { try { await bgm.resume() } catch {} ; setScreen('level') }}
+          onNewGame={async () => { resetProgress(); try { await bgm.resume() } catch {}; setScreen('level') }}
+        />
       )}
 
       {screen === 'level' && (
@@ -245,17 +282,7 @@ export default function App() {
         <GameOver onRestart={() => setScreen('opening')} />
       )}
 
-      <StrudelBackground
-        active={Boolean(soundOn)}
-        code={`setcps(1)
-n("<0 1 2 3 4>*8").scale('G4 minor')
-.s("gm_lead_6_voice")
-.clip(sine.range(.2,.8).slow(8))
-.jux(rev)
-.room(2)
-.sometimes(add(note("12")))
-.lpf(perlin.range(200,20000).slow(4))`}
-      />
+      {/* No embedded music component; BGM handled via WAV player */}
     </div>
   )
 }

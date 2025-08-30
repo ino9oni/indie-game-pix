@@ -50,7 +50,8 @@ class AudioManager {
   // --- SFX ---
   playFill() {
     if (!this.enabled || !this.ctx) return
-    this._beep(660, 0.06, 0.015)
+    // Brush-like short noise burst
+    this._noiseBurst(0.06, 2000, 500)
   }
 
   playMark() {
@@ -76,6 +77,40 @@ class AudioManager {
       osc.disconnect()
       gain.disconnect()
     }
+  }
+
+  _noiseBurst(dur = 0.08, lpfHz = 1800, hpfHz = 400) {
+    const { ctx, sfxGain } = this
+    const t0 = ctx.currentTime
+    const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * dur))
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.6
+
+    const src = ctx.createBufferSource()
+    src.buffer = buffer
+
+    const lpf = ctx.createBiquadFilter()
+    lpf.type = 'lowpass'
+    lpf.frequency.value = lpfHz
+
+    const hpf = ctx.createBiquadFilter()
+    hpf.type = 'highpass'
+    hpf.frequency.value = hpfHz
+
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, t0)
+    g.gain.linearRampToValueAtTime(0.9, t0 + 0.01)
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
+
+    src.connect(hpf)
+    hpf.connect(lpf)
+    lpf.connect(g)
+    g.connect(sfxGain)
+
+    src.start(t0)
+    src.stop(t0 + dur + 0.02)
+    src.onended = () => { src.disconnect(); hpf.disconnect(); lpf.disconnect(); g.disconnect() }
   }
 
   // --- Music ---

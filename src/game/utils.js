@@ -30,6 +30,9 @@ export function toggleCell(grid, r, c, mode = 'fill') {
     next[r][c] = next[r][c] === 1 ? 0 : 1
   } else if (mode === 'cross') {
     next[r][c] = next[r][c] === -1 ? 0 : -1
+  } else if (mode === 'maybe') {
+    // 2 represents a tentative/"maybe" mark that does not affect solution check
+    next[r][c] = next[r][c] === 2 ? 0 : 2
   }
   return next
 }
@@ -45,4 +48,3 @@ export function equalsSolution(grid, solution) {
   }
   return true
 }
-
