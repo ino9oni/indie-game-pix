@@ -21,7 +21,7 @@ export default function RouteMap({ graph, current, last, onArrive }) {
   useEffect(() => {
     if (!anim) return
     const start = performance.now()
-    const dur = 1500
+    const dur = 500
     const step = (now) => {
       const t = Math.min(1, (now - start) / dur)
       setAnim((a) => (a ? { ...a, t } : null))
