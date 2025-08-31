@@ -4,6 +4,7 @@ import Prologue from './components/Prologue.jsx'
 import NameEntry from './components/NameEntry.jsx'
 import GameStart from './components/GameStart.jsx'
 import RouteMap from './components/RouteMap.jsx'
+import Conversation from './components/Conversation.jsx'
 import Background from './components/Background.jsx'
 // Level/Puzzle selection removed in route-based flow
 import GameBoard from './components/GameBoard.jsx'
@@ -21,7 +22,7 @@ import { listBgmUrls } from './audio/library.js'
 const GAME_SECONDS = 20 * 60 // 20 minutes
 
 export default function App() {
-  const [screen, setScreen] = useState('prologue') // 'prologue' | 'opening' | 'gamestart' | 'name' | 'route' | 'picross' | 'result' | 'levelClear' | 'gameover'
+  const [screen, setScreen] = useState('prologue') // 'prologue' | 'opening' | 'gamestart' | 'name' | 'route' | 'conversation' | 'picross' | 'result' | 'levelClear' | 'gameover'
   const [level, setLevel] = useState('easy') // internal only
   const [puzzleIndex, setPuzzleIndex] = useState(0)
   const [grid, setGrid] = useState([])
@@ -236,8 +237,19 @@ export default function App() {
           onArrive={(id) => {
             // Only allow neighbor clicks (RouteMap already enforces), set pending and start battle
             setPendingNode(id)
-            if (CHARACTERS[id]) beginPicrossForNode(id)
+            if (soundOn) audio.playMove()
+            if (CHARACTERS[id]) setScreen('conversation')
           }}
+        />
+      )}
+
+      {screen === 'conversation' && pendingNode && (
+        <Conversation
+          heroName={heroName || '主人公'}
+          enemyName={(CHARACTERS[pendingNode]?.name) || '敵'}
+          difficultyId={pendingNode}
+          onDone={() => beginPicrossForNode(pendingNode)}
+          onSkip={() => beginPicrossForNode(pendingNode)}
         />
       )}
 
