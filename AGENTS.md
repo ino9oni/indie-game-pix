@@ -34,3 +34,39 @@ This guide keeps contributions consistent and predictable. Prefer small, focused
 - Do not commit secrets; sync example defaults in `.env.example`.
 - Validate inputs; treat all external data as untrusted; run `make security-scan` if provided.
 
+# BUILD Process
+## MAIN
+### DO TASKLIST
+    - 以下を行う
+        - TASKLIST.mdを読み込む
+        - TASKLIST毎に以下を行う
+            - TASKを行う前に、仕様を整理する
+            - GAMEDESIGN.md を GAMEDESIGN-new.md にコピーする
+            - GAMEDESIGN-new.md に、TASKの仕様をマージする
+            - TASKの期待値を満たせるか確認する
+            - 満たせている場合は、GAMEDESIGN-new.md に基づいてソースを再生する
+            - 変更点、変更内容についてDIFFを取り、内容をユーザに確認する
+            - ユーザからの承認が得られたら、コミット・Pushを行う
+            - TASK完了後タスクに[done]ラベルを付与する
+        - GAMEDESIGN-new.md と GAMEDESIGN.mdの差分を、GAMEDESIGN.mdに取り込む
+
+#### DO QA
+    - 未定義
+#### DO CI/CD
+    - 未定義
+#### DO CrossPlatform
+    - WebアプリをAndoroid向けに変換する
+    - mobile/androidフォルダ配下に生成する
+#### VERSIONING
+    - メジャーバージョン
+        - 機能の追加や廃止、モードの追加や廃止の場合、それをメジャーバージョンとする
+        - バージョニング
+            - x.y の xの部分をインクリメントする
+        - タギング
+            - タグも同様に付与
+    - マイナーバージョン
+        - 表示文言、UIスタイル、文言修正、バグの修正の場合、それをマイナーバージョンとする
+        - バージョニング
+            - x.y の yの部分をインクリメントする
+        - タギング
+            - タグも同様に付与
