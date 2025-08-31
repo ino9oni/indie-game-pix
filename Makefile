@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: install dev run build preview lint fmt test coverage security-scan
+.PHONY: install dev run build preview lint fmt test coverage security-scan android-sync
 
 # Helper: ensure vite is available locally without always reinstalling
 ensure-vite:
@@ -37,3 +37,11 @@ coverage:
 
 security-scan:
 	@echo "No security scan configured"
+
+# Copy built web assets to Android project's assets folder
+android-sync: build
+	@dest=mobile/android/app/src/main/assets/www; \
+	 echo "Syncing dist -> $$dest"; \
+	 rm -rf "$$dest" && mkdir -p "$$dest"; \
+	 cp -r dist/* "$$dest"/; \
+	 echo "Done. Open mobile/android in Android Studio to build the APK."
