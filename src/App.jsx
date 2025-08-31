@@ -237,7 +237,7 @@ export default function App() {
           onArrive={(id) => {
             // Only allow neighbor clicks (RouteMap already enforces), set pending and start battle
             setPendingNode(id)
-            if (soundOn) audio.playMove()
+            if (soundOn) audio.playFootstep()
             if (CHARACTERS[id]) setScreen('conversation')
           }}
         />

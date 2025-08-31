@@ -10,6 +10,7 @@ class AudioManager {
     this.playRate = 1
     this._nextStep = 0
     this._seqIndex = 0
+    this._sampleBuffers = new Map() // name -> AudioBuffer
   }
 
   init() {
@@ -47,6 +48,30 @@ class AudioManager {
     this.enabled = false
   }
 
+  // --- Sample loading ---
+  async _loadSample(name, url) {
+    if (!this.ctx) this.init()
+    if (this._sampleBuffers.has(name)) return this._sampleBuffers.get(name)
+    const res = await fetch(url)
+    const buf = await res.arrayBuffer()
+    const audioBuf = await this.ctx.decodeAudioData(buf)
+    this._sampleBuffers.set(name, audioBuf)
+    return audioBuf
+  }
+
+  _playBuffer(buffer, gain = 0.8) {
+    const { ctx, sfxGain } = this
+    const t0 = ctx.currentTime + 0.005
+    const src = ctx.createBufferSource()
+    src.buffer = buffer
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(gain, t0)
+    src.connect(g)
+    g.connect(sfxGain)
+    src.start(t0)
+    src.onended = () => { try { src.disconnect(); g.disconnect() } catch {} }
+  }
+
   // --- SFX ---
   playFill() {
     if (!this.enabled || !this.ctx) return
@@ -81,6 +106,23 @@ class AudioManager {
     osc.start(t0)
     osc.stop(t0 + 0.6)
     osc.onended = () => { osc.disconnect(); lpf.disconnect(); g.disconnect() }
+  }
+
+  async playFootstep() {
+    if (!this.enabled) return
+    this.init()
+    try {
+      const { findSfxUrl } = await import('./sfxLibrary.js')
+      const url = findSfxUrl(/foot|step|walk|shoe|sand|wood/i)
+      if (url) {
+        const buf = await this._loadSample('footstep', url)
+        this._playBuffer(buf, 0.9)
+        return
+      }
+    } catch (_) { /* ignore and fallback */ }
+    // Fallback to synthetic short noise-tap pattern
+    this._noiseBurst(0.03, 1800, 800)
+    setTimeout(() => this._noiseBurst(0.03, 1600, 700), 70)
   }
 
   _beep(freq, dur = 0.08, attack = 0.01) {
