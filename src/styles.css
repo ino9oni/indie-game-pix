@@ -178,36 +178,8 @@ button { color: var(--text); background: #131a3a; border: 1px solid #2b2f55; bor
 .opening-hero { display: grid; gap: 8px; place-items: center; }
 .opening-image { max-width: 540px; width: 100%; height: auto; border-radius: 14px; border: 1px solid #2b2f55; box-shadow: 0 12px 40px #0008; }
 .opening-title { font-size: 40px; margin: 10px 0 0; }
+.opening-title.cute { font-weight: 900; letter-spacing: 1.2px; text-shadow: 0 2px 0 #0008, 0 0 14px #7c3aed66; filter: drop-shadow(0 0 12px #22d3ee55); }
 .gameover { text-align: center; }
 .note { color: var(--muted); }
 
-/* Story vertical scroll like movie credits */
-.story-scroll {
-  position: relative;
-  width: 100%;
-  max-width: 720px;
-  height: 140px;
-  overflow: hidden;
-  border-radius: 12px;
-  border: 1px solid #2b2f55;
-  background: #0c1226aa;
-  backdrop-filter: blur(6px);
-}
-.story-scroll::before, .story-scroll::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; height: 32px; z-index: 1;
-}
-.story-scroll::before { top: 0; background: linear-gradient(180deg, #0c1226aa, transparent); }
-.story-scroll::after { bottom: 0; background: linear-gradient(0deg, #0c1226aa, transparent); }
-.story-content {
-  position: absolute;
-  width: 100%;
-  bottom: -100%;
-  display: grid; gap: 10px; padding: 0 12px; color: #e5e7eb;
-  animation: storyUp 26s linear infinite;
-}
-@keyframes storyUp {
-  0% { transform: translateY(0%); }
-  100% { transform: translateY(-220%); }
-}
+/* (Removed) Story vertical scroll styles */

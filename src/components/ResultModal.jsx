@@ -5,7 +5,7 @@ export default function ResultModal({ status, onClose, onRetry, onExit }) {
   return (
     <div className="modal-backdrop">
       <div className="modal">
-        <h2 className={`result-title ${clear ? 'ok' : 'bad'}`}>{clear ? 'クリアー' : 'クリアー失敗'}</h2>
+        <h2 className={`result-title ${clear ? 'ok' : 'bad'}`}>{clear ? 'Mission clear!' : 'クリアー失敗'}</h2>
         <div className="actions">
           {clear ? (
             <button className="primary" onClick={onClose}>OK</button>

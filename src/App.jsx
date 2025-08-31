@@ -38,6 +38,9 @@ export default function App() {
   const [lastNode, setLastNode] = useState('') // previous node to prevent backtracking
   const [pendingNode, setPendingNode] = useState(null) // target node chosen to battle
   const [battleNode, setBattleNode] = useState(null) // last battle node (for Continue)
+  const [cleared, setCleared] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('clearedNodes') || '[]')) } catch { return new Set() }
+  })
   function resetProgress() { /* no-op for now */ }
 
   const size = solution.length
@@ -150,6 +153,13 @@ export default function App() {
   function handleCloseResult() {
     // On clear, move to the selected pending node; otherwise just go back to route
     if (result?.status === 'clear' && pendingNode) {
+      // mark cleared
+      setCleared((prev) => {
+        const next = new Set(prev)
+        next.add(pendingNode)
+        localStorage.setItem('clearedNodes', JSON.stringify(Array.from(next)))
+        return next
+      })
       setLastNode(currentNode)
       setCurrentNode(pendingNode)
       localStorage.setItem('routeNode', pendingNode)
@@ -201,7 +211,7 @@ export default function App() {
           onNewGame={async () => {
             const ok = window.confirm('本当に削除してもよいですか？')
             if (!ok) return
-            resetProgress(); localStorage.removeItem('heroName'); localStorage.removeItem('routeNode'); setCurrentNode('start')
+            resetProgress(); localStorage.removeItem('heroName'); localStorage.removeItem('routeNode'); localStorage.removeItem('clearedNodes'); setCurrentNode('start'); setLastNode(''); setPendingNode(null); setBattleNode(null)
             try { await bgm.resume() } catch {}; setScreen('gamestart')
           }}
         />
