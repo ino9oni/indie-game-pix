@@ -11,7 +11,7 @@ import Timer from './components/Timer.jsx'
 import ResultModal from './components/ResultModal.jsx'
 import LevelClear from './components/LevelClear.jsx'
 import GameOver from './components/GameOver.jsx'
-// import { PUZZLES, LEVELS } from './game/puzzles.js'
+import { getRandomPuzzleForSize } from './game/puzzles.js'
 import { ROUTE, CHARACTERS } from './game/route.js'
 import { computeClues, emptyGrid } from './game/utils.js'
 import audio from './audio/AudioManager.js'
@@ -107,14 +107,11 @@ export default function App() {
     const meta = CHARACTERS[nodeId]
     if (!meta) return
     const n = meta.size
-    let lvl = 'easy'
-    if (n <= 5) lvl = 'easy'
-    else if (n <= 10) lvl = 'middle'
-    else if (n <= 15) lvl = 'high'
-    else lvl = 'high'
-    setLevel(lvl)
+    // Pick a size-appropriate puzzle with good variety per node/difficulty
+    const chosen = getRandomPuzzleForSize(n)
+    setLevel(n <= 5 ? 'easy' : n <= 10 ? 'middle' : n <= 15 ? 'high' : n <= 20 ? 'hard' : 'ultra')
     setPuzzleIndex(0)
-    const sol = Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => (r === c || r + c === n - 1)))
+    const sol = chosen || Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => (r === c || r + c === n - 1)))
     setSolution(sol)
     setGrid(emptyGrid(n))
     setStartedAt(Date.now())
@@ -209,8 +206,6 @@ export default function App() {
         <Opening
           onStart={async () => { try { await bgm.resume() } catch {} ; setScreen('gamestart') }}
           onNewGame={async () => {
-            const ok = window.confirm('本当に削除してもよいですか？')
-            if (!ok) return
             resetProgress(); localStorage.removeItem('heroName'); localStorage.removeItem('routeNode'); localStorage.removeItem('clearedNodes'); setCurrentNode('start'); setLastNode(''); setPendingNode(null); setBattleNode(null)
             try { await bgm.resume() } catch {}; setScreen('gamestart')
           }}
