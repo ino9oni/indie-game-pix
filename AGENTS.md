@@ -43,11 +43,13 @@ This guide keeps contributions consistent and predictable. Prefer small, focused
         - TASKの変更を行う前に、仕様を整理する（"タスク仕様"とする）
         - GAMEDESIGN.md を GAMEDESIGN-new.md にコピーする
         - GAMEDESIGN-new.md に、"タスク仕様"をマージする
-        - TASKの期待値を満たせるか確認する
-        - 満たせている場合は、GAMEDESIGN-new.md に基づいてソースを再生する
-        - 変更点、変更内容についてDIFFを取り、内容をユーザに確認する
+        - GAMEDESIGN-new.md が "タスク仕様"を満たしているかを確認する
+            - 満たせている場合は、GAMEDESIGN-new.md に基づいてアプリ実行に必要なソースファイル・アプリ設定、アセットを再生する
+            - ソース・設定・変更点、変更内容についてDIFFを取る
+            - 上記DIFFの内容をユーザに確認する
         - ユーザからの承認が得られたら、コミット・Pushを行う
-        - TASK完了後タスクに[done]ラベルを付与する
+            - 承認が得られなかった場合は、修正案を受け取り、GAMEDESIGN-new.mdに再度取り込み同様のプロセスを行う。
+        - TASK完了後タスクにTASKLIST.md内の当該タスクのラベルに、[done]ラベルを付与する
     - GAMEDESIGN-new.md と GAMEDESIGN.mdの差分を、GAMEDESIGN.mdに取り込む
 #### DO QA
 - 未定義
