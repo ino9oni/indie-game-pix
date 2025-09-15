@@ -6,7 +6,10 @@ const ENEMY_IMAGES = {
   'elf-middle': '/assets/img/character/enemies/practice/riene_normal.png',
   'elf-hard': '/assets/img/character/enemies/practice/riene_normal.png',
 }
-const HERO_IMAGE = '/assets/img/character/hero/00083-826608146.png'
+const HERO_IMAGES = {
+  normal: '/assets/img/character/hero/hero_normal.png',
+  angry: '/assets/img/character/hero/hero_angry.png',
+}
 
 function buildScript(difficultyId, heroName, enemyName) {
   if (difficultyId === 'elf-practice') {
@@ -56,7 +59,7 @@ export default function Conversation({ heroName, enemyName, difficultyId, onDone
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '8px 8px 0' }}>
           {/* Hero portrait (left) */}
           <div style={{ display: 'grid', placeItems: 'center' }}>
-            <img src={HERO_IMAGE} alt={heroName || '主人公'} style={{ display: 'block' }} />
+            <img src={HERO_IMAGES.normal} alt={heroName || '主人公'} style={{ display: 'block' }} />
             <div style={{ textAlign: 'center', fontWeight: 800, marginTop: 4 }}>{heroName}</div>
           </div>
 

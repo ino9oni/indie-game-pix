@@ -284,6 +284,8 @@
                 - 設定・キャラクター概要：練習用の相手、道先案内人。
                 - 画像（通常）：assets/img/character/enemies/practice/riene_normal.png（380 x 487）
                 - 画像（怒り）：assets/img/character/enemies/practice/riene_angry.png（390 x 487）
+                - 主人公画像（通常）：assets/img/character/hero/hero_normal.png（380 x 487）
+                - 主人公画像（怒り）：assets/img/character/hero/hero_angry.png（390 x 487）
     - easy
         - ノードとの対応
             - 名前:elf-easy
