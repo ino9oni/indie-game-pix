@@ -87,32 +87,45 @@
             - ファイル名： practice/riene_normal.png
         - 怒
             - ファイル名： practice/riene_angry.png
-- easyで利用する敵キャラクターの画像に以下を利用
-    - 会話モード
-        - 普
-            - ファイル名： practice/riene_normal.png
-        - 怒
-            - ファイル名： practice/riene_angry.png
-- normalで利用する敵キャラクターの画像に以下を利用
-    - 会話モード
-        - 普
-            - ファイル名： practice/riene_normal.png
-        - 怒
-            - ファイル名： practice/riene_angry.png
-- hardで利用する敵キャラクターの画像に以下を利用
-    - 会話モード
-        - 普
-            - ファイル名： practice/riene_normal.png
-        - 怒
-            - ファイル名： practice/riene_angry.png
+- practice以外で利用する敵キャラクターの画像に以下を利用
+    - easyで利用する敵キャラクターの画像に以下を利用
+        - 会話モード
+            - 普
+                - ファイル名： practice/riene_normal.png
+            - 怒
+                - ファイル名： practice/riene_angry.png
+    - normalで利用する敵キャラクターの画像に以下を利用
+        - 会話モード
+            - 普
+                - ファイル名： practice/riene_normal.png
+            - 怒
+                - ファイル名： practice/riene_angry.png
+    - hardで利用する敵キャラクターの画像に以下を利用
+        - 会話モード
+            - 普
+                - ファイル名： practice/riene_normal.png
+            - 怒
+                - ファイル名： practice/riene_angry.png
+- 会話モードで、キャラクターを表示する際に、効果をつける
+    - 画像の表示時にフェードするように表示する
+    - 画像の枠に、会話ウィンドウと同じスタイルの太枠を付与する
 
 # Issues and Bugs
 ## Priority: high
+- 会話モード内の会話の進行のためのボタンを付記
+    - 次へボタン
+        - 動作
+            - 次の会話を表示
+            - 会話の内部状態を次まで進める
+    - スキップボタン
+        - 動作
+            - 会話を会話のENDまでスキップする
+            - 会話の内部状態をENDまで進める
+- 会話モード内の操作指示の文章は削除
 - [done] ノードイベントで、キャラクター別のピクロスの画像が簡単すぎるかつ難易度にあわせて難しくなっていない
     - 難易度別にあわせた複雑かつ、ピクロスとして解が一意に成り立ち、適切なヒントがあり、出来上がりのゲーム様々なドット絵になること
 - [done] オープニング画面で、NewGameを行ったときに、「削除してよろしいですか」の確認を削除する
 - [done] ~~ノードをクリックして移動したときに、音を鳴らした瞬間に画面遷移をしているので、音を鳴らし終わってから遷移するように変更~~
-
 ## Priority: normal
 - (nothing)
 # Improvement

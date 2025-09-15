@@ -33,6 +33,7 @@ function buildScript(difficultyId, heroName, enemyName) {
 export default function Conversation({ heroName, enemyName, difficultyId, onDone, onSkip }) {
   const script = useMemo(() => buildScript(difficultyId, heroName, enemyName), [difficultyId, heroName, enemyName])
   const [idx, setIdx] = useState(0)
+  const [fadeReady, setFadeReady] = useState(false)
 
   useEffect(() => {
     const onKey = (e) => {
@@ -41,6 +42,11 @@ export default function Conversation({ heroName, enemyName, difficultyId, onDone
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [idx])
+
+  useEffect(() => {
+    const t = setTimeout(() => setFadeReady(true), 20)
+    return () => clearTimeout(t)
+  }, [])
 
   function advance() {
     if (idx + 1 >= script.length) {
@@ -59,17 +65,21 @@ export default function Conversation({ heroName, enemyName, difficultyId, onDone
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '8px 8px 0' }}>
           {/* Hero portrait (left) */}
           <div style={{ display: 'grid', placeItems: 'center' }}>
-            <img src={HERO_IMAGES.normal} alt={heroName || '主人公'} style={{ display: 'block' }} />
+            <div style={{ background: '#1e3a8a', border: '3px solid #d1b464', borderRadius: 12, padding: 4 }}>
+              <img src={HERO_IMAGES.normal} alt={heroName || '主人公'} style={{ display: 'block', opacity: fadeReady ? 1 : 0, transition: 'opacity 400ms ease' }} />
+            </div>
             <div style={{ textAlign: 'center', fontWeight: 800, marginTop: 4 }}>{heroName}</div>
           </div>
 
           {/* Enemy portrait (right) */}
           <div style={{ display: 'grid', placeItems: 'center' }}>
-            {enemyImg ? (
-              <img src={enemyImg} alt={enemyName} style={{ display: 'block' }} />
-            ) : (
-              <div style={{ background: '#dc2626', border: '1px solid #2b2f55', borderRadius: 12, padding: '12px 16px', fontWeight: 800 }}>{enemyName}</div>
-            )}
+            <div style={{ background: '#1e3a8a', border: enemyImg ? '3px solid #d1b464' : '1px solid #2b2f55', borderRadius: 12, padding: enemyImg ? 4 : 0 }}>
+              {enemyImg ? (
+                <img src={enemyImg} alt={enemyName} style={{ display: 'block', opacity: fadeReady ? 1 : 0, transition: 'opacity 400ms ease' }} />
+              ) : (
+                <div style={{ background: '#dc2626', borderRadius: 12, padding: '12px 16px', fontWeight: 800 }}>{enemyName}</div>
+              )}
+            </div>
             <div style={{ textAlign: 'center', fontWeight: 800, marginTop: 4 }}>{enemyName}</div>
           </div>
         </div>
@@ -78,9 +88,9 @@ export default function Conversation({ heroName, enemyName, difficultyId, onDone
         <div className="dialog-window" style={{ margin: '12px auto 0' }}>
           <div style={{ fontWeight: 700, opacity: 0.9, marginBottom: 6 }}>{script[idx]?.speaker}</div>
           <div style={{ fontSize: 18 }}>{script[idx]?.text}</div>
-          <div className="sub" style={{ marginTop: 8 }}>(クリック または Enter で進む)</div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-            <button className="ghost" onClick={(e) => { e.stopPropagation(); onSkip && onSkip() }}>Skip</button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8, gap: 8 }}>
+            <button className="primary" onClick={(e) => { e.stopPropagation(); advance() }}>Next</button>
+            <button className="ghost" onClick={(e) => { e.stopPropagation(); setIdx(script.length - 1) }}>Skip</button>
           </div>
         </div>
       </div>
