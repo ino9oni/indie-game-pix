@@ -292,7 +292,7 @@ body {
 .col-clue {
   color: #a5b4fc;
   opacity: 0.9;
-  font-size: 18pt;
+  font-size: calc(var(--cell) * 0.56);
   display: grid;
   place-items: center;
 }
@@ -395,12 +395,11 @@ body {
   max-width: 420px;
   width: calc(100% - 32px);
 }
+.modal.clear { animation: fadeInScale 600ms ease both; }
 .result-title {
   margin: 0 0 10px;
 }
-.result-title.ok {
-  color: var(--ok);
-}
+.result-title.ok { color: var(--ok); animation: glow 1200ms ease both; }
 .result-title.bad {
   color: var(--bad);
 }
@@ -440,8 +439,16 @@ button {
   border-color: #6b7280;
 }
 /* Debug button states */
-.debug.on { background: #be185d; color: #fff; border-color: #be185d; }
-.debug.off { background: #6b7280; color: #fff; border-color: #6b7280; }
+.debug.on {
+  background: #be185d;
+  color: #fff;
+  border-color: #be185d;
+}
+.debug.off {
+  background: #6b7280;
+  color: #fff;
+  border-color: #6b7280;
+}
 
 /* Prologue window styles */
 .prologue {
@@ -606,3 +613,12 @@ button {
 }
 
 /* (Removed) Story vertical scroll styles */
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes glow {
+  0% { text-shadow: none; }
+  50% { text-shadow: 0 0 12px #22d3ee88, 0 0 24px #7c3aed66; }
+  100% { text-shadow: none; }
+}

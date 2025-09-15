@@ -213,8 +213,10 @@ class AudioManager {
   playClearFanfare() {
     if (!this.enabled || !this.ctx) return;
     const t0 = this.ctx.currentTime + 0.02;
-    const seq = [523, 659, 784, 1047]; // C5 E5 G5 C6
-    seq.forEach((f, i) => this._note(f, t0 + i * 0.16, 0.14, 0.01, 0.9));
+    // Victory-like melodic phrase: C E G C6 | G E C + shimmer
+    const seq = [523, 659, 784, 1047, 784, 659, 523];
+    seq.forEach((f, i) => this._note(f, t0 + i * 0.14, 0.16, 0.01, i < 4 ? 0.95 : 0.8));
+    this._note(1175, t0 + 1.05, 0.18, 0.01, 0.6); // D#6 shimmer
   }
 
   playGameOver() {

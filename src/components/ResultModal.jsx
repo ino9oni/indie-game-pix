@@ -4,7 +4,7 @@ export default function ResultModal({ status, onClose, onRetry, onExit }) {
   const clear = status === "clear";
   return (
     <div className="modal-backdrop">
-      <div className="modal">
+      <div className={`modal ${clear ? 'clear' : ''}`}>
         <h2 className={`result-title ${clear ? "ok" : "bad"}`}>
           {clear ? "Mission clear!" : "クリアー失敗"}
         </h2>
