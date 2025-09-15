@@ -31,8 +31,9 @@ export default function GameStart({ heroName, onSetName, onDone }) {
     )
   }
 
+  // After name entry, continue from the first line of linesAfter
   const allLines = [...linesBefore, ...linesAfter]
-  const idx = Math.min(step, allLines.length - 1)
+  const idx = step > linesBefore.length ? step - 1 : step
   const text = allLines[idx]
 
   return (
@@ -40,7 +41,7 @@ export default function GameStart({ heroName, onSetName, onDone }) {
       <div className="dialog-window">
         <p>{text}</p>
         <div className="actions">
-          {step < allLines.length - 1 ? (
+          {idx < allLines.length - 1 ? (
             <button className="primary" onClick={() => setStep((s) => s + 1)}>Next</button>
           ) : (
             <button className="primary" onClick={onDone}>Start</button>
@@ -50,4 +51,3 @@ export default function GameStart({ heroName, onSetName, onDone }) {
     </main>
   )
 }
-

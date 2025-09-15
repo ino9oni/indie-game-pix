@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>音楽開発室 – RPG SFX ラボ</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --ink:#e6edf3; --muted:#9aa4b2;
+    --accent:#82d4ff; --accent-2:#9affb0; --line:#262b36;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font:14px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", Meiryo, sans-serif;
+       color:var(--ink); background:linear-gradient(180deg,#0f1115,#0b0d12);}
+  header{padding:20px 16px; border-bottom:1px solid var(--line); background:rgba(23,26,33,.7); backdrop-filter: blur(6px); position:sticky; top:0; z-index:10;}
+  h1{margin:0; font-size:18px; letter-spacing: .02em}
+  .sub{color:var(--muted); font-size:12px}
+  .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:8px}
+  button, select, input[type="range"]{
+    background:#1d222d; color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:8px 12px; cursor:pointer;
+  }
+  button:hover{border-color:#334055}
+  .pill{border-radius:999px}
+  .danger{color:#ffb3b3}
+  main{padding:20px 16px; max-width:1200px; margin:0 auto}
+  .settings{display:flex; gap:12px; align-items:center; justify-content:flex-end; margin-bottom:12px; color:var(--muted)}
+  .grid{width:100%; border-collapse:collapse; overflow:hidden; border-radius:12px; border:1px solid var(--line)}
+  .grid thead th{position:sticky; top:65px; background:#141821; padding:10px 8px; text-align:left; font-weight:600; color:var(--muted); border-bottom:1px solid var(--line)}
+  .grid tbody td{padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:top}
+  .grid tbody tr:hover{background:#121620}
+  .name{font-weight:600}
+  .scene{color:var(--muted)}
+  .wave{width:320px; height:72px; border:1px solid var(--line); border-radius:8px; background:#0b0e14}
+  .controls{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .codeWrap{max-width:520px}
+  details{background:#0e1219; border:1px solid var(--line); border-radius:8px; padding:6px 8px}
+  summary{cursor:pointer; font-weight:600; color:var(--accent)}
+  pre{margin:8px 0 0; overflow:auto; max-height:260px; padding:8px; background:#0a0d13; border-radius:6px; border:1px solid #10141c}
+  .small{font-size:12px; color:var(--muted)}
+  .badge{display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius:999px; color:var(--muted); font-size:12px}
+  .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; color:#cfe7ff}
+  .muted{color:var(--muted)}
+</style>
+</head>
+<body>
+  <header>
+    <h1>音楽開発室 – RPG SFX ラボ <span class="badge">Web Audio API</span></h1>
+    <div class="row">
+      <button id="enableAudio" class="pill">🔊 音を有効化（初回のみ）</button>
+      <span class="sub">試聴の前に一度押してください（ブラウザの自動再生制限対策）。</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="settings">
+      <label>サンプルレート:
+        <select id="srSel">
+          <option value="48000" selected>48,000 Hz</option>
+          <option value="44100">44,100 Hz</option>
+        </select>
+      </label>
+      <label>マスター音量:
+        <input id="masterGain" type="range" min="-24" max="0" step="1" value="-3" />
+        <span id="gainVal" class="kbd">-3 dB</span>
+      </label>
+      <button id="rerender" title="波形とWAVを再生成">↻ 再レンダリング</button>
+    </div>
+
+    <table class="grid" id="sfxTable">
+      <thead>
+        <tr>
+          <th style="width:180px">効果音名</th>
+          <th>利用シーン</th>
+          <th style="width:360px">波形イメージ</th>
+          <th style="width:260px">生成コード（テキスト）</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <p class="small" style="margin-top:12px">
+      ※ 各WAVはページ内で合成した結果をそのまま書き出しています。著作権フリー（あなたの制作物で自由にご利用ください）。<br>
+      ※ 「階段チュンチュン（FC風）」は当時機器の雰囲気を**模倣**した合成であり、原音の録音ではありません。
+    </p>
+  </main>
+
+<script type="module">
+/* ===========================
+   音楽開発室 – SFX ラボ
+   ・試聴（リアルタイム AudioContext）
+   ・WAVエクスポート（OfflineAudioContext）
+   ・波形描画
+   =========================== */
+
+const $ = (q, el=document)=>el.querySelector(q);
+const $$ = (q, el=document)=>Array.from(el.querySelectorAll(q));
+
+let rtCtx = null;  // real-time AudioContext
+let master = null;
+
+$('#enableAudio').addEventListener('click', async () => {
+  if (!rtCtx) {
+    rtCtx = new (window.AudioContext || window.webkitAudioContext)();
+    master = rtCtx.createGain();
+    master.gain.value = dbToGain(parseInt($('#masterGain').value,10));
+    master.connect(rtCtx.destination);
+  }
+  await rtCtx.resume();
+  $('#enableAudio').textContent = '✅ 有効化済み';
+  $('#enableAudio').disabled = true;
+});
+
+$('#masterGain').addEventListener('input', e=>{
+  const v = parseInt(e.target.value,10);
+  $('#gainVal').textContent = `${v} dB`;
+  if (master) master.gain.value = dbToGain(v);
+});
+
+$('#srSel').addEventListener('change', ()=> renderAll());
+$('#rerender').addEventListener('click', ()=> renderAll());
+
+/* ---------- 共通ユーティリティ（生成コードにも準拠） ---------- */
+function dbToGain(db){ return Math.pow(10, db/20); }
+
+function whiteNoise(ctx, dur=0.2, amp=1.0){
+  const len = Math.max(1, Math.floor(ctx.sampleRate * dur));
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const ch = buf.getChannelData(0);
+  for (let i=0;i<len;i++) ch[i] = (Math.random()*2-1) * amp;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  return src;
+}
+
+function drawWaveform(canvas, audioBuffer){
+  const W = canvas.width, H = canvas.height;
+  const ctx2d = canvas.getContext('2d');
+  ctx2d.clearRect(0,0,W,H);
+  ctx2d.fillStyle = '#0b0e14';
+  ctx2d.fillRect(0,0,W,H);
+  ctx2d.strokeStyle = '#82d4ff';
+  ctx2d.lineWidth = 1;
+  ctx2d.beginPath();
+  const data = audioBuffer.getChannelData(0);
+  const step = Math.ceil(data.length / W);
+  const mid = H/2;
+  ctx2d.moveTo(0, mid);
+  for (let x=0; x<W; x++){
+    const start = x*step;
+    let min=1, max=-1;
+    for (let i=0;i<step && start+i<data.length;i++){
+      const v = data[start+i];
+      if (v<min) min=v; if (v>max) max=v;
+    }
+    ctx2d.moveTo(x, mid + min*mid);
+    ctx2d.lineTo(x, mid + max*mid);
+  }
+  ctx2d.stroke();
+}
+
+// AudioBuffer → WAV（16bit PCM, little endian）
+function audioBufferToWav(abuf){
+  const numCh = abuf.numberOfChannels;
+  const len = abuf.length * numCh * 2;
+  const buf = new ArrayBuffer(44 + len);
+  const view = new DataView(buf);
+  let pos = 0;
+
+  function writeString(s){ for (let i=0;i<s.length;i++) view.setUint8(pos++, s.charCodeAt(i)); }
+  function writeUint32(v){ view.setUint32(pos, v, true); pos+=4; }
+  function writeUint16(v){ view.setUint16(pos, v, true); pos+=2; }
+
+  // RIFF header
+  writeString('RIFF');
+  writeUint32(36 + len);
+  writeString('WAVE');
+
+  // fmt
+  writeString('fmt ');
+  writeUint32(16);          // PCM
+  writeUint16(1);           // PCM format
+  writeUint16(numCh);
+  writeUint32(abuf.sampleRate);
+  writeUint32(abuf.sampleRate * numCh * 2);
+  writeUint16(numCh * 2);
+  writeUint16(16);
+
+  // data
+  writeString('data');
+  writeUint32(len);
+
+  // interleave
+  const channels = [];
+  for (let ch=0; ch<numCh; ch++) channels.push(abuf.getChannelData(ch));
+  const sampleCount = abuf.length;
+  for (let i=0;i<sampleCount;i++){
+    for (let ch=0; ch<numCh; ch++){
+      let s = Math.max(-1, Math.min(1, channels[ch][i]));
+      view.setInt16(pos, s<0 ? s*0x8000 : s*0x7FFF, true);
+      pos += 2;
+    }
+  }
+  return new Blob([buf], {type:'audio/wav'});
+}
+
+/* ---------- ここから SFX 定義 ----------
+   各エントリ：
+   - id: 一意なID
+   - name: 表示名（覚えやすいニックネーム）
+   - scene: 利用シーン
+   - duration: オフライン合成長（秒）
+   - build(ctx, dest): ノード構成（ctx.currentTime=0起点でstart/stopをスケジュール）
+   - code: 生成コードのテキスト（コピー用）
+------------------------------------------------ */
+const SFX = [
+
+  // 1) 足音（石畳） – ザッザッザッ
+  {
+    id:'foot_stone',
+    name:'ザッ歩（石畳）',
+    scene:'ダンジョンの石床上を歩く。ザッと砂利が擦る印象。',
+    duration: 0.78,
+    build(ctx, dest){
+      const steps = 3, interval = 0.24;
+      for (let k=0;k<steps;k++){
+        const t = k*interval;
+        // 基本ボディ：白色ノイズ→バンドパス
+        const n = whiteNoise(ctx, 0.16);
+        const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=800; bp.Q.value=0.8;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.9, t+0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+0.16);
+        n.connect(bp); bp.connect(g); g.connect(dest);
+        n.start(t); n.stop(t+0.17);
+
+        // かかとの当たり（硬質ピン）
+        const ping = ctx.createOscillator(); ping.type='triangle';
+        const pg = ctx.createGain(); pg.gain.value=0;
+        ping.frequency.setValueAtTime(2100, t+0.06);
+        ping.frequency.exponentialRampToValueAtTime(1000, t+0.16);
+        pg.gain.setValueAtTime(0, t+0.06);
+        pg.gain.linearRampToValueAtTime(0.35, t+0.08);
+        pg.gain.exponentialRampToValueAtTime(0.0001, t+0.2);
+        ping.connect(pg); pg.connect(dest);
+        ping.start(t); ping.stop(t+0.22);
+      }
+    },
+    code:`// ザッ歩（石畳）
+function build_foot_stone(ctx, dest){
+  const steps=3, interval=0.24;
+  for(let k=0;k<steps;k++){
+    const t=k*interval;
+    const n=whiteNoise(ctx,0.16);
+    const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=800; bp.Q.value=0.8;
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.9,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.16);
+    n.connect(bp); bp.connect(g); g.connect(dest); n.start(t); n.stop(t+0.17);
+    const ping=ctx.createOscillator(); ping.type='triangle';
+    const pg=ctx.createGain(); pg.gain.value=0;
+    ping.frequency.setValueAtTime(2100,t+0.06);
+    ping.frequency.exponentialRampToValueAtTime(1000,t+0.16);
+    pg.gain.setValueAtTime(0,t+0.06);
+    pg.gain.linearRampToValueAtTime(0.35,t+0.08);
+    pg.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
+    ping.connect(pg); pg.connect(dest); ping.start(t); ping.stop(t+0.22);
+  }
+}`
+  },
+
+  // 2) 足音（木床）
+  {
+    id:'foot_wood',
+    name:'コト歩（木床）',
+    scene:'民家や宿屋の木床。軽めで温かい響き。',
+    duration: 0.78,
+    build(ctx, dest){
+      const steps = 3, interval = 0.24;
+      for (let k=0;k<steps;k++){
+        const t = k*interval;
+        const n = whiteNoise(ctx, 0.14);
+        const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=450; bp.Q.value=0.7;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.8, t+0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+0.14);
+        n.connect(bp); bp.connect(g); g.connect(dest);
+        n.start(t); n.stop(t+0.15);
+        // 木の箱鳴り（低めの短いボン）
+        const boom = ctx.createOscillator(); boom.type='sine';
+        const bg = ctx.createGain(); bg.gain.value=0;
+        boom.frequency.setValueAtTime(160, t);
+        boom.frequency.exponentialRampToValueAtTime(110, t+0.12);
+        bg.gain.setValueAtTime(0, t);
+        bg.gain.linearRampToValueAtTime(0.4, t+0.02);
+        bg.gain.exponentialRampToValueAtTime(0.0001, t+0.14);
+        boom.connect(bg); bg.connect(dest);
+        boom.start(t); boom.stop(t+0.16);
+      }
+    },
+    code:`// コト歩（木床）
+function build_foot_wood(ctx, dest){
+  const steps=3, interval=0.24;
+  for(let k=0;k<steps;k++){
+    const t=k*interval;
+    const n=whiteNoise(ctx,0.14);
+    const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=450; bp.Q.value=0.7;
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.8,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
+    n.connect(bp); bp.connect(g); g.connect(dest); n.start(t); n.stop(t+0.15);
+    const boom=ctx.createOscillator(); boom.type='sine';
+    const bg=ctx.createGain(); bg.gain.value=0;
+    boom.frequency.setValueAtTime(160,t); boom.frequency.exponentialRampToValueAtTime(110,t+0.12);
+    bg.gain.setValueAtTime(0,t); bg.gain.linearRampToValueAtTime(0.4,t+0.02);
+    bg.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
+    boom.connect(bg); bg.connect(dest); boom.start(t); boom.stop(t+0.16);
+  }
+}`
+  },
+
+  // 3) 足音（金属）
+  {
+    id:'foot_metal',
+    name:'キン歩（金属）',
+    scene:'金属の橋や鉄階段。硬質で鈴鳴りの余韻。',
+    duration: 0.74,
+    build(ctx, dest){
+      const steps = 3, interval = 0.23;
+      for (let k=0;k<steps;k++){
+        const t = k*interval;
+        const n = whiteNoise(ctx, 0.14);
+        const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1200; bp.Q.value=1.2;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.9, t+0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+0.12);
+        n.connect(bp); bp.connect(g); g.connect(dest);
+        n.start(t); n.stop(t+0.15);
+        // 金属共鳴（FM 風）
+        const car = ctx.createOscillator(); car.type='sine';
+        const mod = ctx.createOscillator(); mod.type='sine'; // 低周波で金属ビリン
+        const mg = ctx.createGain(); mg.gain.value = 300;   // 周波数偏移幅
+        mod.connect(mg).connect(car.frequency);
+        const cg = ctx.createGain(); cg.gain.value=0;
+        car.frequency.setValueAtTime(600, t+0.03);
+        cg.gain.setValueAtTime(0, t+0.03);
+        cg.gain.linearRampToValueAtTime(0.25, t+0.06);
+        cg.gain.exponentialRampToValueAtTime(0.0001, t+0.22);
+        mod.frequency.setValueAtTime(25, t+0.03);
+        car.connect(cg); cg.connect(dest);
+        mod.start(t+0.03); car.start(t+0.03);
+        mod.stop(t+0.26);  car.stop(t+0.26);
+      }
+    },
+    code:`// キン歩（金属） – ノイズ + バンドパス + 短いFMリン
+function build_foot_metal(ctx, dest){
+  const steps=3, interval=0.23;
+  for(let k=0;k<steps;k++){
+    const t=k*interval;
+    const n=whiteNoise(ctx,0.14);
+    const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1200; bp.Q.value=1.2;
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.9,t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);
+    n.connect(bp); bp.connect(g); g.connect(dest); n.start(t); n.stop(t+0.15);
+    const car=ctx.createOscillator(); car.type='sine';
+    const mod=ctx.createOscillator(); mod.type='sine';
+    const mg=ctx.createGain(); mg.gain.value=300;
+    mod.connect(mg).connect(car.frequency);
+    const cg=ctx.createGain(); cg.gain.value=0;
+    car.frequency.setValueAtTime(600,t+0.03);
+    cg.gain.setValueAtTime(0,t+0.03);
+    cg.gain.linearRampToValueAtTime(0.25,t+0.06);
+    cg.gain.exponentialRampToValueAtTime(0.0001,t+0.22);
+    mod.frequency.setValueAtTime(25,t+0.03);
+    car.connect(cg); cg.connect(dest);
+    mod.start(t+0.03); car.start(t+0.03);
+    mod.stop(t+0.26); car.stop(t+0.26);
+  }
+}`
+  },
+
+  // 4) 足音（水たまり）
+  {
+    id:'foot_water',
+    name:'チャプ歩（水たまり）',
+    scene:'浅い水や湿地。濡れた足音と小さな飛沫。',
+    duration: 0.84,
+    build(ctx, dest){
+      const steps=3, interval=0.28;
+      for (let k=0;k<steps;k++){
+        const t=k*interval;
+        const n=whiteNoise(ctx,0.18);
+        const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900; lp.Q.value=0.6;
+        const g=ctx.createGain();
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(0.95,t+0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
+        n.connect(lp); lp.connect(g); g.connect(dest);
+        n.start(t); n.stop(t+0.2);
+        // しぶき
+        const splash=whiteNoise(ctx,0.1,0.7);
+        const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1500;
+        const sg=ctx.createGain(); sg.gain.setValueAtTime(0,t+0.03);
+        sg.gain.linearRampToValueAtTime(0.5,t+0.05);
+        sg.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
+        splash.connect(hp).connect(sg).connect(dest);
+        splash.start(t+0.02); splash.stop(t+0.16);
+      }
+    },
+    code:`// チャプ歩（水たまり）
+function build_foot_water(ctx, dest){
+  const steps=3, interval=0.28;
+  for(let k=0;k<steps;k++){
+    const t=k*interval;
+    const n=whiteNoise(ctx,0.18);
+    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900; lp.Q.value=0.6;
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.95,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
+    n.connect(lp); lp.connect(g); g.connect(dest); n.start(t); n.stop(t+0.2);
+    const splash=whiteNoise(ctx,0.1,0.7);
+    const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1500;
+    const sg=ctx.createGain(); sg.gain.setValueAtTime(0,t+0.03);
+    sg.gain.linearRampToValueAtTime(0.5,t+0.05);
+    sg.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
+    splash.connect(hp).connect(sg).connect(dest);
+    splash.start(t+0.02); splash.stop(t+0.16);
+  }
+}`
+  },
+
+  // 5) 階段チュンチュン（FC風） – 降りる時の2音
+  {
+    id:'stairs_fc',
+    name:'階段チュンチュン（FC風）',
+    scene:'階段の昇降（例：ドラ○エの雰囲気）。短い2音が反復。',
+    duration: 1.0,
+    build(ctx, dest){
+      const steps=4, interval=0.18;
+      for(let k=0;k<steps;k++){
+        const t=k*interval;
+        // 二音（下降：高→低）
+        const seq = [880, 660]; // A5->E5 相当
+        seq.forEach((f, i)=>{
+          const tt = t + i*0.06;
+          const o = ctx.createOscillator(); o.type='square';
+          const g = ctx.createGain(); g.gain.value=0;
+          o.frequency.setValueAtTime(f, tt);
+          g.gain.setValueAtTime(0, tt);
+          g.gain.linearRampToValueAtTime(0.9, tt+0.005);
+          g.gain.exponentialRampToValueAtTime(0.0001, tt+0.05);
+          o.connect(g).connect(dest);
+          o.start(tt); o.stop(tt+0.06);
+        });
+      }
+    },
+    code:`// 階段チュンチュン（FC風）– 短い2音（高→低）を反復
+function build_stairs_fc(ctx, dest){
+  const steps=4, interval=0.18;
+  for(let k=0;k<steps;k++){
+    const t=k*interval;
+    [880,660].forEach((f,i)=>{
+      const tt=t+i*0.06;
+      const o=ctx.createOscillator(); o.type='square';
+      const g=ctx.createGain(); g.gain.value=0;
+      o.frequency.setValueAtTime(f,tt);
+      g.gain.setValueAtTime(0,tt);
+      g.gain.linearRampToValueAtTime(0.9,tt+0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001,tt+0.05);
+      o.connect(g).connect(dest);
+      o.start(tt); o.stop(tt+0.06);
+    });
+  }
+}`
+  },
+
+  // 6) UI – 決定ピコ
+  {
+    id:'ui_confirm',
+    name:'決定ピコ',
+    scene:'メニュー決定／OK。短く明るい。',
+    duration: 0.14,
+    build(ctx, dest){
+      const o = ctx.createOscillator(); o.type='square';
+      const g = ctx.createGain(); g.gain.value=0;
+      o.frequency.setValueAtTime(1200, 0);
+      o.frequency.exponentialRampToValueAtTime(1600, 0.05);
+      g.gain.setValueAtTime(0, 0);
+      g.gain.linearRampToValueAtTime(0.9, 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, 0.12);
+      o.connect(g).connect(dest);
+      o.start(0); o.stop(0.13);
+    },
+    code:`function build_ui_confirm(ctx, dest){
+  const o=ctx.createOscillator(); o.type='square';
+  const g=ctx.createGain(); g.gain.value=0;
+  o.frequency.setValueAtTime(1200,0);
+  o.frequency.exponentialRampToValueAtTime(1600,0.05);
+  g.gain.setValueAtTime(0,0);
+  g.gain.linearRampToValueAtTime(0.9,0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001,0.12);
+  o.connect(g).connect(dest); o.start(0); o.stop(0.13);
+}`
+  },
+
+  // 7) UI – 取消ブブ
+  {
+    id:'ui_cancel',
+    name:'取消ブブ',
+    scene:'メニューキャンセル／NG。濁り感の短いブザー。',
+    duration: 0.16,
+    build(ctx, dest){
+      const o1 = ctx.createOscillator(); o1.type='square';
+      const o2 = ctx.createOscillator(); o2.type='square';
+      const g = ctx.createGain(); g.gain.value=0;
+      o1.frequency.setValueAtTime(240, 0);
+      o2.frequency.setValueAtTime(255, 0);
+      g.gain.setValueAtTime(0, 0);
+      g.gain.linearRampToValueAtTime(0.8, 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, 0.14);
+      o1.connect(g); o2.connect(g); g.connect(dest);
+      o1.start(0); o2.start(0); o1.stop(0.15); o2.stop(0.15);
+    },
+    code:`function build_ui_cancel(ctx, dest){
+  const o1=ctx.createOscillator(); o1.type='square';
+  const o2=ctx.createOscillator(); o2.type='square';
+  const g=ctx.createGain(); g.gain.value=0;
+  o1.frequency.setValueAtTime(240,0);
+  o2.frequency.setValueAtTime(255,0);
+  g.gain.setValueAtTime(0,0);
+  g.gain.linearRampToValueAtTime(0.8,0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001,0.14);
+  o1.connect(g); o2.connect(g); g.connect(dest);
+  o1.start(0); o2.start(0); o1.stop(0.15); o2.stop(0.15);
+}`
+  },
+
+  // 8) 剣スイッ
+  {
+    id:'sword_swing',
+    name:'剣スイッ',
+    scene:'近接攻撃の振り。空気切断＋金属の短いピン。',
+    duration: 0.24,
+    build(ctx, dest){
+      const n = whiteNoise(ctx, 0.18);
+      const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1800; bp.Q.value=2.2;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0,0);
+      g.gain.linearRampToValueAtTime(0.85, 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, 0.18);
+      n.connect(bp).connect(g).connect(dest);
+      n.start(0); n.stop(0.2);
+      const ping = ctx.createOscillator(); ping.type='triangle';
+      const pg = ctx.createGain(); pg.gain.value=0;
+      ping.frequency.setValueAtTime(1700, 0.06);
+      ping.frequency.exponentialRampToValueAtTime(800, 0.18);
+      pg.gain.setValueAtTime(0, 0.06);
+      pg.gain.linearRampToValueAtTime(0.6, 0.08);
+      pg.gain.exponentialRampToValueAtTime(0.0001, 0.2);
+      ping.connect(pg).connect(dest);
+      ping.start(0); ping.stop(0.22);
+    },
+    code:`function build_sword_swing(ctx, dest){
+  const n=whiteNoise(ctx,0.18);
+  const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1800; bp.Q.value=2.2;
+  const g=ctx.createGain(); g.gain.setValueAtTime(0,0);
+  g.gain.linearRampToValueAtTime(0.85,0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001,0.18);
+  n.connect(bp).connect(g).connect(dest); n.start(0); n.stop(0.2);
+  const ping=ctx.createOscillator(); ping.type='triangle';
+  const pg=ctx.createGain(); pg.gain.value=0;
+  ping.frequency.setValueAtTime(1700,0.06);
+  ping.frequency.exponentialRampToValueAtTime(800,0.18);
+  pg.gain.setValueAtTime(0,0.06);
+  pg.gain.linearRampToValueAtTime(0.6,0.08);
+  pg.gain.exponentialRampToValueAtTime(0.0001,0.2);
+  ping.connect(pg).connect(dest); ping.start(0); ping.stop(0.22);
+}`
+  },
+
+  // 9) 魔法（闇）チャージ – FM 的うなり＋粒子
+  {
+    id:'magic_dark',
+    name:'闇詠唱ゴォ',
+    scene:'闇属性のチャージ。低いうねりと粒子が集まる表現。',
+    duration: 0.65,
+    build(ctx, dest){
+      const car = ctx.createOscillator(); car.type='sawtooth';
+      const mod = ctx.createOscillator(); mod.type='sine';
+      const mg = ctx.createGain(); mg.gain.value = 180; // FM偏移
+      mod.connect(mg).connect(car.frequency);
+      const f = ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value = 600;
+      const g = ctx.createGain(); g.gain.value=0;
+      car.frequency.setValueAtTime(110, 0);
+      car.frequency.exponentialRampToValueAtTime(220, 0.5);
+      mod.frequency.setValueAtTime(22, 0);
+      f.frequency.exponentialRampToValueAtTime(6000, 0.45);
+      g.gain.linearRampToValueAtTime(0.9, 0.06);
+      g.gain.exponentialRampToValueAtTime(0.0001, 0.6);
+      car.connect(f).connect(g).connect(dest);
+      mod.start(0); car.start(0);
+      mod.stop(0.62); car.stop(0.62);
+
+      // 粒子ノイズ
+      for(let i=0;i<6;i++){
+        const t = 0.1 + i*0.06;
+        const p = whiteNoise(ctx, 0.05, 0.6);
+        const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=2000;
+        const pg = ctx.createGain(); pg.gain.value=0;
+        pg.gain.setValueAtTime(0, t);
+        pg.gain.linearRampToValueAtTime(0.3, t+0.01);
+        pg.gain.exponentialRampToValueAtTime(0.0001, t+0.05);
+        p.connect(hp).connect(pg).connect(dest);
+        p.start(t); p.stop(t+0.06);
+      }
+    },
+    code:`// 闇詠唱ゴォ – FM的うねり + 粒子ノイズ
+function build_magic_dark(ctx, dest){
+  const car=ctx.createOscillator(); car.type='sawtooth';
+  const mod=ctx.createOscillator(); mod.type='sine';
+  const mg=ctx.createGain(); mg.gain.value=180;
+  mod.connect(mg).connect(car.frequency);
+  const f=ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=600;
+  const g=ctx.createGain(); g.gain.value=0;
+  car.frequency.setValueAtTime(110,0);
+  car.frequency.exponentialRampToValueAtTime(220,0.5);
+  mod.frequency.setValueAtTime(22,0);
+  f.frequency.exponentialRampToValueAtTime(6000,0.45);
+  g.gain.linearRampToValueAtTime(0.9,0.06);
+  g.gain.exponentialRampToValueAtTime(0.0001,0.6);
+  car.connect(f).connect(g).connect(dest);
+  mod.start(0); car.start(0); mod.stop(0.62); car.stop(0.62);
+  for(let i=0;i<6;i++){
+    const t=0.1+i*0.06;
+    const p=whiteNoise(ctx,0.05,0.6);
+    const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=2000;
+    const pg=ctx.createGain(); pg.gain.value=0;
+    pg.gain.setValueAtTime(0,t);
+    pg.gain.linearRampToValueAtTime(0.3,t+0.01);
+    pg.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+    p.connect(hp).connect(pg).connect(dest); p.start(t); p.stop(t+0.06);
+  }
+}`
+  },
+
+  // 10) 回復キラリ – 三和音アルペジオ
+  {
+    id:'heal_chime',
+    name:'回復キラリ',
+    scene:'回復／セーブ成功。透明感のある三和音。',
+    duration: 0.9,
+    build(ctx, dest){
+      const notes = [523.25, 659.25, 783.99]; // C5,E5,G5
+      notes.forEach((f, i)=>{
+        const t = i * 0.12;
+        const o = ctx.createOscillator(); o.type='triangle';
+        const g = ctx.createGain(); g.gain.value=0;
+        o.frequency.setValueAtTime(f, t);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.8, t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+0.6);
+        o.connect(g).connect(dest);
+        o.start(t); o.stop(t+0.65);
+      });
+      // 微小ベル
+      const b = ctx.createOscillator(); b.type='square';
+      const bg = ctx.createGain(); bg.gain.value=0;
+      b.frequency.setValueAtTime(1568, 0.05); // G6
+      bg.gain.setValueAtTime(0, 0.05);
+      bg.gain.linearRampToValueAtTime(0.25, 0.07);
+      bg.gain.exponentialRampToValueAtTime(0.0001, 0.3);
+      b.connect(bg).connect(dest);
+      b.start(0); b.stop(0.32);
+    },
+    code:`function build_heal_chime(ctx, dest){
+  const notes=[523.25,659.25,783.99]; // C5,E5,G5
+  notes.forEach((f,i)=>{
+    const t=i*0.12;
+    const o=ctx.createOscillator(); o.type='triangle';
+    const g=ctx.createGain(); g.gain.value=0;
+    o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.8,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.6);
+    o.connect(g).connect(dest);
+    o.start(t); o.stop(t+0.65);
+  });
+  const b=ctx.createOscillator(); b.type='square';
+  const bg=ctx.createGain(); bg.gain.value=0;
+  b.frequency.setValueAtTime(1568,0.05);
+  bg.gain.setValueAtTime(0,0.05);
+  bg.gain.linearRampToValueAtTime(0.25,0.07);
+  bg.gain.exponentialRampToValueAtTime(0.0001,0.3);
+  b.connect(bg).connect(dest); b.start(0); b.stop(0.32);
+}`
+  },
+
+  // 11) ドア（木）ギィ
+  {
+    id:'door_wood',
+    name:'ドアギィ（木）',
+    scene:'古い木のドアを開ける。こすれ音→軽いラッチ。',
+    duration: 0.95,
+    build(ctx, dest){
+      const n=whiteNoise(ctx,0.8,0.5);
+      const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=300; bp.Q.value=3;
+      const g=ctx.createGain(); g.gain.value=0;
+      g.gain.setValueAtTime(0, 0.05);
+      g.gain.linearRampToValueAtTime(0.7, 0.3);
+      g.gain.exponentialRampToValueAtTime(0.0001, 0.85);
+      n.connect(bp).connect(g).connect(dest);
+      n.start(0); n.stop(0.9);
+      // ラッチ（コト）
+      const click=whiteNoise(ctx,0.06,0.8);
+      const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1200;
+      const cg=ctx.createGain(); cg.gain.value=0;
+      cg.gain.setValueAtTime(0,0.75);
+      cg.gain.linearRampToValueAtTime(0.5,0.78);
+      cg.gain.exponentialRampToValueAtTime(0.0001,0.88);
+      click.connect(hp).connect(cg).connect(dest);
+      click.start(0.74); click.stop(0.9);
+    },
+    code:`function build_door_wood(ctx, dest){
+  const n=whiteNoise(ctx,0.8,0.5);
+  const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=300; bp.Q.value=3;
+  const g=ctx.createGain(); g.gain.value=0;
+  g.gain.setValueAtTime(0,0.05);
+  g.gain.linearRampToValueAtTime(0.7,0.3);
+  g.gain.exponentialRampToValueAtTime(0.0001,0.85);
+  n.connect(bp).connect(g).connect(dest); n.start(0); n.stop(0.9);
+  const click=whiteNoise(ctx,0.06,0.8);
+  const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1200;
+  const cg=ctx.createGain(); cg.gain.value=0;
+  cg.gain.setValueAtTime(0,0.75);
+  cg.gain.linearRampToValueAtTime(0.5,0.78);
+  cg.gain.exponentialRampToValueAtTime(0.0001,0.88);
+  click.connect(hp).connect(cg).connect(dest); click.start(0.74); click.stop(0.9);
+}`
+  },
+
+  // 12) 宝箱パカン
+  {
+    id:'chest_open',
+    name:'宝箱パカン',
+    scene:'宝箱を開く。解錠→蓋ヒット→小さな金属の転がり。',
+    duration: 1.0,
+    build(ctx, dest){
+      // 解錠
+      const lock = whiteNoise(ctx,0.08,0.9);
+      const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=2500;
+      const lg = ctx.createGain(); lg.gain.value=0;
+      lg.gain.setValueAtTime(0,0);
+      lg.gain.linearRampToValueAtTime(0.6,0.01);
+      lg.gain.exponentialRampToValueAtTime(0.0001,0.08);
+      lock.connect(hp).connect(lg).connect(dest);
+      lock.start(0); lock.stop(0.1);
+
+      // 蓋ヒット
+      const boom = ctx.createOscillator(); boom.type='sine';
+      const bg = ctx.createGain(); bg.gain.value=0;
+      boom.frequency.setValueAtTime(140, 0.08);
+      boom.frequency.exponentialRampToValueAtTime(90, 0.22);
+      bg.gain.setValueAtTime(0,0.08);
+      bg.gain.linearRampToValueAtTime(0.8,0.1);
+      bg.gain.exponentialRampToValueAtTime(0.0001,0.28);
+      boom.connect(bg).connect(dest); boom.start(0.06); boom.stop(0.3);
+
+      // 小さな転がり
+      for(let i=0;i<3;i++){
+        const t=0.28+i*0.06;
+        const p=whiteNoise(ctx,0.05,0.6);
+        const bp2=ctx.createBiquadFilter(); bp2.type='bandpass'; bp2.frequency.value=1500+i*200; bp2.Q.value=5;
+        const pg=ctx.createGain(); pg.gain.value=0;
+        pg.gain.setValueAtTime(0,t);
+        pg.gain.linearRampToValueAtTime(0.3,t+0.01);
+        pg.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+        p.connect(bp2).connect(pg).connect(dest); p.start(t); p.stop(t+0.06);
+      }
+    },
+    code:`function build_chest_open(ctx, dest){
+  const lock=whiteNoise(ctx,0.08,0.9);
+  const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=2500;
+  const lg=ctx.createGain(); lg.gain.value=0;
+  lg.gain.setValueAtTime(0,0);
+  lg.gain.linearRampToValueAtTime(0.6,0.01);
+  lg.gain.exponentialRampToValueAtTime(0.0001,0.08);
+  lock.connect(hp).connect(lg).connect(dest); lock.start(0); lock.stop(0.1);
+
+  const boom=ctx.createOscillator(); boom.type='sine';
+  const bg=ctx.createGain(); bg.gain.value=0;
+  boom.frequency.setValueAtTime(140,0.08);
+  boom.frequency.exponentialRampToValueAtTime(90,0.22);
+  bg.gain.setValueAtTime(0,0.08);
+  bg.gain.linearRampToValueAtTime(0.8,0.1);
+  bg.gain.exponentialRampToValueAtTime(0.0001,0.28);
+  boom.connect(bg).connect(dest); boom.start(0.06); boom.stop(0.3);
+
+  for(let i=0;i<3;i++){
+    const t=0.28+i*0.06;
+    const p=whiteNoise(ctx,0.05,0.6);
+    const bp2=ctx.createBiquadFilter(); bp2.type='bandpass'; bp2.frequency.value=1500+i*200; bp2.Q.value=5;
+    const pg=ctx.createGain(); pg.gain.value=0;
+    pg.gain.setValueAtTime(0,t);
+    pg.gain.linearRampToValueAtTime(0.3,t+0.01);
+    pg.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+    p.connect(bp2).connect(pg).connect(dest); p.start(t); p.stop(t+0.06);
+  }
+}`
+  },
+
+];
+
+/* ---------- レンダリング / テーブル構築 ---------- */
+const $tbody = $('#tbody');
+
+function makeRow(item){
+  const tr = document.createElement('tr');
+
+  const tdName = document.createElement('td');
+  tdName.innerHTML = `<div class="name">${item.name}</div>
+                      <div class="small muted">${item.id}</div>`;
+  tr.appendChild(tdName);
+
+  const tdScene = document.createElement('td');
+  tdScene.innerHTML = `<div class="scene">${item.scene}</div>`;
+  tr.appendChild(tdScene);
+
+  const tdWave = document.createElement('td');
+  const canvas = document.createElement('canvas');
+  canvas.className='wave'; canvas.width=320; canvas.height=72;
+  tdWave.appendChild(canvas);
+  tr.appendChild(tdWave);
+
+  const tdCode = document.createElement('td');
+  const det = document.createElement('details');
+  const sum = document.createElement('summary');
+  sum.textContent = 'コードを表示';
+  const pre = document.createElement('pre');
+  pre.textContent = item.code;
+  const small = document.createElement('div');
+  small.className='small';
+  small.innerHTML = '共通ユーティリティ <span class="kbd">whiteNoise()</span> と <span class="kbd">dbToGain()</span> は上部スクリプト参照。<br>オフラインで使う場合は <span class="kbd">OfflineAudioContext</span> を作成し、<span class="kbd">build_〇〇(ctx, ctx.destination)</span> を呼んで <span class="kbd">startRendering()</span> します。';
+  det.appendChild(sum); det.appendChild(pre); det.appendChild(small);
+  tdCode.appendChild(det);
+  tr.appendChild(tdCode);
+
+  const tdOps = document.createElement('td');
+  const ops = document.createElement('div'); ops.className='controls';
+  const playBtn = document.createElement('button'); playBtn.textContent='▶ テスト';
+  const dlBtn = document.createElement('button'); dlBtn.textContent='WAV';
+  dlBtn.title='WAVを書き出し';
+  const sizeSpan = document.createElement('span'); sizeSpan.className='small muted';
+
+  ops.appendChild(playBtn); ops.appendChild(dlBtn); ops.appendChild(sizeSpan);
+  tdOps.appendChild(ops);
+  tr.appendChild(tdOps);
+
+  // 保持領域
+  tr._canvas = canvas;
+  tr._playBtn = playBtn;
+  tr._dlBtn = dlBtn;
+  tr._size = sizeSpan;
+  tr._item = item;
+  tr._buffer = null;
+
+  // ハンドラ
+  playBtn.addEventListener('click', ()=> playRow(tr));
+  dlBtn.addEventListener('click', ()=> downloadRow(tr));
+
+  return tr;
+}
+
+SFX.forEach(sfx => $tbody.appendChild(makeRow(sfx)));
+
+async function renderRow(tr){
+  const sr = parseInt($('#srSel').value,10);
+  const item = tr._item;
+  const oac = new OfflineAudioContext(1, Math.ceil(item.duration * sr), sr);
+  const master = oac.createGain();
+  master.gain.value = dbToGain(-1); // 少しだけヘッドルーム
+  master.connect(oac.destination);
+  item.build(oac, master);
+  const buf = await oac.startRendering();
+  tr._buffer = buf;
+  drawWaveform(tr._canvas, buf);
+
+  // WAV を先に用意（サイズ表示）
+  const blob = audioBufferToWav(buf);
+  tr._blob = blob;
+  tr._size.textContent = ` ${Math.round(blob.size/1024)} KB`;
+}
+
+async function renderAll(){
+  for (const tr of $$('#tbody tr')) {
+    tr._buffer = null; tr._blob = null; tr._size.textContent='';
+  }
+  await Promise.all($$('#tbody tr').map(renderRow));
+}
+
+function playRow(tr){
+  if (!tr._buffer){ return; }
+  if (!rtCtx){ alert('上部の「音を有効化」を押してください。'); return; }
+  const src = rtCtx.createBufferSource();
+  src.buffer = tr._buffer;
+  src.connect(master);
+  src.start();
+}
+
+function downloadRow(tr){
+  if (!tr._blob){ return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(tr._blob);
+  a.download = `${tr._item.id}.wav`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+
+// 初期化
+renderAll();
+
+</script>
+</body>
+</html>

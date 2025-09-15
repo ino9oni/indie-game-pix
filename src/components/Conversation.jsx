@@ -8,13 +8,13 @@ function buildScript(difficultyId, heroName, enemyName) {
   if (difficultyId === 'elf-practice') {
     return [
       { speaker: heroName, text: 'あなたは…' },
-      { speaker: enemyName, text: 'よくここまできたわね、私が相手してあげましょう…' },
+      { speaker: enemyName, text: `よくここまできたわね、${heroName}。私が相手してあげましょう…` },
       { speaker: heroName, text: '押し通る！' },
     ]
   }
   // placeholders for other difficulties
   return [
-    { speaker: enemyName, text: 'さあ、始めましょう。' },
+    { speaker: enemyName, text: `さあ、始めましょう、${heroName}。` },
     { speaker: heroName, text: '受けて立つ！' },
   ]
 }
@@ -70,4 +70,3 @@ export default function Conversation({ heroName, enemyName, difficultyId, onDone
     </main>
   )
 }
-

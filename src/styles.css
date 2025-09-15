@@ -146,11 +146,11 @@ button { color: var(--text); background: #131a3a; border: 1px solid #2b2f55; bor
 .prologue-window { width: min(800px, 90%); background: #1e3a8a; color: #fff; border: 3px solid #d1b464; border-radius: 12px; padding: 16px 18px; box-shadow: 0 12px 40px #0008; }
 /* Generic dialog window */
 .dialog { display: grid; place-items: center; min-height: 60vh; }
-.dialog-window { width: min(800px, 90%); background: var(--panel); border: 1px solid #2b2f55; color: var(--text); border-radius: 12px; padding: 16px 18px; box-shadow: 0 12px 40px #0008; }
+.dialog-window { width: min(800px, 90%); background: #1e3a8a; border: 3px solid #d1b464; color: #fff; border-radius: 12px; padding: 16px 18px; box-shadow: 0 12px 40px #0008; }
 
 /* Name entry */
 .name-entry { display: grid; place-items: center; }
-.name-card { background: var(--panel); border: 1px solid #2b2f55; border-radius: 12px; padding: 12px; width: min(900px, 96%); }
+.name-card { background: #1e3a8a; color: #fff; border: 3px solid #d1b464; border-radius: 12px; padding: 12px; width: min(900px, 96%); }
 .name-card .display { font-size: 24px; font-weight: 800; letter-spacing: 2px; text-align: center; margin-bottom: 8px; }
 .name-card .grid { display: grid; gap: 6px; }
 .name-card .row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
