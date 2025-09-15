@@ -97,6 +97,19 @@ export default function Conversation({
   const enemySet = ENEMY_IMAGES[difficultyId] || {};
   const enemyImg = enemySet[enemyEmotion] || enemySet.normal;
 
+  // Display-size spec per GAMEDESIGN for enemy portraits
+  const ENEMY_SIZE = {
+    "elf-practice": { w: 380, h: 487 },
+    "elf-easy": { w: 380, h: 487 },
+    "elf-middle": { w: 380, h: 487 },
+    "elf-hard": { w: 380, h: 487 },
+    "elf-ultra": { w: 380, h: 487 },
+  };
+  const enemySz = ENEMY_SIZE[difficultyId] || null;
+
+  // Use consistent display frame for hero portraits as well
+  const HERO_SIZE = { w: 380, h: 487 };
+
   return (
     <main className="screen dialog" onClick={advance}>
       <div style={{ width: "100%" }}>
@@ -118,12 +131,19 @@ export default function Conversation({
                 border: "3px solid #d1b464",
                 borderRadius: 12,
                 padding: 4,
+                width: HERO_SIZE.w,
+                height: HERO_SIZE.h,
+                display: "grid",
+                placeItems: "center",
               }}
             >
               <img
                 src={HERO_IMAGES[heroEmotion] || HERO_IMAGES.normal}
                 alt={heroName || "主人公"}
                 style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
                   display: "block",
                   opacity: fadeReady ? 1 : 0,
                   transition: "opacity 400ms ease",
@@ -143,6 +163,10 @@ export default function Conversation({
                 border: enemyImg ? "3px solid #d1b464" : "1px solid #2b2f55",
                 borderRadius: 12,
                 padding: enemyImg ? 4 : 0,
+                width: enemySz ? enemySz.w : undefined,
+                height: enemySz ? enemySz.h : undefined,
+                display: "grid",
+                placeItems: "center",
               }}
             >
               {enemyImg ? (
@@ -150,6 +174,9 @@ export default function Conversation({
                   src={enemyImg}
                   alt={enemyName}
                   style={{
+                    width: enemySz ? "100%" : undefined,
+                    height: enemySz ? "100%" : undefined,
+                    objectFit: enemySz ? "contain" : undefined,
                     display: "block",
                     opacity: fadeReady ? 1 : 0,
                     transition: "opacity 400ms ease",
