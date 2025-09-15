@@ -6,6 +6,7 @@ const ENEMY_IMAGES = {
   'elf-middle': '/assets/img/character/enemies/practice/riene_normal.png',
   'elf-hard': '/assets/img/character/enemies/practice/riene_normal.png',
 }
+const HERO_IMAGE = '/assets/img/character/hero/00083-826608146.png'
 
 function buildScript(difficultyId, heroName, enemyName) {
   if (difficultyId === 'elf-practice') {
@@ -50,22 +51,28 @@ export default function Conversation({ heroName, enemyName, difficultyId, onDone
 
   return (
     <main className="screen dialog" onClick={advance}>
-      <div style={{ position: 'relative', width: '100%', minHeight: 300 }}>
-        {/* Hero portrait (left). If no specific asset, use a blue placeholder. */}
-        <div style={{ position: 'absolute', left: 8, top: 8, width: 200, height: 100, display: 'grid', placeItems: 'center', borderRadius: 12, background: '#1d4ed8' }}>
-          <span style={{ fontWeight: 800 }}>{heroName}</span>
-        </div>
-        {/* Enemy portrait (right). Show at the image's natural size */}
-        <div style={{ position: 'absolute', right: 8, top: 8, display: 'grid', placeItems: 'center', borderRadius: 12, background: enemyImg ? 'transparent' : '#dc2626', border: '1px solid #2b2f55' }}>
-          {enemyImg ? (
-            <img src={enemyImg} alt={enemyName} style={{ display: 'block' }} />
-          ) : (
-            <span style={{ fontWeight: 800, padding: '12px 16px' }}>{enemyName}</span>
-          )}
+      <div style={{ width: '100%' }}>
+        {/* Stage: portraits side by side, natural sizes, no overlap with dialog */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '8px 8px 0' }}>
+          {/* Hero portrait (left) */}
+          <div style={{ display: 'grid', placeItems: 'center' }}>
+            <img src={HERO_IMAGE} alt={heroName || '主人公'} style={{ display: 'block' }} />
+            <div style={{ textAlign: 'center', fontWeight: 800, marginTop: 4 }}>{heroName}</div>
+          </div>
+
+          {/* Enemy portrait (right) */}
+          <div style={{ display: 'grid', placeItems: 'center' }}>
+            {enemyImg ? (
+              <img src={enemyImg} alt={enemyName} style={{ display: 'block' }} />
+            ) : (
+              <div style={{ background: '#dc2626', border: '1px solid #2b2f55', borderRadius: 12, padding: '12px 16px', fontWeight: 800 }}>{enemyName}</div>
+            )}
+            <div style={{ textAlign: 'center', fontWeight: 800, marginTop: 4 }}>{enemyName}</div>
+          </div>
         </div>
 
-        {/* Dialog window */}
-        <div className="dialog-window" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 0 }}>
+        {/* Dialog window below stage */}
+        <div className="dialog-window" style={{ margin: '12px auto 0' }}>
           <div style={{ fontWeight: 700, opacity: 0.9, marginBottom: 6 }}>{script[idx]?.speaker}</div>
           <div style={{ fontSize: 18 }}>{script[idx]?.text}</div>
           <div className="sub" style={{ marginTop: 8 }}>(クリック または Enter で進む)</div>
