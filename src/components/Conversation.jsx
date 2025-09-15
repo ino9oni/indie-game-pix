@@ -1,11 +1,26 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 const ENEMY_IMAGES = {
-  "elf-practice": "/assets/img/character/enemies/practice/riene_normal.png",
-  "elf-easy": "/assets/img/character/enemies/easy/efina_normal.png",
-  "elf-middle": "/assets/img/character/enemies/normal/cerys_normal.png",
-  "elf-hard": "/assets/img/character/enemies/hard/floria_normal.png",
-  "elf-ultra": "/assets/img/character/enemies/ultra/altina_normal.png",
+  "elf-practice": {
+    normal: "/assets/img/character/enemies/practice/riene_normal.png",
+    angry: "/assets/img/character/enemies/practice/riene_angry.png",
+  },
+  "elf-easy": {
+    normal: "/assets/img/character/enemies/easy/efina_normal.png",
+    angry: "/assets/img/character/enemies/easy/efina_angry.png",
+  },
+  "elf-middle": {
+    normal: "/assets/img/character/enemies/normal/cerys_normal.png",
+    angry: "/assets/img/character/enemies/normal/cerys_angry.png",
+  },
+  "elf-hard": {
+    normal: "/assets/img/character/enemies/hard/floria_normal.png",
+    angry: "/assets/img/character/enemies/hard/floria_angry.png",
+  },
+  "elf-ultra": {
+    normal: "/assets/img/character/enemies/ultra/altina_normal.png",
+    angry: "/assets/img/character/enemies/ultra/altina_angry.png",
+  },
 };
 const HERO_IMAGES = {
   normal: "/assets/img/character/hero/hero_normal.png",
@@ -15,25 +30,29 @@ const HERO_IMAGES = {
 function buildScript(difficultyId, heroName, enemyName) {
   if (difficultyId === "elf-practice") {
     return [
-      { speaker: heroName, text: "あなたは…" },
+      { speaker: heroName, who: "hero", text: "あなたは…", emotion: "normal" },
       {
         speaker: enemyName,
+        who: "enemy",
         text: "よくここまできたわね、あなたがelfpixに認められるにふさわしいかどうか…私が相手してあげましょう…",
+        emotion: "normal",
       },
-      { speaker: enemyName, text: "あなた名前は？" },
-      { speaker: heroName, text: `${heroName}と言います。` },
+      { speaker: enemyName, who: "enemy", text: "あなた名前は？", emotion: "normal" },
+      { speaker: heroName, who: "hero", text: `${heroName}と言います。`, emotion: "normal" },
       {
         speaker: enemyName,
+        who: "enemy",
         text: `${heroName}と言うのね、いい名前ね。覚えておくわ。私は${enemyName}というの。`,
+        emotion: "normal",
       },
-      { speaker: enemyName, text: "では準備はいい？いくわよ。" },
-      { speaker: heroName, text: "お願いします。" },
+      { speaker: enemyName, who: "enemy", text: "では準備はいい？いくわよ。", emotion: "angry" },
+      { speaker: heroName, who: "hero", text: "お願いします。", emotion: "angry" },
     ];
   }
   // placeholders for other difficulties
   return [
-    { speaker: enemyName, text: `さあ、始めましょう、${heroName}。` },
-    { speaker: heroName, text: "受けて立つ！" },
+    { speaker: enemyName, who: "enemy", text: `さあ、始めましょう、${heroName}。`, emotion: "normal" },
+    { speaker: heroName, who: "hero", text: "受けて立つ！", emotion: "normal" },
   ];
 }
 
@@ -72,7 +91,11 @@ export default function Conversation({
     }
   }
 
-  const enemyImg = ENEMY_IMAGES[difficultyId];
+  const current = script[idx] || {};
+  const heroEmotion = current.who === "hero" && current.emotion === "angry" ? "angry" : "normal";
+  const enemyEmotion = current.who === "enemy" && current.emotion === "angry" ? "angry" : "normal";
+  const enemySet = ENEMY_IMAGES[difficultyId] || {};
+  const enemyImg = enemySet[enemyEmotion] || enemySet.normal;
 
   return (
     <main className="screen dialog" onClick={advance}>
@@ -98,7 +121,7 @@ export default function Conversation({
               }}
             >
               <img
-                src={HERO_IMAGES.normal}
+                src={HERO_IMAGES[heroEmotion] || HERO_IMAGES.normal}
                 alt={heroName || "主人公"}
                 style={{
                   display: "block",

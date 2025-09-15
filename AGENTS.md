@@ -42,16 +42,25 @@ This guide keeps contributions consistent and predictable. Prefer small, focused
 
 # Build Process
 
-## ALL
+## BUILD ALL
 
 - 以下を行う
   - TASKLIST
   - QA
-  - CI/CD
-  - CrossPlatform
+  - CICD
+  - CROSSPLATFORM
   - VERSIONING
 
-### DO TASKLIST
+## BUILD GAMEDESIGN
+
+- 以下を行う
+  - GAMEDESIGN.md に基づきアプリ実行に必要なソースファイル・アプリ設定、アセットを再生成する
+    - ソース・設定・変更点、変更内容についてDIFFを取る
+    - 上記DIFFの内容をユーザに確認する
+  - ユーザからの承認が得られたら、ローカルリポジトリとリモートリポジトリにコミット・Pushを行う
+    - 承認が得られなかった場合は、修正案を受け取り、GAMEDESIGN.mdに再度取り込み同様のプロセスを行う
+
+## TASKLIST
 
 - 以下を行う
   - TASKLIST.mdを読み込む
@@ -68,20 +77,20 @@ This guide keeps contributions consistent and predictable. Prefer small, focused
     - TASK完了後タスクにTASKLIST.md内の当該タスクのラベルに、[done]ラベルを付与する
   - GAMEDESIGN-new.md と GAMEDESIGN.mdの差分を、GAMEDESIGN.mdに取り込む
 
-#### DO QA
+## QA
 
 - 未定義
 
-#### DO CI/CD
+## CICD
 
 - 未定義
 
-#### DO CrossPlatform
+## CROSSPLATFORM
 
 - WebアプリをAndoroidアプリに変換する
 - mobile/androidフォルダ配下に生成する
 
-#### VERSIONING
+## VERSIONING
 
 - メジャーバージョン
   - 機能の追加や廃止、モードの追加や廃止の場合、それをメジャーバージョンとする

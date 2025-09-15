@@ -278,9 +278,9 @@
   - ピクロスを説くモード（会話モード終了後に開始）。
   - ノードの位置別に相手キャラクターとお題（ピクロスのサイズ）が異なる
   - 共通
-      - 主人公
-        - 画像（通常）：assets/img/character/hero/hero_normal.png（380 x 487）
-        - 画像（怒り）：assets/img/character/hero/hero_angry.png（390 x 487）
+    - 主人公
+      - 画像（通常）：assets/img/character/hero/hero_normal.png（380 x 487）
+      - 画像（怒り）：assets/img/character/hero/hero_angry.png（390 x 487）
 
   - practice
     - ノードの対応
@@ -312,12 +312,11 @@
           - 役割：森の動物と通じる「調律の巫女」。
           - 性格：明るく無邪気、少し子供っぽい。
           - 特徴：草花を編んだ髪飾り、軽やかな服装、元気さが表情に出やすい。
-          - 全身：明るい少女風、草花を編んだ髪飾り、軽やかな服装。 
+          - 全身：明るい少女風、草花を編んだ髪飾り、軽やかな服装。
           - 表情差分：喜は無邪気な笑み、怒は頬を膨らませる、哀は涙目、楽は笑顔で目を細める、無表情はぽかんとした感じ。
           - デフォルメ：花飾りとポシェットを強調した2頭身キャラ。
-        - 画像（通常）：assets/img/character/enemies/easy/efina_normal.png（1024 x 1024）
-        - 画像（笑い）：assets/img/character/enemies/easy/efina_smile.png（?）
-        - 画像（怒り）：assets/img/character/enemies/easy/efina_angry.png（877 x 1315）
+        - 画像（通常）：assets/img/character/enemies/easy/efina_normal.png（380 x 487）
+        - 画像（怒り）：assets/img/character/enemies/easy/efina_angry.png（380 x 487）
   - middle
     - ノードとの対応
       - 名前: elf-middle
@@ -335,8 +334,8 @@
           - 全身：冷静で知的な雰囲気、ロングローブと紋章入りの杖を持つ。
           - 表情差分：無表情は冷たい視線、喜は控えめな微笑、怒はきりっと厳しい目、哀は眉を下げた沈痛な顔、楽は口元だけ柔らかく緩む。
           - デフォルメ：ローブと杖を簡略化しシンボル的に。
-        - 画像（通常）：assets/img/character/enemies/normal/cerys_normal.png（1024 x 1536）
-        - 画像（怒り）：assets/img/character/enemies/normal/cerys_angry.png（1024 x 1024）
+        - 画像（通常）：assets/img/character/enemies/normal/cerys_normal.png（380 x 487）
+        - 画像（怒り）：assets/img/character/enemies/normal/cerys_angry.png（380 x 487）
   - hard
     - ノードとの対応
       - 名前: elf-hard
@@ -348,8 +347,8 @@
         - 名前（英）：floria
         - 設定・キャラクター概要：
           - 精霊を象るパズル、物語の核心に近づく。
-        - 画像（通常）：assets/img/character/enemies/hard/floria_normal.png（1024 x 1536）
-        - 画像（怒り）：assets/img/character/enemies/hard/floria_angry.png（1024 x 1536）
+        - 画像（通常）：assets/img/character/enemies/hard/floria_normal.png（380 x 487）
+        - 画像（怒り）：assets/img/character/enemies/hard/floria_angry.png（380 x 487）
   - ultra
     - ノードの位置
       - elf-ultra
@@ -364,7 +363,7 @@
           - 全身：誇り高い女戦士風、銀の鎧と森の意匠を組み合わせた装い。
           - 表情差分：無表情は毅然とした面持ち、喜は凛とした笑み、怒は眼光鋭く、哀は瞳に影を落とし、楽は安心感を与える微笑み。
           - デフォルメ：銀の鎧を簡略化し、剣を持った2頭身キャラ。
-        - 画像（通常）：assets/img/character/enemies/ultra/altina_normal.png（1024 x 1024）
+        - 画像（通常）：assets/img/character/enemies/ultra/altina_normal.png（380 x 487）
         - 画像（怒り）：assets/img/character/enemies/practice/altina_angry.png（380 x 487）
 
 - 画面
