@@ -213,10 +213,10 @@ class AudioManager {
   playClearFanfare() {
     if (!this.enabled || !this.ctx) return;
     const t0 = this.ctx.currentTime + 0.02;
-    // Victory-like melodic phrase: C E G C6 | G E C + shimmer
+    // Victory-like melodic phrase played with brass-like synth
     const seq = [523, 659, 784, 1047, 784, 659, 523];
-    seq.forEach((f, i) => this._note(f, t0 + i * 0.14, 0.16, 0.01, i < 4 ? 0.95 : 0.8));
-    this._note(1175, t0 + 1.05, 0.18, 0.01, 0.6); // D#6 shimmer
+    seq.forEach((f, i) => this._brassNote(f, t0 + i * 0.16, 0.2, i < 4 ? 0.85 : 0.7));
+    this._brassNote(1175, t0 + 1.12, 0.22, 0.6);
   }
 
   playGameOver() {
@@ -264,6 +264,58 @@ class AudioManager {
       osc.disconnect();
       g.disconnect();
     };
+  }
+  // Brass-like synthesized note (trumpet-ish)
+  _brassNote(freq, start, dur = 0.22, vol = 0.7) {
+    const ctx = this.ctx;
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    osc1.type = "sawtooth";
+    osc2.type = "square";
+    osc1.frequency.setValueAtTime(freq, start);
+    osc2.frequency.setValueAtTime(freq * 0.999, start);
+
+    const lpf = ctx.createBiquadFilter();
+    lpf.type = "lowpass";
+    lpf.frequency.setValueAtTime(2200, start);
+    lpf.Q.value = 0.9;
+
+    const g = ctx.createGain();
+    const a = 0.015, d = 0.12, s = 0.6, r = 0.12;
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.linearRampToValueAtTime(vol, start + a);
+    g.gain.linearRampToValueAtTime(vol * s, start + a + d);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + Math.max(dur, a + d) + r);
+
+    lpf.frequency.linearRampToValueAtTime(2600, start + a + d);
+    lpf.frequency.linearRampToValueAtTime(2000, start + Math.max(dur, a + d));
+
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.setValueAtTime(5.5, start);
+    lfoGain.gain.setValueAtTime(6, start);
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc1.frequency);
+    lfoGain.connect(osc2.frequency);
+
+    const mix = ctx.createGain();
+    osc1.connect(mix);
+    osc2.connect(mix);
+    mix.connect(lpf);
+    lpf.connect(g);
+    g.connect(this.bgmGain);
+
+    osc1.start(start);
+    osc2.start(start);
+    lfo.start(start + 0.02);
+    const stopAt = start + Math.max(dur, a + d) + 0.2;
+    osc1.stop(stopAt);
+    osc2.stop(stopAt);
+    lfo.stop(stopAt);
+    osc1.onended = () => { try { osc1.disconnect(); } catch {} };
+    osc2.onended = () => { try { osc2.disconnect(); } catch {} };
+    lfo.onended = () => { try { lfo.disconnect(); lfoGain.disconnect(); } catch {} };
+    setTimeout(() => { try { mix.disconnect(); lpf.disconnect(); g.disconnect(); } catch {} }, (stopAt - ctx.currentTime) * 1000 + 20);
   }
 
   _scheduleLoop() {
