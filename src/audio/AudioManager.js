@@ -69,7 +69,9 @@ class AudioManager {
     src.connect(g)
     g.connect(sfxGain)
     src.start(t0)
-    src.onended = () => { try { src.disconnect(); g.disconnect() } catch {} }
+    return new Promise((resolve) => {
+      src.onended = () => { try { src.disconnect(); g.disconnect() } catch {} ; resolve() }
+    })
   }
 
   // --- SFX ---
@@ -116,13 +118,15 @@ class AudioManager {
       const url = findSfxUrl(/foot|step|walk|shoe|sand|wood/i)
       if (url) {
         const buf = await this._loadSample('footstep', url)
-        this._playBuffer(buf, 0.9)
+        await this._playBuffer(buf, 0.9)
         return
       }
     } catch (_) { /* ignore and fallback */ }
     // Fallback to synthetic short noise-tap pattern
     this._noiseBurst(0.03, 1800, 800)
-    setTimeout(() => this._noiseBurst(0.03, 1600, 700), 70)
+    this._noiseBurst(0.03, 1600, 700)
+    // Resolve after a short delay approximating the SFX length
+    await new Promise((r) => setTimeout(r, 160))
   }
 
   _beep(freq, dur = 0.08, attack = 0.01) {

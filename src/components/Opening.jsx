@@ -4,7 +4,6 @@ export default function Opening({ onStart, onNewGame }) {
   return (
     <main className="screen opening">
       <div className="opening-hero">
-        <img className="opening-image" src="/title.png" alt="elfpix title" onError={(e) => { e.currentTarget.style.display = 'none' }} />
         <h1 className="headline opening-title cute">elfpix</h1>
         <p className="sub">エルフ達と心を通わせるピクロスの旅</p>
       </div>

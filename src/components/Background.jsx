@@ -7,7 +7,7 @@ const modules = import.meta.glob('../../assets/img/*.{png,jpg,jpeg,webp,gif}', {
   as: 'url',
 })
 
-export default function Background({ seed = 0 }) {
+export default function Background({ seed = 0, fixedUrl = null }) {
   const urls = useMemo(() => Object.values(modules), [])
   const [idx, setIdx] = useState(0)
 
@@ -21,6 +21,11 @@ export default function Background({ seed = 0 }) {
     })
   }, [urls.length, seed])
 
+  if (fixedUrl) {
+    return (
+      <div className="bg-image" style={{ backgroundImage: `url(${fixedUrl})` }} aria-hidden="true" />
+    )
+  }
   if (!urls.length) return null
 
   return (

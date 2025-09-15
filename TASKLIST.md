@@ -78,18 +78,46 @@
 
 - [done] ~~ノードクリック時の効果音追加~~
     - ノードをクリックして移動したときに、ざっざっざと歩くような音を
+- オープニングで利用する背景画像を固定化
+    - ファイル名
+        - title.png
+- practiceで利用する敵キャラクターの画像に以下を利用
+    - 会話モード
+        - 普
+            - ファイル名： practice/riene_normal.png
+        - 怒
+            - ファイル名： practice/riene_angry.png
+- easyで利用する敵キャラクターの画像に以下を利用
+    - 会話モード
+        - 普
+            - ファイル名： practice/riene_normal.png
+        - 怒
+            - ファイル名： practice/riene_angry.png
+- normalで利用する敵キャラクターの画像に以下を利用
+    - 会話モード
+        - 普
+            - ファイル名： practice/riene_normal.png
+        - 怒
+            - ファイル名： practice/riene_angry.png
+- hardで利用する敵キャラクターの画像に以下を利用
+    - 会話モード
+        - 普
+            - ファイル名： practice/riene_normal.png
+        - 怒
+            - ファイル名： practice/riene_angry.png
 
 # Issues and Bugs
 ## Priority: high
 - [done] ノードイベントで、キャラクター別のピクロスの画像が簡単すぎるかつ難易度にあわせて難しくなっていない
     - 難易度別にあわせた複雑かつ、ピクロスとして解が一意に成り立ち、適切なヒントがあり、出来上がりのゲーム様々なドット絵になること
 - [done] オープニング画面で、NewGameを行ったときに、「削除してよろしいですか」の確認を削除する
+- ノードをクリックして移動したときに、音を鳴らした瞬間に画面遷移をしているので、音を鳴らし終わってから遷移するように変更
 
 ## Priority: normal
 - (nothing)
 # Improvement
 ## Priority High
-- (nothing)
+- [notyet]
 ## Priority: normal
 - [done] ~~名前決定モード終了後に、元の画面に戻り、会話の続きから始まる~~
 - [done] ~~会話の続きで、入力した値が利用・表示される~~

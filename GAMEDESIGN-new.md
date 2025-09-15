@@ -398,3 +398,14 @@
   - ウィンドウ背景：青色（#1e3a8a）
   - ウィンドウ枠：金色（#d1b464）
   - 文字色：白（必要に応じて）
+
+## タスク仕様（Dev Task TODO 追加分）
+- オープニングの背景画像を固定化する
+  - 表示画像：/assets/img/title.png（ファイル名：title.png）
+- 会話モードで利用する敵キャラクター画像を設定する（普＝通常）
+  - practice: assets/img/character/enemies/practice/riene_normal.png
+  - easy:     assets/img/character/enemies/practice/riene_normal.png
+  - normal:   assets/img/character/enemies/practice/riene_normal.png
+  - hard:     assets/img/character/enemies/practice/riene_normal.png
+- ノードクリック時の遷移タイミングを変更
+  - ざっざっざ…の足音SE再生が終わってから画面遷移（会話モードへ）する

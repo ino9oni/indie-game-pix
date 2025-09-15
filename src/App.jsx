@@ -173,7 +173,9 @@ export default function App() {
 
   return (
     <div className="app">
-      {screen !== 'prologue' && <Background seed={bgSeed} />}
+      {screen !== 'prologue' && (
+        <Background seed={bgSeed} fixedUrl={screen === 'opening' ? '/assets/img/title.png' : null} />
+      )}
       <header className="app-header">
         <div className="brand">
           <span className="logo">▦</span>
@@ -234,10 +236,12 @@ export default function App() {
           graph={ROUTE}
           current={currentNode}
           last={lastNode}
-          onArrive={(id) => {
+          onArrive={async (id) => {
             // Only allow neighbor clicks (RouteMap already enforces), set pending and start battle
             setPendingNode(id)
-            if (soundOn) audio.playFootstep()
+            if (soundOn) {
+              try { await audio.playFootstep() } catch {}
+            }
             if (CHARACTERS[id]) setScreen('conversation')
           }}
         />

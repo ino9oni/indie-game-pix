@@ -1,15 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react'
 
 const ENEMY_IMAGES = {
-  'elf-practice': '/assets/img/character/enemies/00011-3639403992.png',
+  'elf-practice': '/assets/img/character/enemies/practice/riene_normal.png',
+  'elf-easy': '/assets/img/character/enemies/practice/riene_normal.png',
+  'elf-middle': '/assets/img/character/enemies/practice/riene_normal.png',
+  'elf-hard': '/assets/img/character/enemies/practice/riene_normal.png',
 }
 
 function buildScript(difficultyId, heroName, enemyName) {
   if (difficultyId === 'elf-practice') {
     return [
       { speaker: heroName, text: 'あなたは…' },
-      { speaker: enemyName, text: `よくここまできたわね、${heroName}。私が相手してあげましょう…` },
-      { speaker: heroName, text: '押し通る！' },
+      { speaker: enemyName, text: 'よくここまできたわね、あなたがelfpixに認められるにふさわしいかどうか…私が相手してあげましょう…' },
+      { speaker: enemyName, text: 'あなた名前は？' },
+      { speaker: heroName, text: `${heroName}と言います。` },
+      { speaker: enemyName, text: `${heroName}と言うのね、いい名前ね。覚えておくわ。私は${enemyName}というの。` },
+      { speaker: enemyName, text: 'では準備はいい？いくわよ。' },
+      { speaker: heroName, text: 'お願いします。' },
     ]
   }
   // placeholders for other difficulties
@@ -48,12 +55,12 @@ export default function Conversation({ heroName, enemyName, difficultyId, onDone
         <div style={{ position: 'absolute', left: 8, top: 8, width: 200, height: 100, display: 'grid', placeItems: 'center', borderRadius: 12, background: '#1d4ed8' }}>
           <span style={{ fontWeight: 800 }}>{heroName}</span>
         </div>
-        {/* Enemy portrait (right). Use image for known enemy, else red placeholder */}
-        <div style={{ position: 'absolute', right: 8, top: 8, width: 200, height: 100, display: 'grid', placeItems: 'center', borderRadius: 12, background: enemyImg ? 'transparent' : '#dc2626', overflow: 'hidden', border: '1px solid #2b2f55' }}>
+        {/* Enemy portrait (right). Show at the image's natural size */}
+        <div style={{ position: 'absolute', right: 8, top: 8, display: 'grid', placeItems: 'center', borderRadius: 12, background: enemyImg ? 'transparent' : '#dc2626', border: '1px solid #2b2f55' }}>
           {enemyImg ? (
-            <img src={enemyImg} alt={enemyName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={enemyImg} alt={enemyName} style={{ display: 'block' }} />
           ) : (
-            <span style={{ fontWeight: 800 }}>{enemyName}</span>
+            <span style={{ fontWeight: 800, padding: '12px 16px' }}>{enemyName}</span>
           )}
         </div>
 
