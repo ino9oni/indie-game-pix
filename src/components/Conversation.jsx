@@ -37,21 +37,46 @@ function buildScript(difficultyId, heroName, enemyName) {
         text: "よくここまできたわね、あなたがelfpixに認められるにふさわしいかどうか…私が相手してあげましょう…",
         emotion: "normal",
       },
-      { speaker: enemyName, who: "enemy", text: "あなた名前は？", emotion: "normal" },
-      { speaker: heroName, who: "hero", text: `${heroName}と言います。`, emotion: "normal" },
+      {
+        speaker: enemyName,
+        who: "enemy",
+        text: "あなた名前は？",
+        emotion: "normal",
+      },
+      {
+        speaker: heroName,
+        who: "hero",
+        text: `${heroName}と言います。`,
+        emotion: "normal",
+      },
       {
         speaker: enemyName,
         who: "enemy",
         text: `${heroName}と言うのね、いい名前ね。覚えておくわ。私は${enemyName}というの。`,
         emotion: "normal",
       },
-      { speaker: enemyName, who: "enemy", text: "では準備はいい？いくわよ。", emotion: "angry" },
-      { speaker: heroName, who: "hero", text: "お願いします。", emotion: "angry" },
+      {
+        speaker: enemyName,
+        who: "enemy",
+        text: "では準備はいい？いくわよ。",
+        emotion: "angry",
+      },
+      {
+        speaker: heroName,
+        who: "hero",
+        text: "お願いします。",
+        emotion: "angry",
+      },
     ];
   }
   // placeholders for other difficulties
   return [
-    { speaker: enemyName, who: "enemy", text: `さあ、始めましょう、${heroName}。`, emotion: "normal" },
+    {
+      speaker: enemyName,
+      who: "enemy",
+      text: `さあ、始めましょう、${heroName}。`,
+      emotion: "normal",
+    },
     { speaker: heroName, who: "hero", text: "受けて立つ！", emotion: "normal" },
   ];
 }
@@ -92,8 +117,10 @@ export default function Conversation({
   }
 
   const current = script[idx] || {};
-  const heroEmotion = current.who === "hero" && current.emotion === "angry" ? "angry" : "normal";
-  const enemyEmotion = current.who === "enemy" && current.emotion === "angry" ? "angry" : "normal";
+  const heroEmotion =
+    current.who === "hero" && current.emotion === "angry" ? "angry" : "normal";
+  const enemyEmotion =
+    current.who === "enemy" && current.emotion === "angry" ? "angry" : "normal";
   const enemySet = ENEMY_IMAGES[difficultyId] || {};
   const enemyImg = enemySet[enemyEmotion] || enemySet.normal;
 

@@ -32,6 +32,13 @@ export default function App() {
   const [result, setResult] = useState(null); // { status: 'clear' | 'gameover' }
   const [bgSeed, setBgSeed] = useState(0);
   const [soundOn, setSoundOn] = useState(false);
+  const [debugMode, setDebugMode] = useState(() => {
+    try {
+      return localStorage.getItem("debugMode") === "1";
+    } catch {
+      return false;
+    }
+  });
   const spedUpRef = useRef(false);
   const resumeOnceRef = useRef(false);
   const [heroName, setHeroName] = useState(
@@ -162,6 +169,13 @@ export default function App() {
   }
 
   function handleSubmit() {
+    // Debug mode: always clear on submit regardless of grid state
+    if (debugMode) {
+      setResult({ status: "clear" });
+      if (soundOn) audio.playClearFanfare();
+      setScreen("result");
+      return;
+    }
     const n = solution.length;
     let ok = true;
     for (let r = 0; r < n && ok; r++) {
@@ -222,6 +236,21 @@ export default function App() {
           <span className="title">elfpix</span>
         </div>
         <nav className="top-actions">
+          <button
+            className={`ghost debug ${debugMode ? "on" : "off"}`}
+            title="デバッグモード切り替え"
+            onClick={() =>
+              setDebugMode((v) => {
+                const nv = !v;
+                try {
+                  localStorage.setItem("debugMode", nv ? "1" : "0");
+                } catch {}
+                return nv;
+              })
+            }
+          >
+            Debug: {debugMode ? "On" : "Off"}
+          </button>
           <button
             className={`ghost bgm ${soundOn ? "on" : "off"}`}
             onClick={async () => {

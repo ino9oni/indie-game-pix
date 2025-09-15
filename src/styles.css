@@ -439,6 +439,9 @@ button {
   color: white;
   border-color: #6b7280;
 }
+/* Debug button states */
+.debug.on { background: #be185d; color: #fff; border-color: #be185d; }
+.debug.off { background: #6b7280; color: #fff; border-color: #6b7280; }
 
 /* Prologue window styles */
 .prologue {
