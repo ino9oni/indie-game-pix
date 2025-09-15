@@ -26,19 +26,28 @@ body {
     radial-gradient(1200px 800px at 80% -20%, #1f1147 0%, transparent 60%),
     radial-gradient(1000px 700px at -10% 120%, #0b5b63 0%, transparent 50%),
     linear-gradient(180deg, #0a0f1b 0%, #070a12 100%);
+  /* Rounded, cute font stack (local/system fallbacks) */
   font-family:
+    "M PLUS Rounded 1c",
+    "Hiragino Maru Gothic ProN",
+    "Rounded Mplus 1c",
+    "Yu Gothic UI",
+    "Quicksand",
+    ui-rounded,
     ui-sans-serif,
     system-ui,
     -apple-system,
     Segoe UI,
     Roboto,
+    Noto Sans JP,
     Noto Sans,
     Ubuntu,
     Cantarell,
     Helvetica Neue,
     Arial,
     "Apple Color Emoji",
-    "Segoe UI Emoji";
+    "Segoe UI Emoji",
+    sans-serif;
 }
 
 .app {

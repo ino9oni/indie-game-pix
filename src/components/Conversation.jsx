@@ -139,7 +139,7 @@ export default function Conversation({
 
   return (
     <main className="screen dialog" onClick={advance}>
-      <div style={{ width: "100%" }}>
+      <div style={{ width: "100%", display: 'flex', flexDirection: 'column', minHeight: '70vh' }}>
         {/* Stage: portraits side by side, natural sizes, no overlap with dialog */}
         <div
           style={{
@@ -228,8 +228,8 @@ export default function Conversation({
           </div>
         </div>
 
-        {/* Dialog window below stage */}
-        <div className="dialog-window" style={{ margin: "12px auto 0" }}>
+        {/* Dialog window placed to lower third */}
+        <div className="dialog-window" style={{ margin: "24px auto 0", marginTop: 'auto' }}>
           <div style={{ fontWeight: 700, opacity: 0.9, marginBottom: 6 }}>
             {script[idx]?.speaker}
           </div>
