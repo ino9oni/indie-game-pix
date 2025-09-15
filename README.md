@@ -22,7 +22,7 @@ Current release: 1.1.5
 - You have 20 minutes. Submit anytime to check your answer.
 - If your grid matches the solution at end/submit: Clear. Otherwise: Game Over.
 - Clear all 5 in a level to see a level clear screen. For `easy` and `middle`, you’ll be guided to the next level.
- - On failure, you can return to puzzle select or end the game. Ending the game shows a Game Over screen with closing music and a button back to Title.
+- On failure, you can return to puzzle select or end the game. Ending the game shows a Game Over screen with closing music and a button back to Title.
 
 ## Controls
 

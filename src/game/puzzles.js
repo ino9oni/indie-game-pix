@@ -1,9 +1,9 @@
 // Boolean matrices for each level. true = filled, false = empty
 
-export const LEVELS = ['easy', 'middle', 'high', 'hard', 'ultra']
+export const LEVELS = ["easy", "middle", "high", "hard", "ultra"];
 
-const E = true
-const _ = false
+const E = true;
+const _ = false;
 
 // 5x5 puzzles (easy) — 5 puzzles
 const EASY = [
@@ -47,7 +47,7 @@ const EASY = [
     [_, E, _, E, _],
     [E, _, _, _, E],
   ],
-]
+];
 
 // 10x10 puzzles (middle) — 5 puzzles
 const MIDDLE = [
@@ -116,7 +116,7 @@ const MIDDLE = [
     [_, _, _, _, E, _, _, _, _, _],
     [_, _, _, _, _, _, _, _, _, _],
   ],
-]
+];
 
 // 15x15 puzzles (high) — 5 puzzles
 const HIGH = [
@@ -210,7 +210,7 @@ const HIGH = [
     [_, E, _, _, E, _, _, E, _, _, E, _, _, _, _],
     [_, _, E, E, _, _, _, _, E, E, _, _, _, _, _],
   ],
-]
+];
 
 // 20x20 puzzles (hard) — 3 puzzles
 const HARD20 = [
@@ -283,7 +283,7 @@ const HARD20 = [
     [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
     [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
   ],
-]
+];
 
 // 25x25 puzzles (ultra) — 2 puzzles
 const ULTRA25 = [
@@ -343,16 +343,30 @@ const ULTRA25 = [
     [_, _, _, _, _, _, _, _, _, _, _, E, E, E, _, _, _, _, _, _, _, _, _, _, _],
     [_, _, _, _, _, _, _, _, _, _, _, _, E, _, _, _, _, _, _, _, _, _, _, _, _],
   ],
-]
+];
 
-export const PUZZLES = { easy: EASY, middle: MIDDLE, high: HIGH, hard: HARD20, ultra: ULTRA25 }
+export const PUZZLES = {
+  easy: EASY,
+  middle: MIDDLE,
+  high: HIGH,
+  hard: HARD20,
+  ultra: ULTRA25,
+};
 
-export const PUZZLES_BY_SIZE = { 5: EASY, 10: MIDDLE, 15: HIGH, 20: HARD20, 25: ULTRA25 }
+export const PUZZLES_BY_SIZE = {
+  5: EASY,
+  10: MIDDLE,
+  15: HIGH,
+  20: HARD20,
+  25: ULTRA25,
+};
 
-export function getPuzzlesForSize(n) { return PUZZLES_BY_SIZE[n] || [] }
+export function getPuzzlesForSize(n) {
+  return PUZZLES_BY_SIZE[n] || [];
+}
 export function getRandomPuzzleForSize(n) {
-  const arr = getPuzzlesForSize(n)
-  if (!arr.length) return null
-  const idx = Math.floor(Math.random() * arr.length)
-  return arr[idx]
+  const arr = getPuzzlesForSize(n);
+  if (!arr.length) return null;
+  const idx = Math.floor(Math.random() * arr.length);
+  return arr[idx];
 }
