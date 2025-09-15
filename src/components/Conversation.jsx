@@ -94,6 +94,7 @@ export default function Conversation({
   );
   const [idx, setIdx] = useState(0);
   const [fadeReady, setFadeReady] = useState(false);
+  const [portraitSize, setPortraitSize] = useState({ w: 380, h: 487 });
 
   useEffect(() => {
     const onKey = (e) => {
@@ -106,6 +107,22 @@ export default function Conversation({
   useEffect(() => {
     const t = setTimeout(() => setFadeReady(true), 20);
     return () => clearTimeout(t);
+  }, []);
+
+  // Responsive portrait sizing: shrink on narrow screens
+  useEffect(() => {
+    const RATIO = 487 / 380; // h/w
+    function recalc() {
+      const ww = window.innerWidth || 1024;
+      let w = 380;
+      if (ww <= 480) w = 240; // phones
+      else if (ww <= 768) w = 300; // tablets / small screens
+      const h = Math.round(w * RATIO);
+      setPortraitSize({ w, h });
+    }
+    recalc();
+    window.addEventListener('resize', recalc);
+    return () => window.removeEventListener('resize', recalc);
   }, []);
 
   function advance() {
@@ -158,8 +175,8 @@ export default function Conversation({
                 border: "3px solid #d1b464",
                 borderRadius: 12,
                 padding: 4,
-                width: HERO_SIZE.w,
-                height: HERO_SIZE.h,
+                width: portraitSize.w,
+                height: portraitSize.h,
                 display: "grid",
                 placeItems: "center",
               }}
@@ -190,8 +207,8 @@ export default function Conversation({
                 border: enemyImg ? "3px solid #d1b464" : "1px solid #2b2f55",
                 borderRadius: 12,
                 padding: enemyImg ? 4 : 0,
-                width: enemySz ? enemySz.w : undefined,
-                height: enemySz ? enemySz.h : undefined,
+                width: portraitSize.w,
+                height: portraitSize.h,
                 display: "grid",
                 placeItems: "center",
               }}
@@ -201,9 +218,9 @@ export default function Conversation({
                   src={enemyImg}
                   alt={enemyName}
                   style={{
-                    width: enemySz ? "100%" : undefined,
-                    height: enemySz ? "100%" : undefined,
-                    objectFit: enemySz ? "contain" : undefined,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
                     display: "block",
                     opacity: fadeReady ? 1 : 0,
                     transition: "opacity 400ms ease",
