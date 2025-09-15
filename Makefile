@@ -1,20 +1,27 @@
 SHELL := /bin/bash
 
-.PHONY: install dev run build preview lint fmt test coverage security-scan
+.PHONY: install dev run build preview lint fmt test coverage security-scan android-sync
+
+# Helper: ensure vite is available locally without always reinstalling
+ensure-vite:
+	@if [ ! -x node_modules/.bin/vite ]; then \
+		echo "vite not found locally. Installing deps..."; \
+		if command -v npm >/dev/null 2>&1; then npm ci || npm install; else echo "npm not found"; exit 1; fi; \
+	fi
 
 install:
 	@if command -v npm >/dev/null 2>&1; then npm ci || npm install; else echo "npm not found"; exit 1; fi
 
-dev:
-	npm run dev
+dev: ensure-vite
+	npx vite --host --port 15173
 
 run: dev
 
-build:
-	npm run build
+build: ensure-vite
+	npx vite build
 
-preview:
-	npm run preview
+preview: ensure-vite
+	npx vite preview --host --port 15173
 
 lint:
 	npm run lint || true
@@ -31,3 +38,10 @@ coverage:
 security-scan:
 	@echo "No security scan configured"
 
+# Copy built web assets to Android project's assets folder
+android-sync: build
+	@dest=mobile/android/app/src/main/assets/www; \
+	 echo "Syncing dist -> $$dest"; \
+	 rm -rf "$$dest" && mkdir -p "$$dest"; \
+	 cp -r dist/* "$$dest"/; \
+	 echo "Done. Open mobile/android in Android Studio to build the APK."

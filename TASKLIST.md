@@ -1,0 +1,139 @@
+# Rules
+- handle tasks of priority:high firstly
+- handel dev task todo firstly
+- if task is started, create issue ticket on GitHub
+- if tasks are done, modify document(GAMEDESIGN.md and TASKLIST.md)
+    - confirm changed item and differences
+- if task is done, change issue ticket done status on GitHub and add done label in this document
+
+# Dev Task TODO
+## Priority: high
+- [done] ~~会話モードの追加~~
+    - 概要
+        - ノードクリック時に、お題を出す相手と会話をするモードを追加する
+    - 追加したい仕様
+        - ASIS
+            - ノードクリック後、すぐにピクロスゲーム画面に遷移する
+        - TOBE
+            - **会話モード** を新たに設ける
+                - 概要
+                    - 敵キャラクターと主人公の会話を表現する
+                    - 主人公の会話と敵キャラクターの会話を経てからピクロスが開始する
+                - 背景音楽
+                    - assets/bgm/*(任意)
+                - ノードクリック後、会話モード変遷移する
+                - 会話モード
+                    - 表示
+                        - 主人公の画像
+                            - ファイル
+                                - （テスト用の四角画像）
+                                - ラベル：${HERO_NAME}
+                            - レイアウト
+                                - 左端、会話のウィンドウにかからない程度
+                            - 画像
+                                - 200px x 100px 青四角（テスト表示）
+                        - 敵の画像
+                            - ファイル
+                                - （テスト用の四角画像）
+                                - ラベル：敵の名前
+                            - レイアウト
+                                - 右端、会話のウィンドウにかからない程度
+                            - 画像
+                                - 200px x 100px 赤角（テスト表示）
+                        - 会話のウィンドウ
+                            - 左上
+                                - セリフの話者の名前
+                            - 中央
+                                - セリフ
+                    - 操作
+                        - クリック または Enterキーの入力を受け付け
+                            - 会話を進める
+                    - 内部状態
+                        - 会話スクリプトを読み込み表示
+                            - practiceの会話
+                                - START
+                                - No.1
+                                    - 話者
+                                        - 主人公
+                                    - セリフ
+                                        - "あなたは…"
+                                - No.2
+                                    - 話者
+                                        - 敵キャラクター
+                                    - セリフ
+                                        - "よくここまできたわね、私が相手してあげましょう…"
+                                - No.3
+                                    - 話者
+                                        - 主人公
+                                    - セリフ
+                                        - "押し通る！"
+                                - END
+                            - easyの会話
+                                - 適当に生成（後ほど実装）
+                            - normalの会話
+                                - 適当に生成（後ほど実装）
+                            - hardの会話
+                                - 適当に生成（後ほど実装）
+                        - 相手の画像会話モード終了後、ピクロスモードに遷移
+
+- [done] ~~ノードクリック時の効果音追加~~
+    - ノードをクリックして移動したときに、ざっざっざと歩くような音を
+- [done] ~~オープニングで利用する背景画像を固定化~~
+    - ファイル名
+        - title.png
+- [done] ~~practiceで利用する敵キャラクターの画像に以下を利用~~
+    - 会話モード
+        - 普
+            - ファイル名： practice/riene_normal.png
+        - 怒
+            - ファイル名： practice/riene_angry.png
+- practice以外で利用する敵キャラクターの画像に以下を利用
+    - easyで利用する敵キャラクターの画像に以下を利用
+        - 会話モード
+            - 普
+                - ファイル名： practice/riene_normal.png
+            - 怒
+                - ファイル名： practice/riene_angry.png
+    - normalで利用する敵キャラクターの画像に以下を利用
+        - 会話モード
+            - 普
+                - ファイル名： practice/riene_normal.png
+            - 怒
+                - ファイル名： practice/riene_angry.png
+    - hardで利用する敵キャラクターの画像に以下を利用
+        - 会話モード
+            - 普
+                - ファイル名： practice/riene_normal.png
+            - 怒
+                - ファイル名： practice/riene_angry.png
+- 会話モードで、キャラクターを表示する際に、効果をつける
+    - 画像の表示時にフェードするように表示する
+    - 画像の枠に、会話ウィンドウと同じスタイルの太枠を付与する
+
+# Issues and Bugs
+## Priority: high
+- 会話モード内の会話の進行のためのボタンを付記
+    - 次へボタン
+        - 動作
+            - 次の会話を表示
+            - 会話の内部状態を次まで進める
+    - スキップボタン
+        - 動作
+            - 会話を会話のENDまでスキップする
+            - 会話の内部状態をENDまで進める
+- 会話モード内の操作指示の文章は削除
+- [done] ノードイベントで、キャラクター別のピクロスの画像が簡単すぎるかつ難易度にあわせて難しくなっていない
+    - 難易度別にあわせた複雑かつ、ピクロスとして解が一意に成り立ち、適切なヒントがあり、出来上がりのゲーム様々なドット絵になること
+- [done] オープニング画面で、NewGameを行ったときに、「削除してよろしいですか」の確認を削除する
+- [done] ~~ノードをクリックして移動したときに、音を鳴らした瞬間に画面遷移をしているので、音を鳴らし終わってから遷移するように変更~~
+## Priority: normal
+- (nothing)
+# Improvement
+## Priority High
+- [notyet]
+## Priority: normal
+- [done] ~~名前決定モード終了後に、元の画面に戻り、会話の続きから始まる~~
+- [done] ~~会話の続きで、入力した値が利用・表示される~~
+- [done] ~~名前解決モード、会話モードのウィンドウを以下に変更する~~
+    - ウィンドウ背景：青色
+    - ウィンドウ枠：金色

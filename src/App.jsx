@@ -1,60 +1,54 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Opening from './components/Opening.jsx'
+import Prologue from './components/Prologue.jsx'
+import NameEntry from './components/NameEntry.jsx'
+import GameStart from './components/GameStart.jsx'
+import RouteMap from './components/RouteMap.jsx'
+import Conversation from './components/Conversation.jsx'
 import Background from './components/Background.jsx'
-import StrudelBackground from './components/StrudelBackground.jsx'
-import LevelSelect from './components/LevelSelect.jsx'
-import PuzzleSelect from './components/PuzzleSelect.jsx'
+// Level/Puzzle selection removed in route-based flow
 import GameBoard from './components/GameBoard.jsx'
 import Timer from './components/Timer.jsx'
 import ResultModal from './components/ResultModal.jsx'
 import LevelClear from './components/LevelClear.jsx'
 import GameOver from './components/GameOver.jsx'
-import { PUZZLES, LEVELS } from './game/puzzles.js'
-import { computeClues, emptyGrid, equalsSolution } from './game/utils.js'
+import { getRandomPuzzleForSize } from './game/puzzles.js'
+import { ROUTE, CHARACTERS } from './game/route.js'
+import { computeClues, emptyGrid } from './game/utils.js'
 import audio from './audio/AudioManager.js'
+import bgm from './audio/BgmPlayer.js'
+import { listBgmUrls } from './audio/library.js'
 
 const GAME_SECONDS = 20 * 60 // 20 minutes
 
 export default function App() {
-  const [screen, setScreen] = useState('opening') // 'opening' | 'level' | 'puzzle' | 'game' | 'result' | 'levelClear' | 'gameover'
-  const [level, setLevel] = useState('easy')
+  const [screen, setScreen] = useState('prologue') // 'prologue' | 'opening' | 'gamestart' | 'name' | 'route' | 'conversation' | 'picross' | 'result' | 'levelClear' | 'gameover'
+  const [level, setLevel] = useState('easy') // internal only
   const [puzzleIndex, setPuzzleIndex] = useState(0)
   const [grid, setGrid] = useState([])
+  const [solution, setSolution] = useState([])
   const [startedAt, setStartedAt] = useState(null)
   const [remaining, setRemaining] = useState(GAME_SECONDS)
   const [result, setResult] = useState(null) // { status: 'clear' | 'gameover' }
   const [bgSeed, setBgSeed] = useState(0)
   const [soundOn, setSoundOn] = useState(false)
   const spedUpRef = useRef(false)
-  const [progress, setProgress] = useState(() => {
-    const desired = Object.fromEntries(LEVELS.map((l) => [l, Array(PUZZLES[l].length).fill(false)]))
-    const saved = localStorage.getItem('picrossProgress')
-    if (!saved) return desired
-    try {
-      const parsed = JSON.parse(saved)
-      const normalized = {}
-      for (const l of LEVELS) {
-        const arr = Array.isArray(parsed?.[l]) ? parsed[l] : []
-        const need = PUZZLES[l].length
-        normalized[l] = arr.slice(0, need)
-        while (normalized[l].length < need) normalized[l].push(false)
-      }
-      return normalized
-    } catch {
-      return desired
-    }
+  const resumeOnceRef = useRef(false)
+  const [heroName, setHeroName] = useState(() => localStorage.getItem('heroName') || '')
+  const [currentNode, setCurrentNode] = useState(() => localStorage.getItem('routeNode') || 'start')
+  const [lastNode, setLastNode] = useState('') // previous node to prevent backtracking
+  const [pendingNode, setPendingNode] = useState(null) // target node chosen to battle
+  const [battleNode, setBattleNode] = useState(null) // last battle node (for Continue)
+  const [cleared, setCleared] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('clearedNodes') || '[]')) } catch { return new Set() }
   })
+  function resetProgress() { /* no-op for now */ }
 
-  useEffect(() => {
-    localStorage.setItem('picrossProgress', JSON.stringify(progress))
-  }, [progress])
-
-  const solution = useMemo(() => PUZZLES[level][puzzleIndex], [level, puzzleIndex])
   const size = solution.length
   const clues = useMemo(() => computeClues(solution), [solution])
 
   useEffect(() => {
-    if (screen === 'game') {
+    if (screen === 'picross') {
       const id = setInterval(() => {
         setRemaining((r) => {
           const nr = Math.max(0, r - 1)
@@ -69,131 +63,201 @@ export default function App() {
     }
   }, [screen])
 
-  // Disable internal BGM (Strudel provides background music)
+  // Global BGM control: when Sound is On, play continuously on all screens.
+  const chosenTrackRef = useRef(null)
   useEffect(() => {
-    if (!soundOn) return
-    audio.stopPlayMusic()
-    return () => audio.stopPlayMusic()
-  }, [screen, soundOn])
-
-  // Speed up BGM when under 3 minutes remaining (only during game)
-  useEffect(() => {
-    if (screen === 'game') {
-      if (!spedUpRef.current && remaining <= 180) {
-        audio.setPlayRate(1.5)
-        spedUpRef.current = true
+    if (soundOn) {
+      if (!chosenTrackRef.current) {
+        const urls = listBgmUrls()
+        if (urls.length) {
+          const idx = Math.floor(Math.random() * urls.length)
+          chosenTrackRef.current = urls[idx]
+        }
       }
+      const url = chosenTrackRef.current
+      if (url) bgm.play(url, 'global')
+    } else {
+      bgm.stop()
+      chosenTrackRef.current = null
     }
-  }, [remaining, screen])
+  }, [soundOn])
 
-  function startGame(selLevel, selIndex) {
-    setLevel(selLevel)
-    setPuzzleIndex(selIndex)
-    setGrid(emptyGrid(PUZZLES[selLevel][selIndex].length))
+  // Keep playback rate normal
+  useEffect(() => { if (soundOn) bgm.setRate(1) }, [screen, soundOn])
+
+  // Resume BGM and SFX on any user gesture (autoplay fix)
+  useEffect(() => {
+    const handler = async () => {
+      if (resumeOnceRef.current) return
+      resumeOnceRef.current = true
+      try { await audio.enable() } catch {}
+      try { await bgm.resume() } catch {}
+    }
+    window.addEventListener('pointerdown', handler)
+    window.addEventListener('keydown', handler)
+    return () => {
+      window.removeEventListener('pointerdown', handler)
+      window.removeEventListener('keydown', handler)
+    }
+  }, [])
+
+  // No tempo changes; keep marker false
+  useEffect(() => { spedUpRef.current = false }, [remaining, screen])
+
+  function beginPicrossForNode(nodeId) {
+    const meta = CHARACTERS[nodeId]
+    if (!meta) return
+    const n = meta.size
+    // Pick a size-appropriate puzzle with good variety per node/difficulty
+    const chosen = getRandomPuzzleForSize(n)
+    setLevel(n <= 5 ? 'easy' : n <= 10 ? 'middle' : n <= 15 ? 'high' : n <= 20 ? 'hard' : 'ultra')
+    setPuzzleIndex(0)
+    const sol = chosen || Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => (r === c || r + c === n - 1)))
+    setSolution(sol)
+    setGrid(emptyGrid(n))
     setStartedAt(Date.now())
     setRemaining(GAME_SECONDS)
     setResult(null)
-    setScreen('game')
+    setBattleNode(nodeId)
+    setScreen('picross')
     spedUpRef.current = false
-    audio.setPlayRate(1)
-    // bump background seed to rotate background image per play
+    // bump background seed to rotate background image per state change
     setBgSeed((s) => s + 1)
+    // Nudge BGM resume on user gesture
+    try { bgm.resume() } catch {}
   }
 
   function handleSubmit() {
-    const ok = equalsSolution(grid, solution)
-    if (ok) {
-      // mark progress
-      setProgress((p) => {
-        const next = { ...p, [level]: [...p[level]] }
-        next[level][puzzleIndex] = true
-        return next
-      })
-      setResult({ status: 'clear' })
-      if (soundOn) {
-        audio.stopPlayMusic()
-        audio.playClearFanfare()
-      }
-    } else {
-      setResult({ status: 'gameover' })
-      if (soundOn) {
-        audio.stopPlayMusic()
+    const n = solution.length
+    let ok = true
+    for (let r = 0; r < n && ok; r++) {
+      for (let c = 0; c < n; c++) {
+        const shouldFill = solution[r][c]
+        const isFilled = grid[r][c] === 1
+        if (shouldFill !== isFilled) { ok = false; break }
       }
     }
-    setScreen('result')
+    if (ok) {
+      setResult({ status: 'clear' })
+      if (soundOn) audio.playClearFanfare()
+      setScreen('result')
+    } else {
+      // Failed -> go directly to Game Over per spec
+      setResult({ status: 'gameover' })
+      setScreen('gameover')
+    }
   }
 
   function handleCloseResult() {
-    // If all solved at this level, show level clear
-    const total = PUZZLES[level].length
-    const solved = progress[level].filter(Boolean).length
-    const allSolved = progress[level].every(Boolean) || (result?.status === 'clear' && solved + 1 === total)
-    if (allSolved) {
-      setScreen('levelClear')
-      return
+    // On clear, move to the selected pending node; otherwise just go back to route
+    if (result?.status === 'clear' && pendingNode) {
+      // mark cleared
+      setCleared((prev) => {
+        const next = new Set(prev)
+        next.add(pendingNode)
+        localStorage.setItem('clearedNodes', JSON.stringify(Array.from(next)))
+        return next
+      })
+      setLastNode(currentNode)
+      setCurrentNode(pendingNode)
+      localStorage.setItem('routeNode', pendingNode)
+      setPendingNode(null)
     }
-    setScreen('puzzle')
+    setScreen('route')
   }
+
+  // Change background image on every screen change (randomized in component)
+  useEffect(() => {
+    setBgSeed((s) => s + 1)
+  }, [screen])
 
   return (
     <div className="app">
-      <Background seed={bgSeed} />
+      {screen !== 'prologue' && (
+        <Background seed={bgSeed} fixedUrl={screen === 'opening' ? '/assets/img/title.png' : null} />
+      )}
       <header className="app-header">
         <div className="brand">
           <span className="logo">▦</span>
-          <span className="title">Picross Neo</span>
+          <span className="title">elfpix</span>
         </div>
         <nav className="top-actions">
           <button
-            className="ghost"
+            className={`ghost bgm ${soundOn ? 'on' : 'off'}`}
             onClick={async () => {
               if (!soundOn) {
-                await audio.enable()
-                audio.playOpening()
+                try { await audio.enable() } catch {}
+                try { await bgm.resume() } catch {}
                 setSoundOn(true)
               } else {
-                await audio.disable()
+                try { await audio.disable() } catch {}
+                try { bgm.stop() } catch {}
                 setSoundOn(false)
               }
             }}
           >
-            Sound: {soundOn ? 'On' : 'Off'}
+            BGM: {soundOn ? 'On' : 'Off'}
           </button>
-          
-          {screen !== 'level' && screen !== 'opening' && (
-            <button className="ghost" onClick={() => setScreen('level')}>
-              Levels
-            </button>
-          )}
         </nav>
       </header>
 
-      {screen === 'opening' && (
-        <Opening onStart={() => setScreen('level')} />
+      {screen === 'prologue' && (
+        <Prologue onNext={() => setScreen('opening')} />
       )}
 
-      {screen === 'level' && (
-        <LevelSelect
-          levels={LEVELS}
-          progress={progress}
-          onSelect={(lvl) => {
-            setLevel(lvl)
-            setScreen('puzzle')
+      {screen === 'opening' && (
+        <Opening
+          onStart={async () => { try { await bgm.resume() } catch {} ; setScreen('gamestart') }}
+          onNewGame={async () => {
+            resetProgress(); localStorage.removeItem('heroName'); localStorage.removeItem('routeNode'); localStorage.removeItem('clearedNodes'); setCurrentNode('start'); setLastNode(''); setPendingNode(null); setBattleNode(null)
+            try { await bgm.resume() } catch {}; setScreen('gamestart')
           }}
         />
       )}
 
-      {screen === 'puzzle' && (
-        <PuzzleSelect
-          level={level}
-          puzzles={PUZZLES[level]}
-          progress={progress[level]}
-          onBack={() => setScreen('level')}
-          onSelect={(i) => startGame(level, i)}
+      {screen === 'gamestart' && (
+        <GameStart
+          heroName={heroName}
+          onSetName={(n) => { setHeroName(n); localStorage.setItem('heroName', n) }}
+          onDone={() => setScreen('route')}
         />
       )}
 
-      {screen === 'game' && (
+      {screen === 'name' && (
+        <NameEntry
+          initial={heroName}
+          onConfirm={(n) => { setHeroName(n); localStorage.setItem('heroName', n); setScreen('route') }}
+          onCancel={() => setScreen('gamestart')}
+        />
+      )}
+
+      {screen === 'route' && (
+        <RouteMap
+          graph={ROUTE}
+          current={currentNode}
+          last={lastNode}
+          onArrive={async (id) => {
+            // Only allow neighbor clicks (RouteMap already enforces), set pending and start battle
+            setPendingNode(id)
+            if (soundOn) {
+              try { await audio.playFootstep() } catch {}
+            }
+            if (CHARACTERS[id]) setScreen('conversation')
+          }}
+        />
+      )}
+
+      {screen === 'conversation' && pendingNode && (
+        <Conversation
+          heroName={heroName || '主人公'}
+          enemyName={(CHARACTERS[pendingNode]?.name) || '敵'}
+          difficultyId={pendingNode}
+          onDone={() => beginPicrossForNode(pendingNode)}
+          onSkip={() => beginPicrossForNode(pendingNode)}
+        />
+      )}
+
+      {screen === 'picross' && (
         <div className="game-screen">
           <div className="game-topbar">
             <div className="top-left">
@@ -201,16 +265,12 @@ export default function App() {
             </div>
             <div className="top-right hud-actions">
               <button className="ghost" onClick={() => setGrid(emptyGrid(size))}>Reset</button>
+              <button className="ghost" onClick={() => setScreen('route')}>Quit</button>
               <button className="primary" onClick={handleSubmit}>Submit</button>
             </div>
           </div>
           <div className="game-center">
-            <GameBoard
-              size={size}
-              grid={grid}
-              setGrid={setGrid}
-              clues={clues}
-            />
+            <GameBoard size={size} grid={grid} setGrid={setGrid} clues={clues} />
           </div>
         </div>
       )}
@@ -219,43 +279,17 @@ export default function App() {
         <ResultModal
           status={result?.status}
           onClose={handleCloseResult}
-          onRetry={() => setScreen('puzzle')}
+          onRetry={() => setScreen('route')}
           onExit={() => setScreen('gameover')}
         />
       )}
 
-      {screen === 'levelClear' && (
-        <LevelClear
-          level={level}
-          onBackToLevels={() => setScreen('level')}
-          onNextLevel={() => {
-            const idx = LEVELS.indexOf(level)
-            const nextLevel = LEVELS[idx + 1]
-            if (nextLevel) {
-              setLevel(nextLevel)
-              setScreen('puzzle')
-            } else {
-              setScreen('level')
-            }
-          }}
+      {screen === 'gameover' && (
+        <GameOver
+          onContinue={() => { if (battleNode) beginPicrossForNode(battleNode) }}
+          onQuit={() => setScreen('opening')}
         />
       )}
-
-      {screen === 'gameover' && (
-        <GameOver onRestart={() => setScreen('opening')} />
-      )}
-
-      <StrudelBackground
-        active={Boolean(soundOn)}
-        code={`setcps(1)
-n("<0 1 2 3 4>*8").scale('G4 minor')
-.s("gm_lead_6_voice")
-.clip(sine.range(.2,.8).slow(8))
-.jux(rev)
-.room(2)
-.sometimes(add(note("12")))
-.lpf(perlin.range(200,20000).slow(4))`}
-      />
     </div>
   )
 }

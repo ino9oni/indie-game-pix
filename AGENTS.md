@@ -1,4 +1,4 @@
-# Repository Guidelines
+co# Repository Guidelines
 
 This guide keeps contributions consistent and predictable. Prefer small, focused pull requests and update this document when commands or structure change.
 
@@ -34,3 +34,40 @@ This guide keeps contributions consistent and predictable. Prefer small, focused
 - Do not commit secrets; sync example defaults in `.env.example`.
 - Validate inputs; treat all external data as untrusted; run `make security-scan` if provided.
 
+# Build Process
+## MAIN
+### DO TASKLIST
+- 以下を行う
+    - TASKLIST.mdを読み込む
+    - TASKLIST毎に以下を行う
+        - TASKの変更を行う前に、仕様を整理する（"タスク仕様"とする）
+        - GAMEDESIGN.md を GAMEDESIGN-new.md にコピーする
+        - GAMEDESIGN-new.md に、"タスク仕様"をマージする
+        - GAMEDESIGN-new.md が "タスク仕様"を満たしているかを確認する
+            - 満たせている場合は、GAMEDESIGN-new.md に基づいてアプリ実行に必要なソースファイル・アプリ設定、アセットを再生する
+            - ソース・設定・変更点、変更内容についてDIFFを取る
+            - 上記DIFFの内容をユーザに確認する
+        - ユーザからの承認が得られたら、コミット・Pushを行う
+            - 承認が得られなかった場合は、修正案を受け取り、GAMEDESIGN-new.mdに再度取り込み同様のプロセスを行う。
+        - TASK完了後タスクにTASKLIST.md内の当該タスクのラベルに、[done]ラベルを付与する
+    - GAMEDESIGN-new.md と GAMEDESIGN.mdの差分を、GAMEDESIGN.mdに取り込む
+#### DO QA
+- 未定義
+#### DO CI/CD
+- 未定義
+#### DO CrossPlatform
+- WebアプリをAndoroidアプリに変換する
+- mobile/androidフォルダ配下に生成する
+#### VERSIONING
+- メジャーバージョン
+    - 機能の追加や廃止、モードの追加や廃止の場合、それをメジャーバージョンとする
+    - バージョニング
+        - x.y の xの部分をインクリメントする
+    - タギング
+        - タグも同様に付与
+- マイナーバージョン
+    - 表示文言、UIスタイル、文言修正、バグの修正の場合、それをマイナーバージョンとする
+    - バージョニング
+        - x.y の yの部分をインクリメントする
+    - タグ付け
+        - タグも同様に付与

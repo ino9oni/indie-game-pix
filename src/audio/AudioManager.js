@@ -10,6 +10,7 @@ class AudioManager {
     this.playRate = 1
     this._nextStep = 0
     this._seqIndex = 0
+    this._sampleBuffers = new Map() // name -> AudioBuffer
   }
 
   init() {
@@ -47,15 +48,85 @@ class AudioManager {
     this.enabled = false
   }
 
+  // --- Sample loading ---
+  async _loadSample(name, url) {
+    if (!this.ctx) this.init()
+    if (this._sampleBuffers.has(name)) return this._sampleBuffers.get(name)
+    const res = await fetch(url)
+    const buf = await res.arrayBuffer()
+    const audioBuf = await this.ctx.decodeAudioData(buf)
+    this._sampleBuffers.set(name, audioBuf)
+    return audioBuf
+  }
+
+  _playBuffer(buffer, gain = 0.8) {
+    const { ctx, sfxGain } = this
+    const t0 = ctx.currentTime + 0.005
+    const src = ctx.createBufferSource()
+    src.buffer = buffer
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(gain, t0)
+    src.connect(g)
+    g.connect(sfxGain)
+    src.start(t0)
+    return new Promise((resolve) => {
+      src.onended = () => { try { src.disconnect(); g.disconnect() } catch {} ; resolve() }
+    })
+  }
+
   // --- SFX ---
   playFill() {
     if (!this.enabled || !this.ctx) return
-    this._beep(660, 0.06, 0.015)
+    // Brush-like short noise burst
+    this._noiseBurst(0.06, 2000, 500)
   }
 
   playMark() {
     if (!this.enabled || !this.ctx) return
     this._beep(360, 0.06, 0.005)
+  }
+
+  playMove() {
+    if (!this.enabled || !this.ctx) return
+    // Simple whoosh-like sweep
+    const { ctx, sfxGain } = this
+    const t0 = ctx.currentTime + 0.01
+    const osc = ctx.createOscillator()
+    const g = ctx.createGain()
+    const lpf = ctx.createBiquadFilter()
+    lpf.type = 'lowpass'
+    lpf.frequency.setValueAtTime(8000, t0)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(300, t0)
+    osc.frequency.exponentialRampToValueAtTime(120, t0 + 0.5)
+    g.gain.setValueAtTime(0.0001, t0)
+    g.gain.linearRampToValueAtTime(0.6, t0 + 0.05)
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5)
+    osc.connect(lpf)
+    lpf.connect(g)
+    g.connect(sfxGain)
+    osc.start(t0)
+    osc.stop(t0 + 0.6)
+    osc.onended = () => { osc.disconnect(); lpf.disconnect(); g.disconnect() }
+  }
+
+  async playFootstep() {
+    if (!this.enabled) return
+    this.init()
+    try {
+      const { findSfxUrl } = await import('./sfxLibrary.js')
+      const url = findSfxUrl(/foot|step|walk|shoe|sand|wood/i)
+      if (url) {
+        const buf = await this._loadSample('footstep', url)
+        await this._playBuffer(buf, 0.9)
+        return
+      }
+    } catch (_) { /* ignore and fallback */ }
+    // Fallback to synthetic short noise-tap pattern
+    this._noiseBurst(0.03, 1800, 800)
+    this._noiseBurst(0.03, 1600, 700)
+    // Resolve after a short delay approximating the SFX length
+    await new Promise((r) => setTimeout(r, 160))
   }
 
   _beep(freq, dur = 0.08, attack = 0.01) {
@@ -76,6 +147,40 @@ class AudioManager {
       osc.disconnect()
       gain.disconnect()
     }
+  }
+
+  _noiseBurst(dur = 0.08, lpfHz = 1800, hpfHz = 400) {
+    const { ctx, sfxGain } = this
+    const t0 = ctx.currentTime
+    const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * dur))
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.6
+
+    const src = ctx.createBufferSource()
+    src.buffer = buffer
+
+    const lpf = ctx.createBiquadFilter()
+    lpf.type = 'lowpass'
+    lpf.frequency.value = lpfHz
+
+    const hpf = ctx.createBiquadFilter()
+    hpf.type = 'highpass'
+    hpf.frequency.value = hpfHz
+
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, t0)
+    g.gain.linearRampToValueAtTime(0.9, t0 + 0.01)
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
+
+    src.connect(hpf)
+    hpf.connect(lpf)
+    lpf.connect(g)
+    g.connect(sfxGain)
+
+    src.start(t0)
+    src.stop(t0 + dur + 0.02)
+    src.onended = () => { src.disconnect(); hpf.disconnect(); lpf.disconnect(); g.disconnect() }
   }
 
   // --- Music ---

@@ -1,18 +1,18 @@
 import React from 'react'
 
-export default function Opening({ onStart }) {
+export default function Opening({ onStart, onNewGame }) {
   return (
     <main className="screen opening">
       <div className="opening-hero">
-        <img className="opening-image" src="/title.png" alt="Game Title" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-        <h1 className="headline opening-title">Picross Neo</h1>
-        <p className="sub">Stylish, colorful nonogram puzzle</p>
+        <h1 className="headline opening-title cute">elfpix</h1>
+        <p className="sub">エルフ達と心を通わせるピクロスの旅</p>
       </div>
+
       <div className="actions">
-        <button className="primary" onClick={onStart}>Start Game</button>
+        <button className="ghost" title="セーブデータをロードします" onClick={onStart}>Continue</button>
+        <button className="primary" title="進行状況を消去して新しく開始" onClick={onNewGame}>New Game</button>
       </div>
-      <p className="sub note">Tip: Enable sound from the top-right to enjoy BGM/SFX.</p>
+      <p className="sub note">Tip: サウンドは右上のトグルで切り替えできます。</p>
     </main>
   )
 }
-
