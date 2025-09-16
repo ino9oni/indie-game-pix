@@ -2,7 +2,7 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: 1.1.5
+Current release: 1.5.0
 
 ## Quickstart
 

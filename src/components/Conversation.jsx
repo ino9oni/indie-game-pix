@@ -93,7 +93,7 @@ export default function Conversation({
     [difficultyId, heroName, enemyName],
   );
   const [idx, setIdx] = useState(0);
-  const [fadeReady, setFadeReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [portraitSize, setPortraitSize] = useState({ w: 380, h: 487 });
 
   useEffect(() => {
@@ -105,8 +105,8 @@ export default function Conversation({
   }, [idx]);
 
   useEffect(() => {
-    const t = setTimeout(() => setFadeReady(true), 20);
-    return () => clearTimeout(t);
+    const frame = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   // Responsive portrait sizing: shrink on narrow screens
@@ -121,8 +121,8 @@ export default function Conversation({
       setPortraitSize({ w, h });
     }
     recalc();
-    window.addEventListener('resize', recalc);
-    return () => window.removeEventListener('resize', recalc);
+    window.addEventListener("resize", recalc);
+    return () => window.removeEventListener("resize", recalc);
   }, []);
 
   function advance() {
@@ -141,22 +141,21 @@ export default function Conversation({
   const enemySet = ENEMY_IMAGES[difficultyId] || {};
   const enemyImg = enemySet[enemyEmotion] || enemySet.normal;
 
-  // Display-size spec per GAMEDESIGN for enemy portraits
-  const ENEMY_SIZE = {
-    "elf-practice": { w: 380, h: 487 },
-    "elf-easy": { w: 380, h: 487 },
-    "elf-middle": { w: 380, h: 487 },
-    "elf-hard": { w: 380, h: 487 },
-    "elf-ultra": { w: 380, h: 487 },
-  };
-  const enemySz = ENEMY_SIZE[difficultyId] || null;
-
-  // Use consistent display frame for hero portraits as well
-  const HERO_SIZE = { w: 380, h: 487 };
+  const heroActive = current.who === "hero";
+  const enemyActive = current.who === "enemy";
+  const heroOpacity = mounted ? (heroActive ? 1 : 0.45) : 0;
+  const enemyOpacity = mounted ? (enemyActive ? 1 : 0.45) : 0;
 
   return (
     <main className="screen dialog" onClick={advance}>
-      <div style={{ width: "100%", display: 'flex', flexDirection: 'column', minHeight: '70vh' }}>
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "70vh",
+        }}
+      >
         {/* Stage: portraits side by side, natural sizes, no overlap with dialog */}
         <div
           style={{
@@ -179,9 +178,14 @@ export default function Conversation({
                 height: portraitSize.h,
                 display: "grid",
                 placeItems: "center",
+                boxShadow: heroActive
+                  ? "0 0 32px #60a5fa66"
+                  : "0 6px 20px #03081566",
+                transition: "box-shadow 320ms ease",
               }}
             >
               <img
+                key={`${heroEmotion}-${idx}`}
                 src={HERO_IMAGES[heroEmotion] || HERO_IMAGES.normal}
                 alt={heroName || "主人公"}
                 style={{
@@ -189,12 +193,28 @@ export default function Conversation({
                   height: "100%",
                   objectFit: "contain",
                   display: "block",
-                  opacity: fadeReady ? 1 : 0,
-                  transition: "opacity 400ms ease",
+                  opacity: heroOpacity,
+                  transform: heroActive
+                    ? "translateY(-2px) scale(1.02)"
+                    : "translateY(6px) scale(0.96)",
+                  filter: heroActive
+                    ? "drop-shadow(0 0 14px #7dd3fc88) saturate(1.05)"
+                    : "grayscale(18%) brightness(0.82)",
+                  transition:
+                    "opacity 260ms ease, transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 360ms ease",
                 }}
               />
             </div>
-            <div style={{ textAlign: "center", fontWeight: 800, marginTop: 4 }}>
+            <div
+              style={{
+                textAlign: "center",
+                fontWeight: heroActive ? 800 : 700,
+                marginTop: 4,
+                opacity: mounted ? (heroActive ? 1 : 0.7) : 0,
+                transition: "opacity 240ms ease, transform 240ms ease",
+                transform: heroActive ? "translateY(0)" : "translateY(2px)",
+              }}
+            >
               {heroName}
             </div>
           </div>
@@ -211,10 +231,15 @@ export default function Conversation({
                 height: portraitSize.h,
                 display: "grid",
                 placeItems: "center",
+                boxShadow: enemyActive
+                  ? "0 0 32px #f9731699"
+                  : "0 6px 20px #03081566",
+                transition: "box-shadow 320ms ease",
               }}
             >
               {enemyImg ? (
                 <img
+                  key={`${enemyEmotion}-${idx}`}
                   src={enemyImg}
                   alt={enemyName}
                   style={{
@@ -222,8 +247,15 @@ export default function Conversation({
                     height: "100%",
                     objectFit: "contain",
                     display: "block",
-                    opacity: fadeReady ? 1 : 0,
-                    transition: "opacity 400ms ease",
+                    opacity: enemyOpacity,
+                    transform: enemyActive
+                      ? "translateY(-2px) scale(1.02)"
+                      : "translateY(6px) scale(0.96)",
+                    filter: enemyActive
+                      ? "drop-shadow(0 0 14px #fb923c99) saturate(1.05)"
+                      : "grayscale(18%) brightness(0.82)",
+                    transition:
+                      "opacity 260ms ease, transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 360ms ease",
                   }}
                 />
               ) : (
@@ -239,14 +271,23 @@ export default function Conversation({
                 </div>
               )}
             </div>
-            <div style={{ textAlign: "center", fontWeight: 800, marginTop: 4 }}>
+            <div
+              style={{
+                textAlign: "center",
+                fontWeight: enemyActive ? 800 : 700,
+                marginTop: 4,
+                opacity: mounted ? (enemyActive ? 1 : 0.7) : 0,
+                transition: "opacity 240ms ease, transform 240ms ease",
+                transform: enemyActive ? "translateY(0)" : "translateY(2px)",
+              }}
+            >
               {enemyName}
             </div>
           </div>
         </div>
 
         {/* Dialog window placed to lower third */}
-        <div className="dialog-window" style={{ margin: "24px auto 0", marginTop: 'auto' }}>
+        <div className="dialog-window" style={{ margin: "24px auto 0", marginTop: "auto" }}>
           <div style={{ fontWeight: 700, opacity: 0.9, marginBottom: 6 }}>
             {script[idx]?.speaker}
           </div>
@@ -273,6 +314,7 @@ export default function Conversation({
               onClick={(e) => {
                 e.stopPropagation();
                 setIdx(script.length - 1);
+                onSkip && onSkip();
               }}
             >
               Skip
