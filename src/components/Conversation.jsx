@@ -322,6 +322,7 @@ export default function Conversation({
                 height: portraitSize.h,
                 display: "grid",
                 placeItems: "center",
+                overflow: "hidden",
                 boxShadow: heroActive
                   ? "0 0 32px #60a5fa66"
                   : "0 6px 20px #03081566",
@@ -335,7 +336,8 @@ export default function Conversation({
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "contain",
+                  objectFit: "cover",
+                  objectPosition: "center",
                   display: "block",
                   opacity: heroOpacity,
                   transform: heroActive
@@ -375,6 +377,7 @@ export default function Conversation({
                 height: portraitSize.h,
                 display: "grid",
                 placeItems: "center",
+                overflow: enemyImg ? "hidden" : "visible",
                 boxShadow: enemyActive
                   ? "0 0 32px #f9731699"
                   : "0 6px 20px #03081566",
@@ -389,7 +392,8 @@ export default function Conversation({
                   style={{
                     width: "100%",
                     height: "100%",
-                    objectFit: "contain",
+                    objectFit: "cover",
+                    objectPosition: "center",
                     display: "block",
                     opacity: enemyOpacity,
                     transform: enemyActive
