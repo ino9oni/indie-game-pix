@@ -112,9 +112,13 @@
 - [done] ~~会話モードで、キャラクターを表示する際に、効果をつける~~
   - 画像の表示時にフェードするように表示する
   - 画像の枠に、会話ウィンドウと同じスタイルの太枠を付与する
-- 会話モード
+- [done] ~~会話モード~~
   - 各レベル
-    - 
+    - practice の会話をGAMEDESIGNに定義どおり実装
+    - easy の会話をGAMEDESIGNに定義どおり実装
+    - normal の会話をGAMEDESIGNに定義どおり実装
+    - hard の会話をGAMEDESIGNに定義どおり実装
+    - ultra の会話をGAMEDESIGNに定義どおり実装
 # Issues and Bugs
 
 ## Priority: high

@@ -28,56 +28,200 @@ const HERO_IMAGES = {
 };
 
 function buildScript(difficultyId, heroName, enemyName) {
-  if (difficultyId === "elf-practice") {
-    return [
-      { speaker: heroName, who: "hero", text: "あなたは…", emotion: "normal" },
+  const hero = heroName?.trim() ? heroName : "主人公";
+  const enemy = enemyName?.trim() ? enemyName : "敵";
+
+  const scripts = {
+    "elf-practice": [
       {
-        speaker: enemyName,
+        speaker: enemy,
         who: "enemy",
-        text: "よくここまできたわね、あなたがelfpixに認められるにふさわしいかどうか…私が相手してあげましょう…",
+        text: "……この森に足を踏み入れる者よ。elfpixの知恵比べに挑まずして進むことは許されません。",
         emotion: "normal",
       },
       {
-        speaker: enemyName,
-        who: "enemy",
-        text: "あなた名前は？",
-        emotion: "normal",
-      },
-      {
-        speaker: heroName,
+        speaker: hero,
         who: "hero",
-        text: `${heroName}と言います。`,
+        text: "知恵比べ？私が解かなければ、森は通してくれないというの？",
         emotion: "normal",
       },
       {
-        speaker: enemyName,
+        speaker: enemy,
         who: "enemy",
-        text: `${heroName}と言うのね、いい名前ね。覚えておくわ。私は${enemyName}というの。`,
+        text: "その通り。この試練は、森に迷い込んだ者の心を映し出します。失敗すれば森に拒まれ、二度と光を見られぬでしょう。",
         emotion: "normal",
       },
       {
-        speaker: enemyName,
+        speaker: hero,
+        who: "hero",
+        text: "厳しいわね……だが構わないわ。私のこの目で真実を見抜いてみせる。",
+        emotion: "normal",
+      },
+      {
+        speaker: enemy,
         who: "enemy",
-        text: "では準備はいい？いくわよ。",
+        text: "ならば、この最初のelfpixで示しなさい。あなたの歩む道が、森に受け入れられるものであるかを――。",
         emotion: "angry",
       },
+    ],
+    "elf-easy": [
       {
-        speaker: heroName,
+        speaker: enemy,
+        who: "enemy",
+        text: "わぁ！　人間がここまで来たのね。面白そう！",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
         who: "hero",
-        text: "お願いします。",
+        text: "あなたがこの先の試練を与えるエルフなの？",
+        emotion: "normal",
+      },
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "そうだよ！　今回は“森の小鹿”を描き出すelfpix。うまくいけば、精霊たちもきっと喜ぶよ！",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
+        who: "hero",
+        text: "小鹿……？　なぜそんな題材を？",
+        emotion: "normal",
+      },
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "ふふっ、可愛いでしょ？　でもね、この図形を読み解けなければ、鹿たちが君を森の奥へは導かないからね。",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
+        who: "hero",
+        text: "遊び心に見えて、深い試練……面白い。",
         emotion: "angry",
       },
-    ];
-  }
-  // placeholders for other difficulties
+    ],
+    "elf-middle": [
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "ここまで来たのなら、軽い遊び心では済まされぬ。これからは“古代の紋章”そのものが題材となる。",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
+        who: "hero",
+        text: "紋章……この森に眠る秘密を示している？",
+        emotion: "normal",
+      },
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "答えはelfpixが浮かび上がらせる。正しく解ければ紋章は輝き、道は拓かれる。だが、誤れば虚無へと飲まれるのみ。",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
+        who: "hero",
+        text: "……やはりただのパズルではないわね。これは、試練であり同時に鍵でもある…。",
+        emotion: "normal",
+      },
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "理解が早い。それならば、知恵を示してみせよ。さもなくば、この森はあなたを拒む。",
+        emotion: "angry",
+      },
+    ],
+    "elf-hard": [
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "ようこそ……ここは精霊と花々が囁く場所。あなたは、森の声を聞き取れるかしら？",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
+        who: "hero",
+        text: "精霊の声……それをelfpixで形にするってこと？",
+        emotion: "normal",
+      },
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "そう。ひとつひとつの点は、花びらの露。線は精霊の歌。完成すれば、森の命そのものが浮かび上がるでしょう。",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
+        who: "hero",
+        text: "もし失敗すれば？",
+        emotion: "normal",
+      },
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "花は枯れ、精霊は背を向ける。あなたがここで消えるか、進むかは……花の裁きに委ねられるのです。",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
+        who: "hero",
+        text: "……美しいけど、容赦ないね。",
+        emotion: "normal",
+      },
+    ],
+    "elf-ultra": [
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "ここまで辿り着いたのか。ならば最後のelfpixを前に立ち尽くすがいい。",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
+        who: "hero",
+        text: "これが…最後の試練…？",
+        emotion: "normal",
+      },
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "そう。この絵は「森そのもの」。点と線で構築された生命の記憶。解ける者だけが、真実へ至る。",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
+        who: "hero",
+        text: "……私が解けば、森の奥にある“古代の泉”へ行けるのね。",
+        emotion: "normal",
+      },
+      {
+        speaker: enemy,
+        who: "enemy",
+        text: "ただ行くだけではない。正しく解き明かした時、森はあなたを“仲間”として迎えるだろう。",
+        emotion: "normal",
+      },
+      {
+        speaker: hero,
+        who: "hero",
+        text: "わかった。すべてを懸けて、この最後の謎に挑む。",
+        emotion: "normal",
+      },
+    ],
+  };
+
+  if (scripts[difficultyId]) return scripts[difficultyId];
+
   return [
     {
-      speaker: enemyName,
+      speaker: enemy,
       who: "enemy",
-      text: `さあ、始めましょう、${heroName}。`,
+      text: `さあ、始めましょう、${hero}。`,
       emotion: "normal",
     },
-    { speaker: heroName, who: "hero", text: "受けて立つ！", emotion: "normal" },
+    { speaker: hero, who: "hero", text: "受けて立つ！", emotion: "normal" },
   ];
 }
 
