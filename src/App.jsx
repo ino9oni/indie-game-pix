@@ -11,6 +11,7 @@ import GameBoard from "./components/GameBoard.jsx";
 import Timer from "./components/Timer.jsx";
 import ResultModal from "./components/ResultModal.jsx";
 import LevelClear from "./components/LevelClear.jsx";
+import Ending from "./components/Ending.jsx";
 import GameOver from "./components/GameOver.jsx";
 import { getRandomPuzzleForSize } from "./game/puzzles.js";
 import { ROUTE, CHARACTERS } from "./game/route.js";
@@ -22,7 +23,7 @@ import { listBgmUrls } from "./audio/library.js";
 const GAME_SECONDS = 20 * 60; // 20 minutes
 
 export default function App() {
-  const [screen, setScreen] = useState("prologue"); // 'prologue' | 'opening' | 'gamestart' | 'name' | 'route' | 'conversation' | 'picross' | 'result' | 'levelClear' | 'gameover'
+  const [screen, setScreen] = useState("prologue"); // 'prologue' | 'opening' | 'gamestart' | 'name' | 'route' | 'conversation' | 'picross' | 'result' | 'ending' | 'levelClear' | 'gameover'
   const [level, setLevel] = useState("easy"); // internal only
   const [puzzleIndex, setPuzzleIndex] = useState(0);
   const [grid, setGrid] = useState([]);
@@ -168,6 +169,27 @@ export default function App() {
     } catch {}
   }
 
+  function enterEnding(nodeId) {
+    setPendingNode(null);
+    setBattleNode(null);
+    setLastNode(currentNode);
+    setCurrentNode(nodeId);
+    localStorage.setItem("routeNode", nodeId);
+    setScreen("ending");
+  }
+
+  function handleEndingComplete() {
+    setPendingNode(null);
+    setBattleNode(null);
+    setResult(null);
+    setLastNode("");
+    setCurrentNode("start");
+    setScreen("opening");
+    setCleared(new Set());
+    localStorage.setItem("routeNode", "start");
+    localStorage.removeItem("clearedNodes");
+  }
+
   function handleSubmit() {
     // Debug mode: always clear on submit regardless of grid state
     if (debugMode) {
@@ -227,7 +249,13 @@ export default function App() {
       {screen !== "prologue" && (
         <Background
           seed={bgSeed}
-          fixedUrl={screen === "opening" ? "/assets/img/title.png" : null}
+          fixedUrl={
+            screen === "opening"
+              ? "/assets/img/title.png"
+              : screen === "ending"
+                ? "/assets/img/background/ending.png"
+                : null
+          }
         />
       )}
       <header className="app-header">
@@ -336,14 +364,17 @@ export default function App() {
           current={currentNode}
           last={lastNode}
           onArrive={async (id) => {
-            // Only allow neighbor clicks (RouteMap already enforces), set pending and start battle
-            setPendingNode(id);
             if (soundOn) {
               try {
                 await audio.playFootstep();
               } catch {}
             }
-            if (CHARACTERS[id]) setScreen("conversation");
+            if (CHARACTERS[id]) {
+              setPendingNode(id);
+              setScreen("conversation");
+            } else {
+              enterEnding(id);
+            }
           }}
         />
       )}
@@ -405,6 +436,13 @@ export default function App() {
             if (battleNode) beginPicrossForNode(battleNode);
           }}
           onQuit={() => setScreen("opening")}
+        />
+      )}
+
+      {screen === "ending" && (
+        <Ending
+          heroName={heroName || "主人公"}
+          onDone={handleEndingComplete}
         />
       )}
     </div>

@@ -627,6 +627,147 @@ button {
   color: var(--muted);
 }
 
+/* Ending */
+.ending {
+  position: relative;
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f8fafc;
+  text-align: center;
+  padding-top: 40px;
+}
+.ending-content {
+  display: grid;
+  gap: 32px;
+  width: min(90%, 720px);
+  margin: 0 auto;
+}
+.story-container {
+  overflow: hidden;
+  height: 200px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #0f172a88 0%, #0f172a44 100%);
+  border: 1px solid #1e293b;
+  padding: 24px 20px;
+  opacity: 0;
+}
+.story-container.play {
+  animation: endingStoryFade 600ms ease forwards;
+}
+.story-scroll {
+  display: grid;
+  gap: 18px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.5;
+  transform: translateY(60%);
+  opacity: 0;
+}
+.story-container.play .story-scroll {
+  animation: endingStoryScroll 10s ease-in-out forwards;
+}
+.story-scroll p {
+  margin: 0;
+}
+
+.ending-fin {
+  display: grid;
+  gap: 12px;
+  opacity: 0;
+  transform: translateY(20px) scale(0.94);
+  transition: opacity 600ms ease, transform 600ms ease;
+  font-family: "kawaii font", "M PLUS Rounded 1c", sans-serif;
+}
+.ending-fin.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.ending-fin-title {
+  font-size: clamp(48px, 8vw, 72px);
+  letter-spacing: 8px;
+  text-shadow: 0 0 28px #f9fafb88;
+}
+.ending-fin-sub {
+  font-size: clamp(20px, 4vw, 26px);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.ending-credits {
+  display: grid;
+  gap: 18px;
+  opacity: 0;
+}
+.ending-credits.show {
+  opacity: 1;
+}
+.ending-credit-line {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: 0;
+  transform: translateX(-120%);
+  animation: endingCreditSlide 4.2s ease-in-out forwards;
+}
+.ending-credit-role {
+  font-weight: 600;
+  color: #cbd5f5;
+}
+.ending-credit-name {
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+@keyframes endingStoryFade {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes endingStoryScroll {
+  0% {
+    transform: translateY(60%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.45;
+  }
+  45% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-55%);
+    opacity: 0;
+  }
+}
+
+@keyframes endingCreditSlide {
+  0% {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+}
+
 /* (Removed) Story vertical scroll styles */
 @keyframes fadeInScale {
   from { opacity: 0; transform: scale(0.92); }
