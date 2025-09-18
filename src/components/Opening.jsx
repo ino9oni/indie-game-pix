@@ -10,18 +10,18 @@ export default function Opening({ onStart, onNewGame }) {
 
       <div className="actions">
         <button
-          className="ghost"
-          title="セーブデータをロードします"
-          onClick={onStart}
-        >
-          Continue
-        </button>
-        <button
           className="primary"
           title="進行状況を消去して新しく開始"
           onClick={onNewGame}
         >
           New Game
+        </button>
+        <button
+          className="ghost"
+          title="セーブデータをロードします"
+          onClick={onStart}
+        >
+          Continue
         </button>
       </div>
       <p className="sub note">

@@ -589,16 +589,20 @@ button {
 
 /* Opening & GameOver */
 .opening {
-  display: grid;
-  gap: 16px;
-  place-items: center;
-  text-align: center;
-  min-height: 100%;
+  position: relative;
+  min-height: calc(100vh - 140px);
+  padding: clamp(32px, 6vw, 80px);
 }
 .opening-hero {
-  display: grid;
-  gap: 8px;
-  place-items: center;
+  position: absolute;
+  top: clamp(32px, 10vh, 140px);
+  left: clamp(16px, 4vw, 400px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  max-width: clamp(320px, 40vw, 640px);
+  text-align: left;
 }
 .opening-image {
   max-width: 540px;
@@ -610,7 +614,7 @@ button {
 }
 .opening-title {
   font-size: 40px;
-  margin: 10px 0 0;
+  margin: 0;
 }
 .opening-title.cute {
   font-weight: 900;
@@ -619,6 +623,50 @@ button {
     0 2px 0 #0008,
     0 0 14px #7c3aed66;
   filter: drop-shadow(0 0 12px #22d3ee55);
+}
+.opening .sub {
+  margin: 0;
+  text-align: left;
+}
+.opening .actions {
+  position: absolute;
+  bottom: clamp(64px, 12vh, 160px);
+  right: clamp(16px, 4vw, 320px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: clamp(220px, 24vw, 320px);
+}
+.opening .actions button {
+  width: 100%;
+}
+.opening .note {
+  position: absolute;
+  bottom: clamp(20px, 8vh, 100px);
+  right: clamp(16px, 4vw, 320px);
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .opening {
+    min-height: auto;
+    padding: 48px 20px 120px;
+  }
+  .opening-hero {
+    position: static;
+    max-width: 100%;
+  }
+  .opening .actions {
+    position: static;
+    width: 100%;
+    margin-top: 32px;
+    align-items: stretch;
+  }
+  .opening .note {
+    position: static;
+    align-self: flex-end;
+    margin-top: 12px;
+  }
 }
 .gameover {
   text-align: center;
