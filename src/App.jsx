@@ -327,6 +327,12 @@ export default function App() {
             setLastNode("");
             setPendingNode(null);
             setBattleNode(null);
+            if (!soundOn) {
+              try {
+                await audio.enable();
+              } catch {}
+              setSoundOn(true);
+            }
             try {
               await bgm.resume();
             } catch {}
