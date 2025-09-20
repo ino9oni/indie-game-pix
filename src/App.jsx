@@ -32,7 +32,13 @@ export default function App() {
   const [remaining, setRemaining] = useState(GAME_SECONDS);
   const [result, setResult] = useState(null); // { status: 'clear' | 'gameover' }
   const [bgSeed, setBgSeed] = useState(0);
-  const [soundOn, setSoundOn] = useState(false);
+  const [soundOn, setSoundOn] = useState(() => {
+    try {
+      return localStorage.getItem("soundOn") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [debugMode, setDebugMode] = useState(() => {
     try {
       return localStorage.getItem("debugMode") === "1";
@@ -80,6 +86,12 @@ export default function App() {
       return () => clearInterval(id);
     }
   }, [screen]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("soundOn", soundOn ? "1" : "0");
+    } catch {}
+  }, [soundOn]);
 
   // Global BGM control: when Sound is On, play continuously on all screens.
   const chosenTrackRef = useRef(null);
@@ -172,9 +184,10 @@ export default function App() {
   function enterEnding(nodeId) {
     setPendingNode(null);
     setBattleNode(null);
+    const destination = nodeId && ROUTE.nodes[nodeId] ? nodeId : currentNode;
     setLastNode(currentNode);
-    setCurrentNode(nodeId);
-    localStorage.setItem("routeNode", nodeId);
+    setCurrentNode(destination);
+    localStorage.setItem("routeNode", destination);
     setScreen("ending");
   }
 
@@ -224,16 +237,21 @@ export default function App() {
   function handleCloseResult() {
     // On clear, move to the selected pending node; otherwise just go back to route
     if (result?.status === "clear" && pendingNode) {
+      const clearedNode = pendingNode;
       // mark cleared
       setCleared((prev) => {
         const next = new Set(prev);
-        next.add(pendingNode);
+        next.add(clearedNode);
         localStorage.setItem("clearedNodes", JSON.stringify(Array.from(next)));
         return next;
       });
+      if (clearedNode === "elf-ultra") {
+        enterEnding(clearedNode);
+        return;
+      }
       setLastNode(currentNode);
-      setCurrentNode(pendingNode);
-      localStorage.setItem("routeNode", pendingNode);
+      setCurrentNode(clearedNode);
+      localStorage.setItem("routeNode", clearedNode);
       setPendingNode(null);
     }
     setScreen("route");
@@ -331,8 +349,8 @@ export default function App() {
               try {
                 await audio.enable();
               } catch {}
-              setSoundOn(true);
             }
+            setSoundOn(true);
             try {
               await bgm.resume();
             } catch {}
