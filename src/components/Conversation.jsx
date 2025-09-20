@@ -467,13 +467,14 @@ export default function Conversation({
           <div style={{ fontWeight: 700, marginBottom: 6 }}>
             <span
               className={`fade-text ${phase === "in" ? "in" : ""}`}
-              style={{ "--fade-target": 0.9 }}
+              style={{ "--fade-target": 0.92 }}
             >
               {script[idx]?.speaker}
             </span>
           </div>
           <div
             className={`fade-text dialog-body ${phase === "in" ? "in" : ""}`}
+            style={{ "--fade-target": 0.92 }}
           >
             {script[idx]?.text}
           </div>
