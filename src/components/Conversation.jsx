@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const ENEMY_IMAGES = {
   "elf-practice": {
@@ -239,6 +239,8 @@ export default function Conversation({
   const [idx, setIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [portraitSize, setPortraitSize] = useState({ w: 380, h: 487 });
+  const [phase, setPhase] = useState("in");
+  const timers = useRef([]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -246,7 +248,7 @@ export default function Conversation({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [idx]);
+  }, [idx, phase, script.length]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setMounted(true));
@@ -269,11 +271,37 @@ export default function Conversation({
     return () => window.removeEventListener("resize", recalc);
   }, []);
 
+  useEffect(() => () => {
+    timers.current.forEach((id) => clearTimeout(id));
+    timers.current = [];
+  }, []);
+
+  const queueTimeout = (handler, ms) => {
+    const id = setTimeout(handler, ms);
+    timers.current.push(id);
+    return id;
+  };
+
+  const clearTimers = () => {
+    timers.current.forEach((id) => clearTimeout(id));
+    timers.current = [];
+  };
+
   function advance() {
+    if (phase === "out") return;
     if (idx + 1 >= script.length) {
-      onDone && onDone();
+      clearTimers();
+      setPhase("out");
+      queueTimeout(() => {
+        onDone && onDone();
+      }, 200);
     } else {
-      setIdx((i) => i + 1);
+      clearTimers();
+      setPhase("out");
+      queueTimeout(() => {
+        setIdx((i) => Math.min(i + 1, script.length - 1));
+        setPhase("in");
+      }, 200);
     }
   }
 
@@ -436,10 +464,20 @@ export default function Conversation({
 
         {/* Dialog window placed to lower third */}
         <div className="dialog-window" style={{ margin: "24px auto 0", marginTop: "auto" }}>
-          <div style={{ fontWeight: 700, opacity: 0.9, marginBottom: 6 }}>
-            {script[idx]?.speaker}
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>
+            <span
+              className={`fade-text ${phase === "in" ? "in" : ""}`}
+              style={{ "--fade-target": 0.9 }}
+            >
+              {script[idx]?.speaker}
+            </span>
           </div>
-          <div style={{ fontSize: 18 }}>{script[idx]?.text}</div>
+          <div
+            className={`fade-text ${phase === "in" ? "in" : ""}`}
+            style={{ fontSize: 18 }}
+          >
+            {script[idx]?.text}
+          </div>
           <div
             style={{
               display: "flex",
@@ -461,8 +499,14 @@ export default function Conversation({
               className="ghost"
               onClick={(e) => {
                 e.stopPropagation();
-                setIdx(script.length - 1);
-                onSkip && onSkip();
+                if (phase === "out") return;
+                clearTimers();
+                setPhase("out");
+                queueTimeout(() => {
+                  setIdx(script.length - 1);
+                  setPhase("in");
+                  onSkip && onSkip();
+                }, 200);
               }}
             >
               Skip

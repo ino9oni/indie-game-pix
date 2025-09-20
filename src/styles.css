@@ -471,13 +471,20 @@ button {
   min-height: 100%;
 }
 .prologue-window {
-  width: min(800px, 90%);
+  width: min(760px, 92%);
+  min-height: 320px;
+  height: clamp(320px, 70vh, 420px);
   background: #1e3a8a;
   color: #fff;
   border: 3px solid #d1b464;
   border-radius: 12px;
-  padding: 16px 18px;
+  padding: 24px 28px;
   box-shadow: 0 12px 40px #0008;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
 }
 /* Generic dialog window */
 .dialog {
@@ -487,12 +494,25 @@ button {
 }
 .dialog-window {
   width: min(800px, 90%);
+  min-height: 180px;
   background: #1e3a8a;
   border: 3px solid #d1b464;
   color: #fff;
   border-radius: 12px;
   padding: 16px 18px;
   box-shadow: 0 12px 40px #0008;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.fade-text {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.fade-text.in {
+  opacity: var(--fade-target, 1);
 }
 
 /* Name entry */
@@ -518,7 +538,20 @@ button {
   text-align: center;
   margin-bottom: 8px;
 }
-.name-card .grid {
+.name-card .display .caret {
+  color: #f59e0b;
+}
+.name-card .name-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(128px, 0.8fr);
+  gap: 12px;
+}
+.kana-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.kana-column {
   display: grid;
   gap: 6px;
 }
@@ -528,8 +561,32 @@ button {
   gap: 6px;
   justify-content: center;
 }
+.name-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+.name-actions .kana.confirm {
+  margin-top: auto;
+}
 .kana {
   padding: 6px 10px;
+}
+
+@media (max-width: 640px) {
+  .name-card .name-body {
+    grid-template-columns: 1fr;
+  }
+  .name-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .name-actions .kana.confirm {
+    margin-top: 0;
+    flex-basis: 100%;
+  }
 }
 
 /* Route */

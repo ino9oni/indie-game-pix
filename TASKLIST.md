@@ -1,12 +1,3 @@
-# Rules
-
-- handle tasks of priority:high firstly
-- handel dev task todo firstly
-- if task is started, create issue ticket on GitHub
-- if tasks are done, modify document(GAMEDESIGN.md and TASKLIST.md)
-  - confirm changed item and differences
-- if task is done, change issue ticket done status on GitHub and add done label in this document
-
 # Dev Task TODO
 
 ## Priority: high
@@ -179,25 +170,39 @@
   - 表示
     - マップの位置を画面の中央に配置
     - マップを画面全体に拡大
-- 会話ウィンドウの変更
+- [done] 会話ウィンドウの変更
   - 表示
     - [done] ~~会話ウィンドウの表示位置を画面の中央より下段に配置~~
     - [done] ~~敵キャラクターの表示位置を画面右へ配置~~
     - [done] ~~主人公の表示位置を画面左へ配置~~
-- ピクロスの表示の変更
+- [done] ピクロスの表示の変更
   - [done] ~~ピクロスの縦横が小さいので、画面の高さ全体に拡大~~
   - [done] ~~文字やヒントの数字についても、ピクロスの縦横にあわせて拡大~~
-- 音の変更
+- [done] 音の変更
   - ピクロスクリアーの音を変更
     - [done] ~~クリアーの音を勝利音風の音に変更~~
     - [done] ~~メロディアスな音に変更する~~
     - [done] ~~音源をトランペットのような音源に変更する~~
-- ピクロスクリアー時の表示効果の変更
+- [done] ピクロスクリアー時の表示効果の変更
   - クリア時に、クリアの表示に効果を付与する
     - 効果
       - [done] ~~フェードイン~~
-- 全般のフォント
+- [done] 全般のフォント
   - [done] ~~丸みを帯びた文字でかわいい文字にする~~
+- [done] ~~名前入力モードの変更~~
+  - 決定ボタンを右端にレイアウトする
+  - 名前入力以外の操作ボタンも右側にレイアウトする
+- [done] ~~プロローグモードの変更~~
+  - 表示
+    - 会話ウィンドウが文字の表示にあわせてサイズを変えない
+- [done] ~~ピクロスモード時の効果音の変更~~
+  - ピクロス画面でチェックを入れた時に、効果音を入れる
+    - 効果音は意思を削りだしたような効果音にする
+- [done] ~~全モード全画面の変更~~
+  - ウィンドウの表示の仕方
+    - ウィンドウの形はそのままサイズをそのままにし表示しておく
+    - 文字を表示する際に、ウィンドウの中に文字をフェードインする
+    - 次の文字を表示する際に、ウィンドウの中から文字をフェードアウトして、次の文字をフェードインする
 
 ## Priority: normal
 - [done] ~~オープニングの変更~~

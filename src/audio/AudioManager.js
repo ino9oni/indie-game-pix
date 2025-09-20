@@ -11,6 +11,7 @@ class AudioManager {
     this._nextStep = 0;
     this._seqIndex = 0;
     this._sampleBuffers = new Map(); // name -> AudioBuffer
+    this._sfxUrlCache = new Map();
   }
 
   init() {
@@ -80,16 +81,54 @@ class AudioManager {
     });
   }
 
+  async _getSfxUrl(key, pattern) {
+    if (this._sfxUrlCache.has(key)) return this._sfxUrlCache.get(key);
+    const { findSfxUrl } = await import("./sfxLibrary.js");
+    const url = findSfxUrl(pattern) || null;
+    this._sfxUrlCache.set(key, url);
+    return url;
+  }
+
+  async _playChiselTap(playbackRate = 1, gain = 0.9) {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const url = await this._getSfxUrl("chisel_tap", /chisel_tap/i);
+    if (!url) throw new Error("missing chisel tap sfx");
+    const buffer = await this._loadSample("chisel_tap", url);
+    const { ctx, sfxGain } = this;
+    const when = ctx.currentTime + 0.004;
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.setValueAtTime(playbackRate, when);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(gain, when);
+    src.connect(g);
+    g.connect(sfxGain);
+    src.start(when);
+    src.onended = () => {
+      try {
+        src.disconnect();
+        g.disconnect();
+      } catch {}
+    };
+  }
+
   // --- SFX ---
   playFill() {
-    if (!this.enabled || !this.ctx) return;
-    // Brush-like short noise burst
-    this._noiseBurst(0.06, 2000, 500);
+    if (!this.enabled) return;
+    this._playChiselTap(1, 0.9).catch(() => {
+      if (!this.ctx) this.init();
+      if (this.ctx) this._noiseBurst(0.06, 2000, 500);
+    });
   }
 
   playMark() {
-    if (!this.enabled || !this.ctx) return;
-    this._beep(360, 0.06, 0.005);
+    if (!this.enabled) return;
+    this._playChiselTap(1.18, 0.72).catch(() => {
+      if (!this.ctx) this.init();
+      if (this.ctx) this._beep(360, 0.06, 0.005);
+    });
   }
 
   playMove() {
