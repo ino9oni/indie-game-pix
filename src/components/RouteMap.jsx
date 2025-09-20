@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 
 // Route map with neighbor-only movement, hero sprite, and simple path animation
-export default function RouteMap({ graph, current, last, onArrive }) {
+export default function RouteMap({ graph, current, last, debugMode, onArrive }) {
   const nodes = graph.nodes;
   const edges = graph.edges;
   const heroImg = "/assets/img/character/hero/00083-826608146.png";
@@ -19,6 +19,7 @@ export default function RouteMap({ graph, current, last, onArrive }) {
 
   const canClick = (id) => {
     if (id === current) return false;
+    if (debugMode) return true;
     if (last && id === last) return false;
     return Boolean(adj[current]?.has(id));
   };

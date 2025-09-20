@@ -12,6 +12,7 @@ class AudioManager {
     this._seqIndex = 0;
     this._sampleBuffers = new Map(); // name -> AudioBuffer
     this._sfxUrlCache = new Map();
+    this._scoreSource = null;
   }
 
   init() {
@@ -45,6 +46,7 @@ class AudioManager {
   async disable() {
     if (!this.ctx) return;
     this.stopPlayMusic();
+    this.stopScoreCount();
     await this.ctx.suspend();
     this.enabled = false;
   }
@@ -157,6 +159,60 @@ class AudioManager {
       lpf.disconnect();
       g.disconnect();
     };
+  }
+
+  async startScoreCount() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    this.stopScoreCount();
+    try {
+      const url = await this._getSfxUrl("coin_rush", /coin|gold|score|rush/i);
+      if (!url) return;
+      const buffer = await this._loadSample("coin_rush", url);
+      const src = this.ctx.createBufferSource();
+      src.buffer = buffer;
+      src.loop = true;
+      const gain = this.ctx.createGain();
+      const startAt = this.ctx.currentTime + 0.01;
+      gain.gain.setValueAtTime(0.75, startAt);
+      src.connect(gain);
+      gain.connect(this.sfxGain);
+      src.start(startAt);
+      this._scoreSource = { src, gain };
+      src.onended = () => {
+        if (this._scoreSource && this._scoreSource.src === src) {
+          this._scoreSource = null;
+        }
+        try {
+          src.disconnect();
+          gain.disconnect();
+        } catch {}
+      };
+    } catch (_) {
+      // Ignore and allow silent fallback
+    }
+  }
+
+  stopScoreCount() {
+    if (!this._scoreSource || !this.ctx) return;
+    const { src, gain } = this._scoreSource;
+    this._scoreSource = null;
+    try {
+      const now = this.ctx.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      if (typeof src.stop === "function") {
+        src.stop(now + 0.2);
+      }
+    } catch {}
+    setTimeout(() => {
+      try {
+        src.disconnect();
+        gain.disconnect();
+      } catch {}
+    }, 260);
   }
 
   async playFootstep() {

@@ -473,8 +473,7 @@ export default function Conversation({
             </span>
           </div>
           <div
-            className={`fade-text ${phase === "in" ? "in" : ""}`}
-            style={{ fontSize: 18 }}
+            className={`fade-text dialog-body ${phase === "in" ? "in" : ""}`}
           >
             {script[idx]?.text}
           </div>

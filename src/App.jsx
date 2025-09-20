@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Opening from "./components/Opening.jsx";
 import Prologue from "./components/Prologue.jsx";
 import NameEntry from "./components/NameEntry.jsx";
@@ -13,6 +13,7 @@ import ResultModal from "./components/ResultModal.jsx";
 import LevelClear from "./components/LevelClear.jsx";
 import Ending from "./components/Ending.jsx";
 import GameOver from "./components/GameOver.jsx";
+import ScoreDisplay from "./components/ScoreDisplay.jsx";
 import { getRandomPuzzleForSize } from "./game/puzzles.js";
 import { ROUTE, CHARACTERS } from "./game/route.js";
 import { computeClues, emptyGrid } from "./game/utils.js";
@@ -21,6 +22,29 @@ import bgm from "./audio/BgmPlayer.js";
 import { listBgmUrls } from "./audio/library.js";
 
 const GAME_SECONDS = 20 * 60; // 20 minutes
+const SCORE_BONUS = {
+  "elf-practice": 1000,
+  "elf-easy": 5000,
+  "elf-middle": 10000,
+  "elf-hard": 15000,
+  "elf-ultra": 20000,
+};
+const FONT_SIZE_CHOICES = [
+  { label: "100%", value: 1 },
+  { label: "150%", value: 1.5 },
+  { label: "200%", value: 2 },
+];
+
+function readStoredScore() {
+  try {
+    const raw = localStorage.getItem("score");
+    if (!raw) return 0;
+    const parsed = parseInt(raw, 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  } catch {
+    return 0;
+  }
+}
 
 export default function App() {
   const [screen, setScreen] = useState("prologue"); // 'prologue' | 'opening' | 'gamestart' | 'name' | 'route' | 'conversation' | 'picross' | 'result' | 'ending' | 'levelClear' | 'gameover'
@@ -39,6 +63,18 @@ export default function App() {
       return false;
     }
   });
+  const [fontScale, setFontScale] = useState(() => {
+    try {
+      const stored = parseFloat(localStorage.getItem("fontScale") || "1.5");
+      if (!Number.isFinite(stored)) return 1.5;
+      return FONT_SIZE_CHOICES.some((opt) => opt.value === stored) ? stored : 1.5;
+    } catch {
+      return 1.5;
+    }
+  });
+  const [score, setScore] = useState(() => readStoredScore());
+  const [displayScore, setDisplayScore] = useState(() => readStoredScore());
+  const [scoreAnimating, setScoreAnimating] = useState(false);
   const [debugMode, setDebugMode] = useState(() => {
     try {
       return localStorage.getItem("debugMode") === "1";
@@ -64,8 +100,12 @@ export default function App() {
       return new Set();
     }
   });
+  const scoreRef = useRef(score);
+  const displayScoreRef = useRef(displayScore);
+  const scoreAnimTimerRef = useRef(null);
   function resetProgress() {
-    /* no-op for now */
+    resetScore();
+    setCleared(new Set());
   }
 
   const size = solution.length;
@@ -92,6 +132,98 @@ export default function App() {
       localStorage.setItem("soundOn", soundOn ? "1" : "0");
     } catch {}
   }, [soundOn]);
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+
+  useEffect(() => {
+    displayScoreRef.current = displayScore;
+  }, [displayScore]);
+
+  useEffect(() => {
+    try {
+      if (score <= 0) {
+        localStorage.removeItem("score");
+      } else {
+        localStorage.setItem("score", String(score));
+      }
+    } catch {}
+  }, [score]);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.style.setProperty("--font-scale", String(fontScale));
+    }
+    try {
+      localStorage.setItem("fontScale", String(fontScale));
+    } catch {}
+  }, [fontScale]);
+
+  const stopScoreAnimation = useCallback(
+    (nextValue) => {
+      if (scoreAnimTimerRef.current) {
+        clearInterval(scoreAnimTimerRef.current);
+        scoreAnimTimerRef.current = null;
+      }
+      if (typeof audio.stopScoreCount === "function") {
+        audio.stopScoreCount();
+      }
+      setScoreAnimating(false);
+      if (typeof nextValue === "number") {
+        setDisplayScore(nextValue);
+      }
+    },
+    [],
+  );
+
+  const resetScore = useCallback(() => {
+    stopScoreAnimation(0);
+    scoreRef.current = 0;
+    setScore(0);
+    setDisplayScore(0);
+  }, [stopScoreAnimation]);
+
+  const awardScore = useCallback(
+    (nodeId, remainingSeconds) => {
+      const bonus = SCORE_BONUS[nodeId] ?? 0;
+      const seconds = Math.max(0, Math.floor(remainingSeconds || 0));
+      const earned = seconds * 100 + bonus;
+      if (earned <= 0) {
+        return 0;
+      }
+      stopScoreAnimation(displayScoreRef.current);
+      const target = scoreRef.current + earned;
+      scoreRef.current = target;
+      setScore(target);
+      setScoreAnimating(true);
+      if (typeof audio.startScoreCount === "function") {
+        audio.startScoreCount();
+      }
+      const from = displayScoreRef.current;
+      setDisplayScore(from);
+      const duration = Math.min(2400, Math.max(900, earned * 4));
+      const stepMs = 50;
+      const steps = Math.max(1, Math.round(duration / stepMs));
+      let tick = 0;
+      scoreAnimTimerRef.current = setInterval(() => {
+        tick += 1;
+        const progress = Math.min(1, tick / steps);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const value = Math.round(from + (target - from) * eased);
+        setDisplayScore(value);
+        if (tick >= steps) {
+          stopScoreAnimation(target);
+        }
+      }, stepMs);
+      return earned;
+    },
+    [stopScoreAnimation],
+  );
+
+  useEffect(() => {
+    return () => stopScoreAnimation(scoreRef.current);
+  }, [stopScoreAnimation]);
 
   // Global BGM control: when Sound is On, play continuously on all screens.
   const chosenTrackRef = useRef(null);
@@ -192,6 +324,7 @@ export default function App() {
   }
 
   function handleEndingComplete() {
+    resetScore();
     setPendingNode(null);
     setBattleNode(null);
     setResult(null);
@@ -204,8 +337,13 @@ export default function App() {
   }
 
   function handleSubmit() {
+    const awardIfPossible = () => {
+      if (!battleNode) return 0;
+      return awardScore(battleNode, remaining);
+    };
     // Debug mode: always clear on submit regardless of grid state
     if (debugMode) {
+      awardIfPossible();
       setResult({ status: "clear" });
       if (soundOn) audio.playClearFanfare();
       setScreen("result");
@@ -224,12 +362,14 @@ export default function App() {
       }
     }
     if (ok) {
+      awardIfPossible();
       setResult({ status: "clear" });
       if (soundOn) audio.playClearFanfare();
       setScreen("result");
     } else {
       // Failed -> go directly to Game Over per spec
       setResult({ status: "gameover" });
+      resetScore();
       setScreen("gameover");
     }
   }
@@ -262,6 +402,8 @@ export default function App() {
     setBgSeed((s) => s + 1);
   }, [screen]);
 
+  const showScore = !["prologue", "opening", "gamestart", "name"].includes(screen);
+
   return (
     <div className="app">
       {screen !== "prologue" && (
@@ -277,11 +419,31 @@ export default function App() {
         />
       )}
       <header className="app-header">
-        <div className="brand">
-          <span className="logo">▦</span>
-          <span className="title">elfpix</span>
+        <div className="brand-stack">
+          <div className="brand">
+            <span className="logo">▦</span>
+            <span className="title">elfpix</span>
+          </div>
+          {showScore && (
+            <ScoreDisplay value={displayScore} animating={scoreAnimating} />
+          )}
         </div>
         <nav className="top-actions">
+          <div className="font-scale-group" role="group" aria-label="フォントサイズ">
+            {FONT_SIZE_CHOICES.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={`ghost ${fontScale === opt.value ? "active" : ""}`}
+                aria-pressed={fontScale === opt.value}
+                onClick={() =>
+                  setFontScale((prev) => (prev === opt.value ? prev : opt.value))
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
           <button
             className={`ghost debug ${debugMode ? "on" : "off"}`}
             title="デバッグモード切り替え"
@@ -387,6 +549,7 @@ export default function App() {
           graph={ROUTE}
           current={currentNode}
           last={lastNode}
+          debugMode={debugMode}
           onArrive={async (id) => {
             if (soundOn) {
               try {
@@ -459,7 +622,10 @@ export default function App() {
           onContinue={() => {
             if (battleNode) beginPicrossForNode(battleNode);
           }}
-          onQuit={() => setScreen("opening")}
+          onQuit={() => {
+            resetScore();
+            setScreen("opening");
+          }}
         />
       )}
 
