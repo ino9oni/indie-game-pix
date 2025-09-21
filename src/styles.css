@@ -559,6 +559,9 @@ button {
   gap: 8px;
   overflow: hidden;
 }
+.prologue-window p {
+  text-align: center;
+}
 /* Generic dialog window */
 .dialog {
   display: grid;
