@@ -103,6 +103,7 @@ export default function App() {
   const scoreRef = useRef(score);
   const displayScoreRef = useRef(displayScore);
   const scoreAnimTimerRef = useRef(null);
+  const successTimerRef = useRef(null);
   function resetProgress() {
     resetScore();
     setCleared(new Set());
@@ -190,7 +191,7 @@ export default function App() {
       const seconds = Math.max(0, Math.floor(remainingSeconds || 0));
       const earned = seconds * 100 + bonus;
       if (earned <= 0) {
-        return 0;
+        return { earned: 0, durationMs: 0 };
       }
       stopScoreAnimation(displayScoreRef.current);
       const target = scoreRef.current + earned;
@@ -205,6 +206,7 @@ export default function App() {
       const duration = Math.min(2400, Math.max(900, earned * 4));
       const stepMs = 50;
       const steps = Math.max(1, Math.round(duration / stepMs));
+      const durationMs = steps * stepMs;
       let tick = 0;
       scoreAnimTimerRef.current = setInterval(() => {
         tick += 1;
@@ -216,7 +218,7 @@ export default function App() {
           stopScoreAnimation(target);
         }
       }, stepMs);
-      return earned;
+      return { earned, durationMs };
     },
     [stopScoreAnimation],
   );
@@ -224,6 +226,15 @@ export default function App() {
   useEffect(() => {
     return () => stopScoreAnimation(scoreRef.current);
   }, [stopScoreAnimation]);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+        successTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Global BGM control: when Sound is On, play continuously on all screens.
   const chosenTrackRef = useRef(null);
@@ -338,15 +349,27 @@ export default function App() {
 
   function handleSubmit() {
     const awardIfPossible = () => {
-      if (!battleNode) return 0;
+      if (!battleNode) return { earned: 0, durationMs: 0 };
       return awardScore(battleNode, remaining);
+    };
+    const scheduleSuccessTransition = (durationMs) => {
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+      }
+      const delay = Math.max(0, durationMs || 0) + 60;
+      successTimerRef.current = setTimeout(() => {
+        successTimerRef.current = null;
+        handleCloseResult();
+      }, delay);
+    };
+    const handleSuccess = () => {
+      const { durationMs } = awardIfPossible();
+      setResult({ status: "clear" });
+      scheduleSuccessTransition(durationMs);
     };
     // Debug mode: always clear on submit regardless of grid state
     if (debugMode) {
-      awardIfPossible();
-      setResult({ status: "clear" });
-      if (soundOn) audio.playClearFanfare();
-      setScreen("result");
+      handleSuccess();
       return;
     }
     const n = solution.length;
@@ -362,10 +385,7 @@ export default function App() {
       }
     }
     if (ok) {
-      awardIfPossible();
-      setResult({ status: "clear" });
-      if (soundOn) audio.playClearFanfare();
-      setScreen("result");
+      handleSuccess();
     } else {
       // Failed -> go directly to Game Over per spec
       setResult({ status: "gameover" });
