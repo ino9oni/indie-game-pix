@@ -545,8 +545,8 @@ button {
 }
 .prologue-window {
   width: min(760px, 92%);
-  min-height: 320px;
-  height: clamp(320px, 70vh, 420px);
+  min-height: 240px;
+  height: clamp(240px, 52vh, 315px);
   background: #1e3a8a;
   color: #fff;
   border: 3px solid #d1b464;
@@ -607,7 +607,7 @@ button {
   border: 3px solid #d1b464;
   border-radius: 12px;
   padding: 12px;
-  width: min(900px, 96%);
+  width: min(1040px, 96%);
 }
 .name-card .display {
   font-size: calc(24px * var(--font-scale));
@@ -634,10 +634,9 @@ button {
   gap: 6px;
 }
 .name-card .row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
-  justify-content: center;
 }
 .name-actions {
   display: flex;
@@ -649,7 +648,15 @@ button {
   margin-top: auto;
 }
 .kana {
-  padding: 6px 10px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+}
+.kana.blank {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 @media (max-width: 640px) {

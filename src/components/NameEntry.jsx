@@ -8,6 +8,10 @@ const BLOCKS = [
   ["％＆（）＠", "　　　　　", "　　　　　", "　　　　　", "　　　　　"],
 ];
 
+function isBlankChar(ch) {
+  return !ch || ch === " " || ch === "　";
+}
+
 export default function NameEntry({ initial = "", onCancel, onConfirm }) {
   const [name, setName] = useState(initial);
   const [caret, setCaret] = useState(initial.length);
@@ -18,7 +22,7 @@ export default function NameEntry({ initial = "", onCancel, onConfirm }) {
   const maxLen = 8;
 
   const insert = (ch) => {
-    if (!ch || ch === " ") return;
+    if (isBlankChar(ch)) return;
     setName((prev) => {
       if (prev.length >= maxLen) return prev;
       const left = prev.slice(0, caret);
@@ -79,15 +83,20 @@ export default function NameEntry({ initial = "", onCancel, onConfirm }) {
               <div className="kana-column" key={bi}>
                 {rows.map((row, ri) => (
                   <div className="row" key={ri}>
-                    {row.map((ch, ci) => (
-                      <button
-                        key={`${bi}-${ri}-${ci}`}
-                        className="kana"
-                        onClick={() => insert(ch.trim() === "" ? null : ch)}
-                      >
-                        {ch}
-                      </button>
-                    ))}
+                    {row.map((ch, ci) => {
+                      const blank = isBlankChar(ch);
+                      return (
+                        <button
+                          type="button"
+                          key={`${bi}-${ri}-${ci}`}
+                          className={`kana${blank ? " blank" : ""}`}
+                          disabled={blank}
+                          onClick={blank ? undefined : () => insert(ch)}
+                        >
+                          {ch}
+                        </button>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
@@ -97,6 +106,7 @@ export default function NameEntry({ initial = "", onCancel, onConfirm }) {
             {controls.map(({ key, label, action, extraClass }) => (
               <button
                 key={key}
+                type="button"
                 className={`kana ${extraClass || ""}`.trim()}
                 onClick={action}
               >
