@@ -9,7 +9,6 @@ import Background from "./components/Background.jsx";
 // Level/Puzzle selection removed in route-based flow
 import GameBoard from "./components/GameBoard.jsx";
 import Timer from "./components/Timer.jsx";
-import ResultModal from "./components/ResultModal.jsx";
 import LevelClear from "./components/LevelClear.jsx";
 import Ending from "./components/Ending.jsx";
 import GameOver from "./components/GameOver.jsx";
@@ -22,6 +21,7 @@ import bgm from "./audio/BgmPlayer.js";
 import { listBgmUrls } from "./audio/library.js";
 
 const GAME_SECONDS = 20 * 60; // 20 minutes
+const FANFARE_DURATION_MS = 2400;
 const SCORE_BONUS = {
   "elf-practice": 1000,
   "elf-easy": 5000,
@@ -47,15 +47,15 @@ function readStoredScore() {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState("prologue"); // 'prologue' | 'opening' | 'gamestart' | 'name' | 'route' | 'conversation' | 'picross' | 'result' | 'ending' | 'levelClear' | 'gameover'
+  const [screen, setScreen] = useState("prologue"); // 'prologue' | 'opening' | 'gamestart' | 'name' | 'route' | 'conversation' | 'picross' | 'ending' | 'levelClear' | 'gameover'
   const [level, setLevel] = useState("easy"); // internal only
   const [puzzleIndex, setPuzzleIndex] = useState(0);
   const [grid, setGrid] = useState([]);
   const [solution, setSolution] = useState([]);
   const [startedAt, setStartedAt] = useState(null);
   const [remaining, setRemaining] = useState(GAME_SECONDS);
-  const [result, setResult] = useState(null); // { status: 'clear' | 'gameover' }
   const [bgSeed, setBgSeed] = useState(0);
+  const [celebrationActive, setCelebrationActive] = useState(false);
   const [soundOn, setSoundOn] = useState(() => {
     try {
       return localStorage.getItem("soundOn") === "1";
@@ -100,11 +100,27 @@ export default function App() {
       return new Set();
     }
   });
+  const cancelCelebration = useCallback(() => {
+    if (celebrationDelayRef.current) {
+      clearTimeout(celebrationDelayRef.current);
+      celebrationDelayRef.current = null;
+    }
+    if (celebrationTimerRef.current) {
+      clearTimeout(celebrationTimerRef.current);
+      celebrationTimerRef.current = null;
+    }
+    setCelebrationActive(false);
+    if (typeof audio.stopClearFanfare === "function") {
+      audio.stopClearFanfare();
+    }
+  }, []);
   const scoreRef = useRef(score);
   const displayScoreRef = useRef(displayScore);
   const scoreAnimTimerRef = useRef(null);
-  const successTimerRef = useRef(null);
+  const celebrationDelayRef = useRef(null);
+  const celebrationTimerRef = useRef(null);
   function resetProgress() {
+    cancelCelebration();
     resetScore();
     setCleared(new Set());
   }
@@ -227,14 +243,7 @@ export default function App() {
     return () => stopScoreAnimation(scoreRef.current);
   }, [stopScoreAnimation]);
 
-  useEffect(() => {
-    return () => {
-      if (successTimerRef.current) {
-        clearTimeout(successTimerRef.current);
-        successTimerRef.current = null;
-      }
-    };
-  }, []);
+  useEffect(() => cancelCelebration, [cancelCelebration]);
 
   // Global BGM control: when Sound is On, play continuously on all screens.
   const chosenTrackRef = useRef(null);
@@ -312,7 +321,6 @@ export default function App() {
     setGrid(emptyGrid(n));
     setStartedAt(Date.now());
     setRemaining(GAME_SECONDS);
-    setResult(null);
     setBattleNode(nodeId);
     setScreen("picross");
     spedUpRef.current = false;
@@ -335,10 +343,10 @@ export default function App() {
   }
 
   function handleEndingComplete() {
+    cancelCelebration();
     resetScore();
     setPendingNode(null);
     setBattleNode(null);
-    setResult(null);
     setLastNode("");
     setCurrentNode("start");
     setScreen("opening");
@@ -352,19 +360,36 @@ export default function App() {
       if (!battleNode) return { earned: 0, durationMs: 0 };
       return awardScore(battleNode, remaining);
     };
+    const startCelebration = () => {
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current);
+      }
+      if (typeof audio.stopClearFanfare === "function") {
+        audio.stopClearFanfare();
+      }
+      setCelebrationActive(true);
+      if (soundOn && typeof audio.playClearFanfare === "function") {
+        audio.playClearFanfare();
+      }
+      celebrationTimerRef.current = setTimeout(() => {
+        celebrationTimerRef.current = null;
+        setCelebrationActive(false);
+        handleCloseResult();
+      }, FANFARE_DURATION_MS);
+    };
     const scheduleSuccessTransition = (durationMs) => {
-      if (successTimerRef.current) {
-        clearTimeout(successTimerRef.current);
+      if (celebrationDelayRef.current) {
+        clearTimeout(celebrationDelayRef.current);
       }
       const delay = Math.max(0, durationMs || 0) + 60;
-      successTimerRef.current = setTimeout(() => {
-        successTimerRef.current = null;
-        handleCloseResult();
+      celebrationDelayRef.current = setTimeout(() => {
+        celebrationDelayRef.current = null;
+        startCelebration();
       }, delay);
     };
     const handleSuccess = () => {
+      cancelCelebration();
       const { durationMs } = awardIfPossible();
-      setResult({ status: "clear" });
       scheduleSuccessTransition(durationMs);
     };
     // Debug mode: always clear on submit regardless of grid state
@@ -388,17 +413,16 @@ export default function App() {
       handleSuccess();
     } else {
       // Failed -> go directly to Game Over per spec
-      setResult({ status: "gameover" });
+      cancelCelebration();
       resetScore();
       setScreen("gameover");
     }
   }
 
   function handleCloseResult() {
-    // On clear, move to the selected pending node; otherwise just go back to route
-    if (result?.status === "clear" && pendingNode) {
+    cancelCelebration();
+    if (pendingNode) {
       const clearedNode = pendingNode;
-      // mark cleared
       setCleared((prev) => {
         const next = new Set(prev);
         next.add(clearedNode);
@@ -437,6 +461,14 @@ export default function App() {
                 : null
           }
         />
+      )}
+      {celebrationActive && (
+        <div className="celebration-overlay">
+          <div className="celebration-card">
+            <h2>Stage Clear!</h2>
+            <p>おめでとう！</p>
+          </div>
+        </div>
       )}
       <header className="app-header">
         <div className="brand-stack">
@@ -626,15 +658,6 @@ export default function App() {
             />
           </div>
         </div>
-      )}
-
-      {screen === "result" && (
-        <ResultModal
-          status={result?.status}
-          onClose={handleCloseResult}
-          onRetry={() => setScreen("route")}
-          onExit={() => setScreen("gameover")}
-        />
       )}
 
       {screen === "gameover" && (

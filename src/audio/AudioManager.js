@@ -12,6 +12,8 @@ class AudioManager {
     this._seqIndex = 0;
     this._sampleBuffers = new Map(); // name -> AudioBuffer
     this._sfxUrlCache = new Map();
+    this._fanfareSource = null;
+    this._celebrationGain = null;
     this._scoreSource = null;
   }
 
@@ -47,6 +49,7 @@ class AudioManager {
     if (!this.ctx) return;
     this.stopPlayMusic();
     this.stopScoreCount();
+    this.stopClearFanfare();
     await this.ctx.suspend();
     this.enabled = false;
   }
@@ -194,6 +197,15 @@ class AudioManager {
     }
   }
 
+  stopClearFanfare() {
+    if (this._fanfareSource) {
+      try {
+        this._fanfareSource.stop();
+      } catch {}
+      this._fanfareSource = null;
+    }
+  }
+
   stopScoreCount() {
     if (!this._scoreSource || !this.ctx) return;
     const { src, gain } = this._scoreSource;
@@ -305,10 +317,46 @@ class AudioManager {
     notes.forEach((f, i) => this._note(f, t0 + i * 0.18, 0.14, 0.02, 0.6));
   }
 
-  playClearFanfare() {
-    if (!this.enabled || !this.ctx) return;
+  async playClearFanfare() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const url = await this._getSfxUrl(
+        "fanfare_melodic",
+        /fanfare_melodic|fanfare|victory|clear/i,
+      );
+      if (url) {
+        const buffer = await this._loadSample("fanfare_melodic", url);
+        if (this._fanfareSource) {
+          try {
+            this._fanfareSource.stop();
+          } catch {}
+          this._fanfareSource = null;
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+        const gain = this.ctx.createGain();
+        const startAt = this.ctx.currentTime + 0.02;
+        gain.gain.setValueAtTime(0.85, startAt);
+        src.connect(gain);
+        gain.connect(this.sfxGain);
+        src.start(startAt);
+        this._fanfareSource = src;
+        src.onended = () => {
+          try {
+            src.disconnect();
+            gain.disconnect();
+          } catch {}
+          if (this._fanfareSource === src) this._fanfareSource = null;
+        };
+        return;
+      }
+    } catch (_) {
+      /* fall back to synthetic fanfare */
+    }
+    if (!this.ctx) return;
     const t0 = this.ctx.currentTime + 0.02;
-    // Victory-like melodic phrase played with brass-like synth
     const seq = [523, 659, 784, 1047, 784, 659, 523];
     seq.forEach((f, i) => this._brassNote(f, t0 + i * 0.16, 0.2, i < 4 ? 0.85 : 0.7));
     this._brassNote(1175, t0 + 1.12, 0.22, 0.6);
