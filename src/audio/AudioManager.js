@@ -167,9 +167,9 @@ class AudioManager {
     if (!this.ctx) return;
     this.stopScoreCount();
     try {
-      const url = await this._getSfxUrl("coin_rush", /coin|gold|score|rush/i);
+      const url = await this._getSfxUrl("score_chiptune", /score_chiptune|score|chip|8bit/i);
       if (!url) return;
-      const buffer = await this._loadSample("coin_rush", url);
+      const buffer = await this._loadSample("score_chiptune", url);
       const src = this.ctx.createBufferSource();
       src.buffer = buffer;
       src.loop = true;
