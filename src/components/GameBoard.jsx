@@ -3,7 +3,14 @@ import Clues from "./Clues.jsx";
 import { toggleCell } from "../game/utils.js";
 import audio from "../audio/AudioManager.js";
 
-export default function GameBoard({ size, grid, setGrid, clues }) {
+export default function GameBoard({
+  size,
+  grid,
+  setGrid,
+  clues,
+  solution,
+  onCorrectFill,
+}) {
   const [paintMode, setPaintMode] = useState("fill"); // 'fill' | 'cross' | 'maybe'
   const [cellPx, setCellPx] = useState(null);
   const [effects, setEffects] = useState([]);
@@ -83,7 +90,19 @@ export default function GameBoard({ size, grid, setGrid, clues }) {
     let mode = paintMode;
     if (e.type === "contextmenu") mode = "cross";
     if (e.shiftKey) mode = "maybe";
-    setGrid((g) => toggleCell(g, r, c, mode));
+    setGrid((g) => {
+      const prevValue = g[r][c];
+      const next = toggleCell(g, r, c, mode);
+      if (
+        mode === "fill" &&
+        prevValue !== 1 &&
+        next[r]?.[c] === 1 &&
+        solution?.[r]?.[c]
+      ) {
+        onCorrectFill?.(r, c);
+      }
+      return next;
+    });
     spawnEffect(e.currentTarget);
     if (mode === "fill") audio.playFill();
     else audio.playMark();

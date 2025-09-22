@@ -28,6 +28,7 @@ const SCORE_BONUS = {
   "elf-hard": 15000,
   "elf-ending": 20000,
 };
+const REALTIME_CORRECT_BONUS = 100;
 const FONT_SIZE_CHOICES = [
   { label: "100%", value: 1 },
   { label: "150%", value: 1.5 },
@@ -139,6 +140,7 @@ export default function App() {
   const scoreRef = useRef(score);
   const displayScoreRef = useRef(displayScore);
   const scoreAnimTimerRef = useRef(null);
+  const realtimeBonusRef = useRef(new Set());
   const celebrationDelayRef = useRef(null);
   function resetProgress() {
     cancelCelebration();
@@ -222,16 +224,14 @@ export default function App() {
     setDisplayScore(0);
   }, [stopScoreAnimation]);
 
-  const awardScore = useCallback(
-    (nodeId, remainingSeconds) => {
-      const bonus = SCORE_BONUS[nodeId] ?? 0;
-      const seconds = Math.max(0, Math.floor(remainingSeconds || 0));
-      const earned = seconds + bonus;
-      if (earned <= 0) {
-        return { earned: 0, durationMs: 0 };
+  const addScore = useCallback(
+    (amount) => {
+      const value = Math.max(0, Math.floor(amount || 0));
+      if (value <= 0) {
+        return { applied: 0, durationMs: 0 };
       }
       stopScoreAnimation(displayScoreRef.current);
-      const target = scoreRef.current + earned;
+      const target = scoreRef.current + value;
       scoreRef.current = target;
       setScore(target);
       setScoreAnimating(true);
@@ -240,7 +240,7 @@ export default function App() {
       }
       const from = displayScoreRef.current;
       setDisplayScore(from);
-      const duration = Math.min(2400, Math.max(900, earned * 4));
+      const duration = Math.min(2400, Math.max(900, value * 4));
       const stepMs = 50;
       const steps = Math.max(1, Math.round(duration / stepMs));
       const durationMs = steps * stepMs;
@@ -249,15 +249,36 @@ export default function App() {
         tick += 1;
         const progress = Math.min(1, tick / steps);
         const eased = 1 - Math.pow(1 - progress, 3);
-        const value = Math.round(from + (target - from) * eased);
-        setDisplayScore(value);
+        const animated = Math.round(from + (target - from) * eased);
+        setDisplayScore(animated);
         if (tick >= steps) {
           stopScoreAnimation(target);
         }
       }, stepMs);
-      return { earned, durationMs };
+      return { applied: value, durationMs };
     },
     [stopScoreAnimation],
+  );
+
+  const awardScore = useCallback(
+    (nodeId, remainingSeconds) => {
+      const bonus = SCORE_BONUS[nodeId] ?? 0;
+      const seconds = Math.max(0, Math.floor(remainingSeconds || 0));
+      const earned = seconds + bonus;
+      const { durationMs } = addScore(earned);
+      return { earned, durationMs };
+    },
+    [addScore],
+  );
+
+  const awardRealtimeBonus = useCallback(
+    (r, c) => {
+      const key = `${r}:${c}`;
+      if (realtimeBonusRef.current.has(key)) return;
+      realtimeBonusRef.current.add(key);
+      addScore(REALTIME_CORRECT_BONUS);
+    },
+    [addScore],
   );
 
   useEffect(() => {
@@ -341,6 +362,7 @@ export default function App() {
       );
     setSolution(sol);
     setGrid(emptyGrid(n));
+    realtimeBonusRef.current = new Set();
     setStartedAt(Date.now());
     setRemaining(GAME_SECONDS);
     setBattleNode(normalizedId);
@@ -659,6 +681,8 @@ export default function App() {
               grid={grid}
               setGrid={setGrid}
               clues={clues}
+              solution={solution}
+              onCorrectFill={awardRealtimeBonus}
             />
           </div>
         </div>
