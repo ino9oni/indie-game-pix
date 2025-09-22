@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 // Route map with neighbor-only movement, hero sprite, and animated traversal
+const MAP_MARGIN = 48;
+const MIN_VIEWBOX_WIDTH = 480;
+const MIN_VIEWBOX_HEIGHT = 320;
+
 export default function RouteMap({
   graph,
   current,
@@ -9,9 +13,44 @@ export default function RouteMap({
   onArrive,
   onMoveStart,
 }) {
-  const nodes = graph.nodes;
-  const edges = graph.edges;
+  const nodes = graph?.nodes ?? {};
+  const edges = graph?.edges ?? [];
   const heroImg = "/assets/img/character/hero/00083-826608146.png";
+
+  const viewBox = useMemo(() => {
+    const points = Object.values(nodes).filter(
+      (n) => Number.isFinite(n?.x) && Number.isFinite(n?.y),
+    );
+    if (points.length === 0) {
+      return "0 0 800 400";
+    }
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const { x, y } of points) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+
+    const width = Math.max(1, maxX - minX);
+    const height = Math.max(1, maxY - minY);
+
+    const paddedWidth = width + MAP_MARGIN * 2;
+    const paddedHeight = height + MAP_MARGIN * 2;
+
+    const finalWidth = Math.max(paddedWidth, MIN_VIEWBOX_WIDTH);
+    const finalHeight = Math.max(paddedHeight, MIN_VIEWBOX_HEIGHT);
+
+    const offsetX = minX - MAP_MARGIN - (finalWidth - paddedWidth) / 2;
+    const offsetY = minY - MAP_MARGIN - (finalHeight - paddedHeight) / 2;
+
+    return `${offsetX} ${offsetY} ${finalWidth} ${finalHeight}`;
+  }, [nodes]);
 
   const adj = useMemo(() => {
     const m = {};
@@ -181,7 +220,11 @@ export default function RouteMap({
   return (
     <main className="screen route">
       <div className="route-canvas">
-        <svg viewBox="0 0 800 400" className="route-svg">
+        <svg
+          viewBox={viewBox}
+          className="route-svg"
+          preserveAspectRatio="xMidYMid meet"
+        >
           {edges.map((e, i) => (
             <path
               key={i}
