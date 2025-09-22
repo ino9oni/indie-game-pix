@@ -226,7 +226,7 @@ export default function App() {
     (nodeId, remainingSeconds) => {
       const bonus = SCORE_BONUS[nodeId] ?? 0;
       const seconds = Math.max(0, Math.floor(remainingSeconds || 0));
-      const earned = seconds * 100 + bonus;
+      const earned = seconds + bonus;
       if (earned <= 0) {
         return { earned: 0, durationMs: 0 };
       }
