@@ -3,14 +3,14 @@
 ## Priority: high
 - [done] マップモードのサイズを変更する
   - [done] マップのノードとエッジがマップモードの中央に来るように配置する
-- マップモードに分岐を入れる
-  - マップモードに難易度別の以下の分岐に変更する
-    - practice
-      - easy
-        - middle
-          - ending
-        - hard
-          - ending
+- [done] マップモードに分岐を入れる
+  - [done] マップモードに難易度別の以下の分岐に変更する
+    - [done] practice
+      - [done] easy
+        - [done] middle
+          - [done] ending
+        - [done] hard
+          - [done] ending
 - スコア計上の仕様を変更する
   - スコアの計算方法を以下に変更する
     - 残時間（秒数）x 1 ＋　クリアーボーナス

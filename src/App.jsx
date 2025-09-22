@@ -26,13 +26,50 @@ const SCORE_BONUS = {
   "elf-easy": 5000,
   "elf-middle": 10000,
   "elf-hard": 15000,
-  "elf-ultra": 20000,
+  "elf-ending": 20000,
 };
 const FONT_SIZE_CHOICES = [
   { label: "100%", value: 1 },
   { label: "150%", value: 1.5 },
   { label: "200%", value: 2 },
 ];
+const FINAL_NODE_ID = "elf-ending";
+const LEGACY_FINAL_NODE_ID = "elf-ultra";
+
+function normalizeNodeId(id) {
+  return id === LEGACY_FINAL_NODE_ID ? FINAL_NODE_ID : id;
+}
+
+function readStoredNode() {
+  try {
+    const stored = localStorage.getItem("routeNode") || "start";
+    const normalized = normalizeNodeId(stored);
+    if (normalized !== stored) {
+      localStorage.setItem("routeNode", normalized);
+    }
+    return normalized;
+  } catch {
+    return "start";
+  }
+}
+
+function readStoredClearedSet() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("clearedNodes") || "[]");
+    const items = Array.isArray(raw) ? raw : [];
+    const normalized = items.map((id) => normalizeNodeId(id));
+    if (
+      Array.isArray(raw) &&
+      normalized.length === items.length &&
+      normalized.some((id, idx) => id !== items[idx])
+    ) {
+      localStorage.setItem("clearedNodes", JSON.stringify(normalized));
+    }
+    return new Set(normalized);
+  } catch {
+    return new Set();
+  }
+}
 
 function readStoredScore() {
   try {
@@ -85,19 +122,11 @@ export default function App() {
   const [heroName, setHeroName] = useState(
     () => localStorage.getItem("heroName") || "",
   );
-  const [currentNode, setCurrentNode] = useState(
-    () => localStorage.getItem("routeNode") || "start",
-  );
+  const [currentNode, setCurrentNode] = useState(() => readStoredNode());
   const [lastNode, setLastNode] = useState(""); // previous node to prevent backtracking
   const [pendingNode, setPendingNode] = useState(null); // target node chosen to battle
   const [battleNode, setBattleNode] = useState(null); // last battle node (for Continue)
-  const [cleared, setCleared] = useState(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem("clearedNodes") || "[]"));
-    } catch {
-      return new Set();
-    }
-  });
+  const [cleared, setCleared] = useState(() => readStoredClearedSet());
   const cancelCelebration = useCallback(() => {
     if (celebrationDelayRef.current) {
       clearTimeout(celebrationDelayRef.current);
@@ -287,7 +316,8 @@ export default function App() {
   }, [remaining, screen]);
 
   function beginPicrossForNode(nodeId) {
-    const meta = CHARACTERS[nodeId];
+    const normalizedId = normalizeNodeId(nodeId);
+    const meta = CHARACTERS[normalizedId];
     if (!meta) return;
     const n = meta.size;
     // Pick a size-appropriate puzzle with good variety per node/difficulty
@@ -313,7 +343,7 @@ export default function App() {
     setGrid(emptyGrid(n));
     setStartedAt(Date.now());
     setRemaining(GAME_SECONDS);
-    setBattleNode(nodeId);
+    setBattleNode(normalizedId);
     setScreen("picross");
     spedUpRef.current = false;
     // bump background seed to rotate background image per state change
@@ -327,8 +357,13 @@ export default function App() {
   function enterEnding(nodeId) {
     setPendingNode(null);
     setBattleNode(null);
-    const destination = nodeId && ROUTE.nodes[nodeId] ? nodeId : currentNode;
-    setLastNode(currentNode);
+    const normalizedCurrent = normalizeNodeId(currentNode);
+    const normalizedTarget = normalizeNodeId(nodeId);
+    const destination =
+      normalizedTarget && ROUTE.nodes[normalizedTarget]
+        ? normalizedTarget
+        : normalizedCurrent;
+    setLastNode(normalizedCurrent);
     setCurrentNode(destination);
     localStorage.setItem("routeNode", destination);
     setScreen("ending");
@@ -397,14 +432,14 @@ export default function App() {
   function handleCloseResult() {
     cancelCelebration();
     if (pendingNode) {
-      const clearedNode = pendingNode;
+      const clearedNode = normalizeNodeId(pendingNode);
       setCleared((prev) => {
         const next = new Set(prev);
         next.add(clearedNode);
         localStorage.setItem("clearedNodes", JSON.stringify(Array.from(next)));
         return next;
       });
-      if (clearedNode === "elf-ultra") {
+      if (clearedNode === FINAL_NODE_ID) {
         enterEnding(clearedNode);
         return;
       }
@@ -576,11 +611,12 @@ export default function App() {
             } catch {}
           }}
           onArrive={(id) => {
-            if (CHARACTERS[id]) {
-              setPendingNode(id);
+            const normalized = normalizeNodeId(id);
+            if (CHARACTERS[normalized]) {
+              setPendingNode(normalized);
               setScreen("conversation");
             } else {
-              enterEnding(id);
+              enterEnding(normalized);
             }
           }}
         />

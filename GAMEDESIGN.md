@@ -187,9 +187,10 @@
         - node: elf-practice
           - node: elf-easy
             - node: elf-middle
-              - node: elf-hard
-                - node: elf-ultra
-      - 最終ノードは『elf-ultra』であり、クリア後はマップに遷移せず自動でエンディングモードへ移行する
+              - node: elf-ending
+            - node: elf-hard
+              - node: elf-ending
+      - 最終ノードは『elf-ending』であり、クリア後はマップに遷移せず自動でエンディングモードへ移行する
   - 現在地
     - 主人公が現在いる位置を示す
 - 画面
@@ -211,6 +212,13 @@
     - ルートとノードの座標群から外接矩形を算出し、上下左右に48pxの余白を加えた `viewBox` を動的に適用する
     - `preserveAspectRatio="xMidYMid meet"` を指定し、描画領域の中央にノードとエッジが収まるようスケーリングする
     - ヒーローの移動アニメーション、ラベル、吹き出しは算出済み座標をそのまま利用し、相対位置関係を維持する
+  - ノード座標（推奨値）
+    - start: (100, 300)
+    - elf-practice: (240, 250)
+    - elf-easy: (400, 190)
+    - elf-middle: (560, 120)
+    - elf-hard: (560, 260)
+    - elf-ending: (720, 190)
   - ノード
     - ノードの真下にテキストボックスを表示
       - テキストボックス内にノードの名称を表示
@@ -380,7 +388,7 @@
         - 台詞："……美しいけど、容赦ないね。"
         - 感情：普
       - END
-    - ultra の会話：
+    - ending の会話：
       - START
       - No.1
         - 話者：敵キャラクター
@@ -487,9 +495,9 @@
           - 精霊を象るパズル、物語の核心に近づく。
         - 画像（通常）：assets/img/character/enemies/hard/floria_normal.png（380 x 487）
         - 画像（怒り）：assets/img/character/enemies/hard/floria_angry.png（380 x 487）
-  - ultra
-    - ノードの位置
-      - elf-ultra
+  - ending
+    - ノードとの対応
+      - 名前: elf-ending
     - 対戦相手
       - ピクロスのサイズ
         - 25 x 25
@@ -502,7 +510,7 @@
           - 表情差分：無表情は毅然とした面持ち、喜は凛とした笑み、怒は眼光鋭く、哀は瞳に影を落とし、楽は安心感を与える微笑み。
           - デフォルメ：銀の鎧を簡略化し、剣を持った2頭身キャラ。
         - 画像（通常）：assets/img/character/enemies/ultra/altina_normal.png（380 x 487）
-        - 画像（怒り）：assets/img/character/enemies/practice/altina_angry.png（380 x 487）
+        - 画像（怒り）：assets/img/character/enemies/ultra/altina_angry.png（380 x 487）
 
 - 画面
   - 初期表示
@@ -540,7 +548,7 @@
   - **Submit** を押下する
     - 正答の場合はスコアを計算して累積値へ加算する
       - スコア計算式：残り時間（秒） × 100 + クリアボーナス
-      - クリアボーナス：practice=1000 / easy=5000 / middle=10000 / high=15000 / ultra=20000
+      - クリアボーナス：practice=1000 / easy=5000 / middle=10000 / high=15000 / ending=20000
       - スコア加算中はスロットマシン風に0.05秒刻みで数値を高速に更新し、最終値で停止する
     - 不正解の場合はゲームオーバー処理へ遷移する（スコア加算は行わない）
 
@@ -557,8 +565,8 @@
   - ピクロス終了状態
     - 終了時のピクロスの回答と答案が一致している場合
       - 即座に次のモードへ遷移し、ステージクリアのダイアログは表示しない
-      - 最終試練（elf-ultra）以外の場合はノードモードへ戻る
-      - 最終試練（elf-ultra）をクリアした場合はエンディングモードへ遷移する
+      - 最終試練（elf-ending）以外の場合はノードモードへ戻る
+      - 最終試練（elf-ending）をクリアした場合はエンディングモードへ遷移する
     - 終了時のピクロスの状態と回答が一致してい無い場合
       - 一致していない場合は「Failed」と表示しする
       - ゲームオーバーモードに移行する

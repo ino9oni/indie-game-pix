@@ -17,7 +17,7 @@ const ENEMY_IMAGES = {
     normal: "/assets/img/character/enemies/hard/floria_normal.png",
     angry: "/assets/img/character/enemies/hard/floria_angry.png",
   },
-  "elf-ultra": {
+  "elf-ending": {
     normal: "/assets/img/character/enemies/ultra/altina_normal.png",
     angry: "/assets/img/character/enemies/ultra/altina_angry.png",
   },
@@ -172,7 +172,7 @@ function buildScript(difficultyId, heroName, enemyName) {
         emotion: "normal",
       },
     ],
-    "elf-ultra": [
+    "elf-ending": [
       {
         speaker: enemy,
         who: "enemy",
