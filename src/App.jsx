@@ -26,7 +26,7 @@ const SCORE_BONUS = {
   "elf-easy": 5000,
   "elf-middle": 10000,
   "elf-hard": 15000,
-  "elf-ending": 20000,
+  "elf-ultra": 20000,
 };
 const REALTIME_CORRECT_BONUS = 100;
 const FONT_SIZE_CHOICES = [
@@ -34,11 +34,13 @@ const FONT_SIZE_CHOICES = [
   { label: "150%", value: 1.5 },
   { label: "200%", value: 2 },
 ];
-const FINAL_NODE_ID = "elf-ending";
-const LEGACY_FINAL_NODE_ID = "elf-ultra";
+const FINAL_NODE_IDS = new Set(["elf-bad-ending", "elf-true-ending"]);
+const LEGACY_FINAL_NODE_ID = "elf-ending";
+const DEFAULT_TRUE_ENDING_NODE = "elf-true-ending";
 
 function normalizeNodeId(id) {
-  return id === LEGACY_FINAL_NODE_ID ? FINAL_NODE_ID : id;
+  if (id === LEGACY_FINAL_NODE_ID) return DEFAULT_TRUE_ENDING_NODE;
+  return id;
 }
 
 function readStoredNode() {
@@ -128,6 +130,7 @@ export default function App() {
   const [pendingNode, setPendingNode] = useState(null); // target node chosen to battle
   const [battleNode, setBattleNode] = useState(null); // last battle node (for Continue)
   const [cleared, setCleared] = useState(() => readStoredClearedSet());
+  const [endingNode, setEndingNode] = useState(null);
   const cancelCelebration = useCallback(() => {
     if (celebrationDelayRef.current) {
       clearTimeout(celebrationDelayRef.current);
@@ -146,6 +149,7 @@ export default function App() {
     cancelCelebration();
     resetScore();
     setCleared(new Set());
+    setEndingNode(null);
   }
 
   const size = solution.length;
@@ -363,6 +367,7 @@ export default function App() {
     setSolution(sol);
     setGrid(emptyGrid(n));
     realtimeBonusRef.current = new Set();
+    setEndingNode(null);
     setStartedAt(Date.now());
     setRemaining(GAME_SECONDS);
     setBattleNode(normalizedId);
@@ -388,6 +393,11 @@ export default function App() {
     setLastNode(normalizedCurrent);
     setCurrentNode(destination);
     localStorage.setItem("routeNode", destination);
+    if (FINAL_NODE_IDS.has(destination)) {
+      setEndingNode(destination);
+    } else {
+      setEndingNode(null);
+    }
     setScreen("ending");
   }
 
@@ -400,6 +410,7 @@ export default function App() {
     setCurrentNode("start");
     setScreen("opening");
     setCleared(new Set());
+    setEndingNode(null);
     localStorage.setItem("routeNode", "start");
     localStorage.removeItem("clearedNodes");
   }
@@ -461,7 +472,7 @@ export default function App() {
         localStorage.setItem("clearedNodes", JSON.stringify(Array.from(next)));
         return next;
       });
-      if (clearedNode === FINAL_NODE_ID) {
+      if (FINAL_NODE_IDS.has(clearedNode)) {
         enterEnding(clearedNode);
         return;
       }
@@ -703,6 +714,7 @@ export default function App() {
       {screen === "ending" && (
         <Ending
           heroName={heroName || "主人公"}
+          endingNode={endingNode}
           onDone={handleEndingComplete}
         />
       )}

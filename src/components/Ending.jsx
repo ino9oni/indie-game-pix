@@ -4,17 +4,27 @@ const STORY_DURATION = 10000;
 const FIN_DURATION = 4000;
 const CREDIT_PER_LINE = 4200;
 
-export default function Ending({ heroName = "主人公", onDone }) {
+export default function Ending({ heroName = "主人公", endingNode = "elf-true-ending", onDone }) {
   const [stage, setStage] = useState("story");
 
   const resolvedHero = heroName || "主人公";
+  const variant = endingNode === "elf-bad-ending" ? "bad" : "true";
   const storyLines = useMemo(
-    () => [
-      `こうして最終試練を乗り越えた${resolvedHero}は、elpixに認められることとなった`,
-      `新しいelfpixを探す${resolvedHero}の旅はまだ続く。`,
-    ],
-    [resolvedHero],
+    () => {
+      if (variant === "bad") {
+        return [
+          `試練の灯火は揺らぎ、${resolvedHero}は森の悲嘆を背負うこととなった。`,
+          `けれど立ち止まらない。失った光を取り戻す旅が、ここから始まる。`,
+        ];
+      }
+      return [
+        `こうして最終試練を乗り越えた${resolvedHero}は、elpixに認められることとなった`,
+        `新しいelfpixを探す${resolvedHero}の旅はまだ続く。`,
+      ];
+    },
+    [resolvedHero, variant],
   );
+  const finSubtitle = variant === "bad" ? "Another journey awaits" : "Thank you for playing";
 
   const credits = useMemo(
     () => [
@@ -56,7 +66,7 @@ export default function Ending({ heroName = "主人公", onDone }) {
 
         <div className={`ending-fin ${stage === "fin" ? "show" : ""}`}>
           <div className="ending-fin-title">FIN</div>
-          <div className="ending-fin-sub">Thank you for playing</div>
+          <div className="ending-fin-sub">{finSubtitle}</div>
         </div>
 
         <div className={`ending-credits ${stage === "credits" ? "show" : ""}`}>

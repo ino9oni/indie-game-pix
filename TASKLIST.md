@@ -166,15 +166,15 @@
 # Issues and Bugs
 
 ## Priority: high
-- マップモードの分岐不具合を修正する
-  - マップモードのエンディングを分割する
-    - practice
-      - easy
-        - middle
-          - bad-ending
-      - hard
-        - ultra
-          - true-ending
+- [done] マップモードの分岐不具合を修正する
+  - [done] マップモードのエンディングを分割する
+    - [done] practice
+      - [done] easy
+        - [done] middle
+          - [done] bad-ending
+      - [done] hard
+        - [done] ultra
+          - [done] true-ending
 - [done] ~~ウィンドウ内の文字表示（全画面共通）の修正~~
   - [done] ~~プロローグと同じ表示方式で、オープニングモード、会話モード、それぞれ統一する~~
 - [done] ~~プロローグの表示方式の修正~~
