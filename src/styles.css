@@ -825,6 +825,16 @@ button {
 .route-node.end {
   fill: #a78bfa;
 }
+.route-label-bubble {
+  fill: rgba(30, 41, 59, 0.9);
+  stroke: rgba(148, 163, 184, 0.7);
+  stroke-width: 1.2px;
+}
+.route-label-text {
+  fill: #f8fafc;
+  font-weight: 600;
+  font-size: calc(12px * var(--font-scale));
+}
 .route-label {
   fill: #e5e7eb;
   font-size: calc(12px * var(--font-scale));

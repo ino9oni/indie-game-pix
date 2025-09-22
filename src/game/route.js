@@ -3,13 +3,13 @@
 export const ROUTE = {
   nodes: {
     start: { x: 100, y: 300, type: "start", label: "Start" },
-    "elf-practice": { x: 240, y: 250, type: "elf", label: "Practice" },
-    "elf-easy": { x: 400, y: 190, type: "elf", label: "Easy" },
-    "elf-middle": { x: 560, y: 120, type: "elf", label: "Middle" },
-    "elf-bad-ending": { x: 720, y: 120, type: "end", label: "Bad Ending" },
-    "elf-hard": { x: 560, y: 260, type: "elf", label: "Hard" },
-    "elf-ultra": { x: 720, y: 260, type: "elf", label: "Ultra" },
-    "elf-true-ending": { x: 880, y: 260, type: "end", label: "True Ending" },
+    "elf-practice": { x: 240, y: 250, type: "elf", label: "翠緑の門" },
+    "elf-easy": { x: 400, y: 190, type: "elf", label: "木漏れ日の小径" },
+    "elf-middle": { x: 560, y: 120, type: "elf", label: "刻印の広間" },
+    "elf-bad-ending": { x: 720, y: 120, type: "end", label: "儚き灯火" },
+    "elf-hard": { x: 560, y: 260, type: "elf", label: "精霊の花園" },
+    "elf-ultra": { x: 720, y: 260, type: "elf", label: "森羅の社" },
+    "elf-true-ending": { x: 880, y: 260, type: "end", label: "黎明の庭" },
   },
   edges: [
     { from: "start", to: "elf-practice" },

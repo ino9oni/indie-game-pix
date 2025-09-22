@@ -235,11 +235,18 @@ export default function RouteMap({
           ))}
           {Object.entries(nodes).map(([id, n]) => {
             const label = n.label || id;
-            const w = Math.max(40, (label.length || 1) * 8);
-            const h = 16;
-            const rx = 6;
-            const lx = n.x - w / 2;
-            const ly = n.y + 22;
+            const chars = Array.from(label);
+            const textWidth = Math.max(48, chars.length * 14);
+            const padding = 6;
+            const bubbleWidth = textWidth + padding * 2;
+            const bubbleHeight = 26;
+            const cornerRadius = 8;
+            const bubbleX = n.x - bubbleWidth / 2;
+            const bubbleY = n.y + 26;
+            const pointerHeight = 8;
+            const pointerHalf = 10;
+            const pointerTop = bubbleY - pointerHeight;
+            const pointerPoints = `${n.x - pointerHalf},${bubbleY} ${n.x + pointerHalf},${bubbleY} ${n.x},${pointerTop}`;
             return (
               <g
                 key={id}
@@ -259,27 +266,31 @@ export default function RouteMap({
                   r={16}
                   className={`route-node ${current === id ? "current" : ""} ${n.type}`}
                 />
-                {/* Label box under node */}
-                <rect
-                  x={lx}
-                  y={ly}
-                  width={w}
-                  height={h}
-                  rx={rx}
-                  ry={rx}
-                  fill="#fff"
-                  stroke="#000"
-                  strokeWidth="1"
-                />
-                <text
-                  x={n.x}
-                  y={ly + 12}
-                  textAnchor="middle"
-                  className="route-label"
-                  fill="#000"
-                >
-                  {label}
-                </text>
+                {/* Location bubble under node */}
+                <g className="route-label">
+                  <rect
+                    x={bubbleX}
+                    y={bubbleY}
+                    width={bubbleWidth}
+                    height={bubbleHeight}
+                    rx={cornerRadius}
+                    ry={cornerRadius}
+                    className="route-label-bubble"
+                  />
+                  <polygon
+                    points={pointerPoints}
+                    className="route-label-bubble"
+                  />
+                  <text
+                    x={n.x}
+                    y={bubbleY + bubbleHeight / 2}
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                    className="route-label-text"
+                  >
+                    {label}
+                  </text>
+                </g>
               </g>
             );
           })}

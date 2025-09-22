@@ -174,15 +174,19 @@ class AudioManager {
     if (!this.ctx) return;
     this.stopScoreCount();
     try {
-      const url = await this._getSfxUrl("score_chiptune", /score_chiptune|score|chip|8bit/i);
+      const url = await this._getSfxUrl(
+        "score_chime",
+        /coin_rush|score_chime|score_chiptune|chime/i,
+      );
       if (!url) return;
-      const buffer = await this._loadSample("score_chiptune", url);
+      const buffer = await this._loadSample("score_chime", url);
       const src = this.ctx.createBufferSource();
       src.buffer = buffer;
-      src.loop = true;
+      src.loop = false;
       const gain = this.ctx.createGain();
       const startAt = this.ctx.currentTime + 0.01;
-      gain.gain.setValueAtTime(0.75, startAt);
+      gain.gain.setValueAtTime(0.5, startAt);
+      src.playbackRate.setValueAtTime(1.1, startAt);
       src.connect(gain);
       gain.connect(this.sfxGain);
       src.start(startAt);
@@ -218,9 +222,9 @@ class AudioManager {
       const now = this.ctx.currentTime;
       gain.gain.cancelScheduledValues(now);
       gain.gain.setValueAtTime(gain.gain.value, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
       if (typeof src.stop === "function") {
-        src.stop(now + 0.2);
+        src.stop(now + 0.1);
       }
     } catch {}
     setTimeout(() => {
@@ -228,7 +232,7 @@ class AudioManager {
         src.disconnect();
         gain.disconnect();
       } catch {}
-    }, 260);
+    }, 180);
   }
 
   async playFootstep() {
