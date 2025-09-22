@@ -481,39 +481,6 @@ body {
   max-width: 420px;
   width: calc(100% - 32px);
 }
-.celebration-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(8, 11, 24, 0.6);
-  pointer-events: none;
-  animation: celebrationFade 2400ms ease forwards;
-}
-.celebration-card {
-  background: rgba(30, 58, 138, 0.92);
-  border: 3px solid #fcd34d;
-  border-radius: 18px;
-  padding: clamp(24px, 6vw, 40px) clamp(32px, 8vw, 64px);
-  text-align: center;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.6);
-  color: #fff;
-  pointer-events: none;
-  animation: celebrationPop 2400ms ease forwards;
-}
-.celebration-card h2 {
-  margin: 0 0 12px;
-  font-size: calc(36px * var(--font-scale));
-  letter-spacing: 2px;
-  text-shadow: 0 0 18px rgba(124, 58, 237, 0.6);
-}
-.celebration-card p {
-  margin: 0;
-  font-size: calc(20px * var(--font-scale));
-  opacity: 0.9;
-}
 
 .particle-overlay {
   position: absolute;
@@ -617,18 +584,6 @@ body {
   0% { transform: rotate(var(--streak-rot, 0deg)) scaleY(0.2); opacity: 0; }
   15% { opacity: 1; }
   100% { transform: rotate(var(--streak-rot, 0deg)) translate(var(--dx, 0px), var(--dy, 0px)) scaleY(1); opacity: 0; }
-}
-@keyframes celebrationFade {
-  0% { opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { opacity: 0; }
-}
-@keyframes celebrationPop {
-  0% { transform: scale(0.78); opacity: 0; }
-  12% { transform: scale(1.08); opacity: 1; }
-  80% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(0.94); opacity: 0.85; }
 }
 .modal.clear { animation: fadeInScale 600ms ease both; }
 .result-title {
@@ -873,6 +828,23 @@ button {
 .route-label {
   fill: #e5e7eb;
   font-size: calc(12px * var(--font-scale));
+}
+
+.encount-bubble rect {
+  fill: rgba(30, 58, 138, 0.92);
+  stroke: #fcd34d;
+  stroke-width: 2px;
+}
+.encount-bubble text {
+  fill: #f8fafc;
+  font-size: calc(12px * var(--font-scale));
+  font-weight: 600;
+  letter-spacing: 0.6px;
+}
+.encount-bubble .bubble-tail {
+  fill: rgba(30, 58, 138, 0.92);
+  stroke: #fcd34d;
+  stroke-width: 2px;
 }
 
 @media (max-width: 720px) {

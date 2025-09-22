@@ -21,7 +21,6 @@ import bgm from "./audio/BgmPlayer.js";
 import { listBgmUrls } from "./audio/library.js";
 
 const GAME_SECONDS = 20 * 60; // 20 minutes
-const FANFARE_DURATION_MS = 2400;
 const SCORE_BONUS = {
   "elf-practice": 1000,
   "elf-easy": 5000,
@@ -55,7 +54,6 @@ export default function App() {
   const [startedAt, setStartedAt] = useState(null);
   const [remaining, setRemaining] = useState(GAME_SECONDS);
   const [bgSeed, setBgSeed] = useState(0);
-  const [celebrationActive, setCelebrationActive] = useState(false);
   const [soundOn, setSoundOn] = useState(() => {
     try {
       return localStorage.getItem("soundOn") === "1";
@@ -105,11 +103,6 @@ export default function App() {
       clearTimeout(celebrationDelayRef.current);
       celebrationDelayRef.current = null;
     }
-    if (celebrationTimerRef.current) {
-      clearTimeout(celebrationTimerRef.current);
-      celebrationTimerRef.current = null;
-    }
-    setCelebrationActive(false);
     if (typeof audio.stopClearFanfare === "function") {
       audio.stopClearFanfare();
     }
@@ -118,7 +111,6 @@ export default function App() {
   const displayScoreRef = useRef(displayScore);
   const scoreAnimTimerRef = useRef(null);
   const celebrationDelayRef = useRef(null);
-  const celebrationTimerRef = useRef(null);
   function resetProgress() {
     cancelCelebration();
     resetScore();
@@ -360,23 +352,6 @@ export default function App() {
       if (!battleNode) return { earned: 0, durationMs: 0 };
       return awardScore(battleNode, remaining);
     };
-    const startCelebration = () => {
-      if (celebrationTimerRef.current) {
-        clearTimeout(celebrationTimerRef.current);
-      }
-      if (typeof audio.stopClearFanfare === "function") {
-        audio.stopClearFanfare();
-      }
-      setCelebrationActive(true);
-      if (soundOn && typeof audio.playClearFanfare === "function") {
-        audio.playClearFanfare();
-      }
-      celebrationTimerRef.current = setTimeout(() => {
-        celebrationTimerRef.current = null;
-        setCelebrationActive(false);
-        handleCloseResult();
-      }, FANFARE_DURATION_MS);
-    };
     const scheduleSuccessTransition = (durationMs) => {
       if (celebrationDelayRef.current) {
         clearTimeout(celebrationDelayRef.current);
@@ -384,7 +359,7 @@ export default function App() {
       const delay = Math.max(0, durationMs || 0) + 60;
       celebrationDelayRef.current = setTimeout(() => {
         celebrationDelayRef.current = null;
-        startCelebration();
+        handleCloseResult();
       }, delay);
     };
     const handleSuccess = () => {
@@ -461,14 +436,6 @@ export default function App() {
                 : null
           }
         />
-      )}
-      {celebrationActive && (
-        <div className="celebration-overlay">
-          <div className="celebration-card">
-            <h2>Stage Clear!</h2>
-            <p>おめでとう！</p>
-          </div>
-        </div>
       )}
       <header className="app-header">
         <div className="brand-stack">
@@ -602,12 +569,13 @@ export default function App() {
           current={currentNode}
           last={lastNode}
           debugMode={debugMode}
-          onArrive={async (id) => {
-            if (soundOn) {
-              try {
-                await audio.playFootstep();
-              } catch {}
-            }
+          onMoveStart={async () => {
+            if (!soundOn) return;
+            try {
+              await audio.playFootstep();
+            } catch {}
+          }}
+          onArrive={(id) => {
             if (CHARACTERS[id]) {
               setPendingNode(id);
               setScreen("conversation");
