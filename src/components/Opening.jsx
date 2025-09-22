@@ -24,9 +24,6 @@ export default function Opening({ onStart, onNewGame }) {
           Continue
         </button>
       </div>
-      <p className="sub note">
-        Tip: サウンドは右上のトグルで切り替えできます。
-      </p>
     </main>
   );
 }
