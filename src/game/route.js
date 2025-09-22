@@ -2,12 +2,12 @@
 
 export const ROUTE = {
   nodes: {
-    start: { x: 80, y: 200, type: "start", label: "Start" },
-    "elf-practice": { x: 200, y: 180, type: "elf", label: "Practice" },
-    "elf-easy": { x: 340, y: 140, type: "elf", label: "Easy" },
-    "elf-middle": { x: 480, y: 180, type: "elf", label: "Middle" },
-    "elf-hard": { x: 620, y: 220, type: "elf", label: "Hard" },
-    "elf-ultra": { x: 700, y: 260, type: "elf", label: "Ultra" },
+    start: { x: 120, y: 320, type: "start", label: "Start" },
+    "elf-practice": { x: 240, y: 260, type: "elf", label: "Practice" },
+    "elf-easy": { x: 360, y: 210, type: "elf", label: "Easy" },
+    "elf-middle": { x: 500, y: 160, type: "elf", label: "Middle" },
+    "elf-hard": { x: 640, y: 120, type: "elf", label: "Hard" },
+    "elf-ultra": { x: 760, y: 80, type: "elf", label: "Ultra" },
   },
   edges: [
     { from: "start", to: "elf-practice" },

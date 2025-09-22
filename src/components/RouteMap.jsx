@@ -25,10 +25,10 @@ export default function RouteMap({ graph, current, last, debugMode, onArrive }) 
   };
 
   const pathD = (from, to) => {
-    const a = nodes[from],
-      b = nodes[to];
-    const cx = (a.x + b.x) / 2;
-    return `M ${a.x} ${a.y} C ${cx} ${a.y - 60}, ${cx} ${b.y + 60}, ${b.x} ${b.y}`;
+    const a = nodes[from];
+    const b = nodes[to];
+    if (!a || !b) return "";
+    return `M ${a.x} ${a.y} L ${b.x} ${a.y} L ${b.x} ${b.y}`;
   };
 
   const heroPos = () => nodes[current];

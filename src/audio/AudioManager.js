@@ -94,46 +94,50 @@ class AudioManager {
     return url;
   }
 
-  async _playChiselTap(playbackRate = 1, gain = 0.9) {
+  async _playSoftClick(playbackRate = 1, gain = 0.9) {
     if (!this.enabled) return;
     this.init();
     if (!this.ctx) return;
-    const url = await this._getSfxUrl("chisel_tap", /chisel_tap/i);
-    if (!url) throw new Error("missing chisel tap sfx");
-    const buffer = await this._loadSample("chisel_tap", url);
-    const { ctx, sfxGain } = this;
-    const when = ctx.currentTime + 0.004;
-    const src = ctx.createBufferSource();
-    src.buffer = buffer;
-    src.playbackRate.setValueAtTime(playbackRate, when);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(gain, when);
-    src.connect(g);
-    g.connect(sfxGain);
-    src.start(when);
-    src.onended = () => {
-      try {
-        src.disconnect();
-        g.disconnect();
-      } catch {}
-    };
+    try {
+      const url = await this._getSfxUrl("picross_click_soft", /picross_click_soft|click_soft|soft_click/i);
+      if (url) {
+        const buffer = await this._loadSample("picross_click_soft", url);
+        const { ctx, sfxGain } = this;
+        const when = ctx.currentTime + 0.004;
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.playbackRate.setValueAtTime(playbackRate, when);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(gain, when);
+        src.connect(g);
+        g.connect(sfxGain);
+        src.start(when);
+        src.onended = () => {
+          try {
+            src.disconnect();
+            g.disconnect();
+          } catch {}
+        };
+        return;
+      }
+    } catch (_) {
+      /* fall through to synthetic fallback */
+    }
+    if (!this.ctx) this.init();
+    if (this.ctx) {
+      this._noiseBurst(0.04, 2600, 900);
+    }
   }
 
   // --- SFX ---
   playFill() {
     if (!this.enabled) return;
-    this._playChiselTap(1, 0.9).catch(() => {
-      if (!this.ctx) this.init();
-      if (this.ctx) this._noiseBurst(0.06, 2000, 500);
-    });
+    this._playSoftClick(1, 0.9);
   }
 
   playMark() {
     if (!this.enabled) return;
-    this._playChiselTap(1.18, 0.72).catch(() => {
-      if (!this.ctx) this.init();
-      if (this.ctx) this._beep(360, 0.06, 0.005);
-    });
+    this._playSoftClick(1.1, 0.8);
   }
 
   playMove() {
