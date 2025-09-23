@@ -667,6 +667,11 @@ button {
 .prologue-window p {
   text-align: center;
 }
+.prologue-actions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+}
 /* Generic dialog window */
 .dialog {
   display: grid;

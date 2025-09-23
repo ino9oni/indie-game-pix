@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const HOLD_MS = 1200;
 const FADE_MS = 200;
@@ -22,9 +22,18 @@ export default function Prologue({ onNext }) {
   const [phase, setPhase] = useState("in");
   const timers = useRef([]);
 
-  useEffect(() => {
+  const clearTimers = useCallback(() => {
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
+  }, []);
+
+  const skipPrologue = useCallback(() => {
+    clearTimers();
+    if (onNext) onNext();
+  }, [clearTimers, onNext]);
+
+  useEffect(() => {
+    clearTimers();
 
     if (phase === "in") {
       if (index < lines.length - 1) {
@@ -43,11 +52,8 @@ export default function Prologue({ onNext }) {
       );
     }
 
-    return () => {
-      timers.current.forEach((id) => clearTimeout(id));
-      timers.current = [];
-    };
-  }, [index, phase, lines.length, onNext]);
+    return clearTimers;
+  }, [index, phase, lines.length, onNext, clearTimers]);
 
   const text = lines[index] ?? "";
 
@@ -60,6 +66,11 @@ export default function Prologue({ onNext }) {
         >
           {text === "" ? "\u00a0" : text}
         </p>
+        <div className="prologue-actions">
+          <button className="ghost" type="button" onClick={skipPrologue}>
+            スキップ
+          </button>
+        </div>
       </div>
     </main>
   );
