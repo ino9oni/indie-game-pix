@@ -636,6 +636,7 @@ export default function App() {
           graph={ROUTE}
           current={currentNode}
           last={lastNode}
+          cleared={cleared}
           debugMode={debugMode}
           onMoveStart={async () => {
             if (!soundOn) return;

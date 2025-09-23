@@ -20,6 +20,15 @@ export const ROUTE = {
     { from: "elf-hard", to: "elf-ultra" },
     { from: "elf-ultra", to: "elf-true-ending" },
   ],
+  parents: {
+    "elf-practice": "start",
+    "elf-easy": "elf-practice",
+    "elf-middle": "elf-easy",
+    "elf-bad-ending": "elf-middle",
+    "elf-hard": "elf-easy",
+    "elf-ultra": "elf-hard",
+    "elf-true-ending": "elf-ultra",
+  },
 };
 
 export const CHARACTERS = {

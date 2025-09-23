@@ -9,12 +9,14 @@ export default function RouteMap({
   graph,
   current,
   last,
+  cleared,
   debugMode,
   onArrive,
   onMoveStart,
 }) {
   const nodes = graph?.nodes ?? {};
   const edges = graph?.edges ?? [];
+  const parents = graph?.parents ?? {};
   const heroImg = "/assets/img/character/hero/00083-826608146.png";
 
   const viewBox = useMemo(() => {
@@ -60,6 +62,35 @@ export default function RouteMap({
     }
     return m;
   }, [edges]);
+
+  const clearedSet = useMemo(() => {
+    if (!cleared) return new Set();
+    if (cleared instanceof Set) return new Set(cleared);
+    return new Set(Array.isArray(cleared) ? cleared : []);
+  }, [cleared]);
+
+  const visibleNodes = useMemo(() => {
+    if (debugMode) {
+      return new Set(Object.keys(nodes));
+    }
+    const visible = new Set();
+    const isVisible = (id) => {
+      if (!id) return false;
+      if (visible.has(id)) return true;
+      if (id === "start") return true;
+      if (clearedSet.has(id)) return true;
+      if (id === current) return true;
+      const parent = parents[id];
+      if (!parent) return true;
+      if (clearedSet.has(parent)) return true;
+      if (parent === current) return true;
+      return false;
+    };
+    Object.keys(nodes).forEach((id) => {
+      if (isVisible(id)) visible.add(id);
+    });
+    return visible;
+  }, [nodes, parents, clearedSet, current, debugMode]);
 
   const [animating, setAnimating] = useState(false);
   const [heroPos, setHeroPos] = useState(() => nodes[current] || { x: 0, y: 0 });
@@ -225,26 +256,31 @@ export default function RouteMap({
           className="route-svg"
           preserveAspectRatio="xMidYMid meet"
         >
-          {edges.map((e, i) => (
-            <path
-              key={i}
-              d={pathD(e.from, e.to)}
-              className="route-edge"
-              fill="none"
-            />
-          ))}
+          {edges
+            .filter((e) =>
+              visibleNodes.has(e.from) && visibleNodes.has(e.to),
+            )
+            .map((e, i) => (
+              <path
+                key={i}
+                d={pathD(e.from, e.to)}
+                className="route-edge"
+                fill="none"
+              />
+            ))}
           {Object.entries(nodes).map(([id, n]) => {
+            if (!visibleNodes.has(id)) return null;
             const label = n.label || id;
             const chars = Array.from(label);
-            const textWidth = Math.max(48, chars.length * 14);
-            const padding = 6;
+            const textWidth = Math.max(60, chars.length * 16);
+            const padding = 3;
             const bubbleWidth = textWidth + padding * 2;
-            const bubbleHeight = 26;
+            const bubbleHeight = 24;
             const cornerRadius = 8;
             const bubbleX = n.x - bubbleWidth / 2;
-            const bubbleY = n.y + 26;
-            const pointerHeight = 8;
-            const pointerHalf = 10;
+            const bubbleY = n.y + 28;
+            const pointerHeight = 10;
+            const pointerHalf = 12;
             const pointerTop = bubbleY - pointerHeight;
             const pointerPoints = `${n.x - pointerHalf},${bubbleY} ${n.x + pointerHalf},${bubbleY} ${n.x},${pointerTop}`;
             return (
