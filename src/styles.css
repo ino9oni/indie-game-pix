@@ -290,6 +290,7 @@ body {
   display: grid;
   place-items: center;
   padding-bottom: 20px;
+  position: relative;
 }
 .hud {
   display: flex;
@@ -322,6 +323,13 @@ body {
   height: 100%;
   background: linear-gradient(90deg, #22d3ee, #7c3aed);
   box-shadow: 0 0 16px #22d3ee66;
+}
+
+.puzzle-progress {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: #c7d2fe;
+  letter-spacing: 0.02em;
 }
 
 .board-wrap {
@@ -399,6 +407,14 @@ body {
   text-align: center;
 }
 
+.clue-hidden {
+  visibility: hidden;
+}
+
+.clue-locked span {
+  letter-spacing: 0.12em;
+}
+
 .grid {
   grid-column: 2;
   grid-row: 2;
@@ -424,6 +440,9 @@ body {
 }
 .cell:hover {
   transform: translateY(-1px);
+}
+.cell.faded {
+  opacity: 0.4;
 }
 .cell.filled {
   background: conic-gradient(
@@ -463,6 +482,173 @@ body {
 /* Picross surface transparency ≈ 75% */
 .board {
   opacity: 0.75;
+}
+
+.battle-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  width: 100%;
+}
+
+.player-panel,
+.enemy-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.battle-score {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ede9fe;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #11163a;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px #2b2f55;
+}
+
+.progress-track.enemy {
+  background: #2a173e;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #34d399, #22d3ee);
+  transition: width 160ms ease;
+}
+
+.progress-track.enemy .progress-fill {
+  background: linear-gradient(90deg, #f97316, #ef4444);
+}
+
+.enemy-board {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 0;
+  align-items: start;
+  opacity: 0.75;
+}
+
+.enemy-board .grid {
+  padding: 8px;
+  background: #1e1f3b66;
+  border: 1px solid #2b2f55aa;
+}
+
+.enemy-board .cell {
+  cursor: default;
+  border-radius: 6px;
+}
+
+.enemy-board .cell.filled,
+.enemy-board .cell {
+  border-radius: 6px;
+}
+
+.enemy-board .cell.filled {
+  background: linear-gradient(135deg, #f97316, #fb7185);
+  border-color: #ea580c;
+  box-shadow: inset 0 0 10px #f59e0b80;
+}
+
+.spell-log {
+  margin-top: 16px;
+  min-height: 48px;
+  background: #111634cc;
+  border: 1px solid #312e81;
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #c7d2fe;
+  font-size: 0.85rem;
+  display: grid;
+  gap: 4px;
+}
+
+.spell-log li {
+  list-style: none;
+}
+
+.spell-overlay {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e1b4bcc;
+  border: 1px solid #7c3aed;
+  border-radius: 14px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 12px 24px #0b0f2040;
+  backdrop-filter: blur(12px);
+  color: #f5f3ff;
+  z-index: 8;
+}
+
+.spell-overlay img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #a855f7;
+}
+
+.spell-overlay .spell-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 2px;
+}
+
+.spell-overlay .spell-desc {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 10, 18, 0.6);
+  backdrop-filter: blur(6px);
+  z-index: 7;
+  pointer-events: all;
+}
+
+.pause-box {
+  background: #0f172acc;
+  border: 1px solid #2563eb;
+  border-radius: 16px;
+  padding: 28px 40px;
+  text-align: center;
+  color: #e0edff;
+  box-shadow: 0 24px 48px rgba(3, 8, 23, 0.5);
+  min-width: 240px;
+}
+
+.pause-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 18px;
+}
+
+.pause-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
 }
 
 .modal-backdrop {
@@ -629,6 +815,16 @@ button {
   background: #6b7280;
   color: white;
   border-color: #6b7280;
+}
+.pause.on {
+  background: #1d4ed8;
+  color: #fff;
+  border-color: #1d4ed8;
+}
+.pause.off {
+  background: #1d4ed833;
+  color: #e0edff;
+  border-color: #1d4ed866;
 }
 /* Debug button states */
 .debug.on {

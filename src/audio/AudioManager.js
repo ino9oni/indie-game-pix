@@ -185,8 +185,10 @@ class AudioManager {
       src.loop = false;
       const gain = this.ctx.createGain();
       const startAt = this.ctx.currentTime + 0.01;
-      gain.gain.setValueAtTime(0.5, startAt);
-      src.playbackRate.setValueAtTime(1.1, startAt);
+      const releaseAt = startAt + 0.48;
+      gain.gain.setValueAtTime(0.32, startAt);
+      gain.gain.exponentialRampToValueAtTime(0.0001, releaseAt);
+      src.playbackRate.setValueAtTime(1.32, startAt);
       src.connect(gain);
       gain.connect(this.sfxGain);
       src.start(startAt);

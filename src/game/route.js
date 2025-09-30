@@ -32,9 +32,44 @@ export const ROUTE = {
 };
 
 export const CHARACTERS = {
-  "elf-practice": { name: "リーネ", size: 5 },
-  "elf-easy": { name: "エフィナ", size: 10 },
-  "elf-middle": { name: "セリス", size: 15 },
-  "elf-hard": { name: "フローリア", size: 20 },
-  "elf-ultra": { name: "アルティナ", size: 25 },
+  "elf-practice": {
+    name: "リーネ",
+    size: 5,
+    images: {
+      normal: "/assets/img/character/enemies/practice/riene_normal.png",
+      angry: "/assets/img/character/enemies/practice/riene_angry.png",
+    },
+  },
+  "elf-easy": {
+    name: "エフィナ",
+    size: 10,
+    images: {
+      normal: "/assets/img/character/enemies/easy/efina_normal.png",
+      angry: "/assets/img/character/enemies/easy/efina_angry.png",
+    },
+  },
+  "elf-middle": {
+    name: "セリス",
+    size: 15,
+    images: {
+      normal: "/assets/img/character/enemies/normal/cerys_normal.png",
+      angry: "/assets/img/character/enemies/normal/cerys_angry.png",
+    },
+  },
+  "elf-hard": {
+    name: "フローリア",
+    size: 20,
+    images: {
+      normal: "/assets/img/character/enemies/hard/floria_normal.png",
+      angry: "/assets/img/character/enemies/hard/floria_angry.png",
+    },
+  },
+  "elf-ultra": {
+    name: "アルティナ",
+    size: 25,
+    images: {
+      normal: "/assets/img/character/enemies/ultra/altina_normal.png",
+      angry: "/assets/img/character/enemies/ultra/altina_angry.png",
+    },
+  },
 };

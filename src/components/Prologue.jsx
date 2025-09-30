@@ -67,8 +67,8 @@ export default function Prologue({ onNext }) {
           {text === "" ? "\u00a0" : text}
         </p>
         <div className="prologue-actions">
-          <button className="ghost" type="button" onClick={skipPrologue}>
-            スキップ
+          <button className="primary" type="button" onClick={skipPrologue}>
+            Skip
           </button>
         </div>
       </div>

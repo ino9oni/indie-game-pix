@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Clues from "./Clues.jsx";
 import { toggleCell } from "../game/utils.js";
 import audio from "../audio/AudioManager.js";
@@ -7,10 +7,22 @@ export default function GameBoard({
   size,
   grid,
   setGrid,
+  hintData,
   clues,
   solution,
   onCorrectFill,
+  onMistake,
+  onCross,
+  hiddenRowClues = [],
+  hiddenColClues = [],
+  lockedRowClues = [],
+  lockedColClues = [],
+  fadedCells = [],
+  disabled = false,
 }) {
+  const resolvedClues = hintData ?? clues ?? {};
+  const rowHints = Array.isArray(resolvedClues.rows) ? resolvedClues.rows : [];
+  const colHints = Array.isArray(resolvedClues.cols) ? resolvedClues.cols : [];
   const [paintMode, setPaintMode] = useState("fill"); // 'fill' | 'cross' | 'maybe'
   const [cellPx, setCellPx] = useState(null);
   const [effects, setEffects] = useState([]);
@@ -87,28 +99,59 @@ export default function GameBoard({
 
   function onCellClick(r, c, e) {
     e.preventDefault();
+    if (disabled) return;
     let mode = paintMode;
     if (e.type === "contextmenu") mode = "cross";
     if (e.shiftKey) mode = "maybe";
     setGrid((g) => {
       const prevValue = g[r][c];
       const next = toggleCell(g, r, c, mode);
-      if (
-        mode === "fill" &&
-        prevValue !== 1 &&
-        next[r]?.[c] === 1 &&
-        solution?.[r]?.[c]
-      ) {
-        onCorrectFill?.(r, c);
+      const shouldFill = solution?.[r]?.[c] ?? false;
+      const newValue = next[r]?.[c];
+
+      if (mode === "fill") {
+        if (prevValue !== 1 && newValue === 1) {
+          if (shouldFill) {
+            onCorrectFill?.(r, c, next);
+          } else {
+            onMistake?.(r, c, { type: "fill" }, next);
+          }
+        }
+        if (prevValue === 1 && newValue !== 1 && shouldFill) {
+          onMistake?.(r, c, { type: "unfill" }, next);
+        }
+      } else if (mode === "cross") {
+        onCross?.(r, c, next);
+        if (newValue === -1 && shouldFill) {
+          onMistake?.(r, c, { type: "cross" }, next);
+        }
       }
+
       return next;
     });
     spawnEffect(e.currentTarget);
+    if (disabled) return;
     if (mode === "fill") audio.playFill();
     else audio.playMark();
   }
 
   const wrapStyle = cellPx ? { "--cell": `${cellPx}px` } : undefined;
+  const fadedSet = useMemo(() => new Set(fadedCells), [fadedCells]);
+  const renderClues = useMemo(
+    () => (
+      <Clues
+        rows={rowHints}
+        cols={colHints}
+        hiddenRows={hiddenRowClues}
+        hiddenCols={hiddenColClues}
+        lockedRows={lockedRowClues}
+        lockedCols={lockedColClues}
+      />
+    ),
+    [rowHints, colHints, hiddenRowClues, hiddenColClues, lockedRowClues, lockedColClues],
+  );
+
+  const cellKey = (r, c) => `${r}-${c}`;
 
   return (
     <div className="board-wrap" ref={overlayRef} style={wrapStyle}>
@@ -186,7 +229,7 @@ export default function GameBoard({
         </button>
       </div>
       <div className={`board n${size}`}>
-        <Clues rows={clues.rows} cols={clues.cols} />
+        {renderClues}
         <div
           className="grid"
           style={{ gridTemplateColumns: `repeat(${size}, var(--cell))` }}
@@ -195,7 +238,7 @@ export default function GameBoard({
             row.map((cell, c) => (
               <div
                 key={`${r}-${c}`}
-                className={`cell ${cell === 1 ? "filled" : ""} ${cell === -1 ? "x" : ""} ${cell === 2 ? "maybe" : ""}`}
+                className={`cell ${cell === 1 ? "filled" : ""} ${cell === -1 ? "x" : ""} ${cell === 2 ? "maybe" : ""} ${fadedSet.has(cellKey(r, c)) ? "faded" : ""}`}
                 onClick={(e) => onCellClick(r, c, e)}
                 onContextMenu={(e) => onCellClick(r, c, e)}
               />
