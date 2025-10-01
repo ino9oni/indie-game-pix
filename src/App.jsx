@@ -224,6 +224,24 @@ export default function App() {
   const size = solution.length;
   const clues = useMemo(() => computeClues(solution), [solution]);
 
+  const playerAvatar = useMemo(
+    () => ({
+      src: HERO_IMAGES.normal,
+      alt: heroName?.trim() ? heroName : "主人公",
+    }),
+    [heroName],
+  );
+
+  const enemyAvatar = useMemo(() => {
+    if (!battleNode) return null;
+    const meta = CHARACTERS[battleNode];
+    if (!meta?.images?.normal) return null;
+    return {
+      src: meta.images.normal,
+      alt: meta.name || "敵キャラクター",
+    };
+  }, [battleNode]);
+
   const cancelCelebration = useCallback(() => {
     if (celebrationDelayRef.current) {
       clearTimeout(celebrationDelayRef.current);
@@ -1530,31 +1548,45 @@ export default function App() {
                     style={{ width: `${Math.min(1, playerProgressRatio) * 100}%` }}
                   />
                 </div>
-                <GameBoard
-                  size={size}
-                  grid={grid}
-                  setGrid={setGrid}
-                  hintData={clues}
-                  clues={clues}
-                  solution={solution}
-                  onCorrectFill={handlePlayerCorrect}
-                  onMistake={handlePlayerMistakeEvent}
-                  onCross={handlePlayerCrossEvent}
-                  hiddenRowClues={hiddenRowClues}
-                  hiddenColClues={hiddenColClues}
-                  lockedRowClues={lockedRowClues}
-                  lockedColClues={lockedColClues}
-                  fadedCells={fadedCells}
-                  disabled={paused}
-                />
+                <div className="board-frame hero">
+                  <GameBoard
+                    size={size}
+                    grid={grid}
+                    setGrid={setGrid}
+                    hintData={clues}
+                    clues={clues}
+                    solution={solution}
+                    onCorrectFill={handlePlayerCorrect}
+                    onMistake={handlePlayerMistakeEvent}
+                    onCross={handlePlayerCrossEvent}
+                    hiddenRowClues={hiddenRowClues}
+                    hiddenColClues={hiddenColClues}
+                    lockedRowClues={lockedRowClues}
+                    lockedColClues={lockedColClues}
+                    fadedCells={fadedCells}
+                    disabled={paused}
+                  />
+                  {playerAvatar?.src && (
+                    <figure className="board-portrait hero">
+                      <img src={playerAvatar.src} alt={playerAvatar.alt} />
+                    </figure>
+                  )}
+                </div>
               </div>
               <div className="enemy-panel">
-                <EnemyBoard
-                  size={size}
-                  grid={enemyGrid}
-                  hintData={clues}
-                  clues={clues}
-                />
+                <div className="board-frame enemy">
+                  <EnemyBoard
+                    size={size}
+                    grid={enemyGrid}
+                    hintData={clues}
+                    clues={clues}
+                  />
+                  {enemyAvatar?.src && (
+                    <figure className="board-portrait enemy">
+                      <img src={enemyAvatar.src} alt={enemyAvatar.alt} />
+                    </figure>
+                  )}
+                </div>
                 <div className="progress-track enemy">
                   <div
                     className="progress-fill"
