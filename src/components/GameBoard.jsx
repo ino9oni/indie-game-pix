@@ -19,6 +19,7 @@ export default function GameBoard({
   lockedColClues = [],
   fadedCells = [],
   disabled = false,
+  onGridChange,
 }) {
   const resolvedClues = hintData ?? clues ?? {};
   const rowHints = Array.isArray(resolvedClues.rows) ? resolvedClues.rows : [];
@@ -127,6 +128,7 @@ export default function GameBoard({
         }
       }
 
+      onGridChange?.(next);
       return next;
     });
     spawnEffect(e.currentTarget);

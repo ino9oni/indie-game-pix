@@ -15,7 +15,7 @@ import GameOver from "./components/GameOver.jsx";
 import ScoreDisplay from "./components/ScoreDisplay.jsx";
 import { getRandomPuzzleForSize, getRandomPuzzlesForSize } from "./game/puzzles.js";
 import { ROUTE, CHARACTERS } from "./game/route.js";
-import { computeClues, emptyGrid } from "./game/utils.js";
+import { computeClues, emptyGrid, equalsSolution } from "./game/utils.js";
 import audio from "./audio/AudioManager.js";
 import bgm from "./audio/BgmPlayer.js";
 import { listBgmUrls } from "./audio/library.js";
@@ -267,6 +267,7 @@ export default function App() {
   const totalCellsRef = useRef(0);
   const ultraPenaltyActiveRef = useRef(false);
   const enemyOrderRef = useRef({ list: [], index: 0 });
+  const puzzleSolvedRef = useRef(false);
 
   const stopEnemySolver = useCallback(() => {
     if (enemySolverRef.current) {
@@ -742,6 +743,7 @@ export default function App() {
     clearSpellEffects();
     setSpellLog([]);
     setActiveSpell(null);
+    puzzleSolvedRef.current = false;
 
     const sequence = getRandomPuzzlesForSize(n, PUZZLES_PER_BATTLE);
     const prepared = sequence.length
@@ -815,6 +817,7 @@ export default function App() {
       const n = nextSolution.length;
       stopEnemySolver();
       clearSpellEffects();
+      puzzleSolvedRef.current = false;
       setPuzzleIndex(safeIndex);
       setSolution(nextSolution);
       setGrid(emptyGrid(n));
@@ -885,58 +888,60 @@ export default function App() {
     localStorage.removeItem("clearedNodes");
   }
 
-  function handleSubmit() {
-    const awardIfPossible = () => {
-      if (!battleNode) return { earned: 0, durationMs: 0 };
-      return awardScore(battleNode, remaining);
-    };
-    const scheduleAfterAnimation = (durationMs, callback) => {
-      if (celebrationDelayRef.current) {
-        clearTimeout(celebrationDelayRef.current);
-      }
-      const delay = Math.max(0, durationMs || 0) + 60;
-      celebrationDelayRef.current = setTimeout(() => {
-        celebrationDelayRef.current = null;
-        callback?.();
-      }, delay);
-    };
-    const handleSuccess = () => {
-      cancelCelebration();
-      const { durationMs } = awardIfPossible();
-      const totalNeeded = puzzleSequence.length || PUZZLES_PER_BATTLE;
-      const nextIndex = puzzleIndex + 1;
-      const nextWins = playerWins + 1;
-      const isFinal = nextWins >= totalNeeded;
-      scheduleAfterAnimation(durationMs, () => {
-        setPlayerWins(nextWins);
-        if (isFinal) {
-          handleCloseResult(true);
-        } else {
-          prepareNextPuzzle(nextIndex);
-        }
-      });
-    };
+  const scheduleAfterAnimation = useCallback((durationMs, callback) => {
+    if (celebrationDelayRef.current) {
+      clearTimeout(celebrationDelayRef.current);
+    }
+    const delay = Math.max(0, durationMs || 0) + 60;
+    celebrationDelayRef.current = setTimeout(() => {
+      celebrationDelayRef.current = null;
+      callback?.();
+    }, delay);
+  }, []);
 
+  const completePuzzle = useCallback(() => {
+    if (puzzleSolvedRef.current) return;
+    puzzleSolvedRef.current = true;
+    stopEnemySolver();
+    cancelCelebration();
+    const { durationMs } = battleNode ? awardScore(battleNode, remaining) : { durationMs: 0 };
+    const totalNeeded = puzzleSequence.length || PUZZLES_PER_BATTLE;
+    const nextIndex = puzzleIndex + 1;
+    const nextWins = playerWins + 1;
+    const isFinal = nextWins >= totalNeeded;
+    scheduleAfterAnimation(durationMs, () => {
+      setPlayerWins(nextWins);
+      if (isFinal) {
+        handleCloseResult(true);
+      } else {
+        prepareNextPuzzle(nextIndex);
+      }
+    });
+  }, [awardScore, battleNode, cancelCelebration, handleCloseResult, playerWins, prepareNextPuzzle, puzzleIndex, puzzleSequence.length, remaining, scheduleAfterAnimation, stopEnemySolver]);
+
+  const maybeCompletePuzzle = useCallback(
+    (candidateGrid) => {
+      if (puzzleSolvedRef.current) return;
+      if (screen !== "picross") return;
+      if (!solution.length) return;
+      const targetGrid = candidateGrid || grid;
+      if (!targetGrid?.length) return;
+      if (equalsSolution(targetGrid, solution)) {
+        completePuzzle();
+      }
+    },
+    [completePuzzle, grid, screen, solution],
+  );
+
+  function handleSubmit() {
+    if (puzzleSolvedRef.current) return;
     if (debugMode) {
-      handleSuccess();
+      completePuzzle();
       return;
     }
 
-    const n = solution.length;
-    let ok = true;
-    for (let r = 0; r < n && ok; r++) {
-      for (let c = 0; c < n; c++) {
-        const shouldFill = solution[r][c];
-        const isFilled = grid[r][c] === 1;
-        if (shouldFill !== isFilled) {
-          ok = false;
-          break;
-        }
-      }
-    }
-
-    if (ok) {
-      handleSuccess();
+    if (equalsSolution(grid, solution)) {
+      completePuzzle();
     } else {
       cancelCelebration();
       stopEnemySolver();
@@ -955,6 +960,7 @@ export default function App() {
     setPuzzleIndex(0);
     setEnemyGrid([]);
     setPaused(false);
+    puzzleSolvedRef.current = false;
     if (!playerVictory) {
       return;
     }
@@ -1558,14 +1564,15 @@ export default function App() {
                     solution={solution}
                     onCorrectFill={handlePlayerCorrect}
                     onMistake={handlePlayerMistakeEvent}
-                    onCross={handlePlayerCrossEvent}
-                    hiddenRowClues={hiddenRowClues}
-                    hiddenColClues={hiddenColClues}
-                    lockedRowClues={lockedRowClues}
-                    lockedColClues={lockedColClues}
-                    fadedCells={fadedCells}
-                    disabled={paused}
-                  />
+                  onCross={handlePlayerCrossEvent}
+                  hiddenRowClues={hiddenRowClues}
+                  hiddenColClues={hiddenColClues}
+                  lockedRowClues={lockedRowClues}
+                  lockedColClues={lockedColClues}
+                  fadedCells={fadedCells}
+                  disabled={paused}
+                  onGridChange={maybeCompletePuzzle}
+                />
                   {playerAvatar?.src && (
                     <figure className="board-portrait hero">
                       <img src={playerAvatar.src} alt={playerAvatar.alt} />
