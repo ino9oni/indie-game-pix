@@ -24,7 +24,6 @@ export default function GameBoard({
   const resolvedClues = hintData ?? clues ?? {};
   const rowHints = Array.isArray(resolvedClues.rows) ? resolvedClues.rows : [];
   const colHints = Array.isArray(resolvedClues.cols) ? resolvedClues.cols : [];
-  const [paintMode, setPaintMode] = useState("fill"); // 'fill' | 'cross' | 'maybe'
   const [cellPx, setCellPx] = useState(null);
   const [effects, setEffects] = useState([]);
   const overlayRef = useRef(null);
@@ -101,8 +100,8 @@ export default function GameBoard({
   function onCellClick(r, c, e) {
     e.preventDefault();
     if (disabled) return;
-    let mode = paintMode;
-    if (e.type === "contextmenu") mode = "cross";
+    let mode = "fill";
+    if (e.type === "contextmenu" || e.button === 2) mode = "cross";
     if (e.shiftKey) mode = "maybe";
     setGrid((g) => {
       const prevValue = g[r][c];
@@ -209,26 +208,6 @@ export default function GameBoard({
             ))}
           </React.Fragment>
         ))}
-      </div>
-      <div className="board-toolbar">
-        <button
-          className={`toggle ${paintMode === "fill" ? "active" : ""}`}
-          onClick={() => setPaintMode("fill")}
-        >
-          Fill
-        </button>
-        <button
-          className={`toggle ${paintMode === "cross" ? "active" : ""}`}
-          onClick={() => setPaintMode("cross")}
-        >
-          Cross
-        </button>
-        <button
-          className={`toggle ${paintMode === "maybe" ? "active" : ""}`}
-          onClick={() => setPaintMode("maybe")}
-        >
-          Maybe
-        </button>
       </div>
       <div className={`board n${size}`}>
         {renderClues}

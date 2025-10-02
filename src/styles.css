@@ -387,23 +387,6 @@ body {
     background: linear-gradient(135deg, rgba(12, 19, 41, 0.88), rgba(30, 41, 82, 0.82));
   }
 }
-.board-toolbar {
-  display: flex;
-  gap: 8px;
-}
-.toggle {
-  border: 1px solid #2b2f55;
-  background: #10162e;
-  color: var(--text);
-  padding: 8px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-.toggle.active {
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 2px #7c3aed44 inset;
-}
-
 .board {
   display: grid;
   grid-template-columns: auto 1fr;

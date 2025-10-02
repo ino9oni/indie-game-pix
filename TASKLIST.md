@@ -1,7 +1,7 @@
 # Dev Task TODO
 
 ## Priority: high
-- ピクロスモードの「Fill」「Cross」「Maybe」ボタンを除外する
+- [done] ピクロスモードの「Fill」「Cross」「Maybe」ボタンを除外する
 - ピクロスモードの対戦表示領域をHEROとENEMY両方同じサイズにする
   - 画面サイズに合わせて縮小拡大されて、縦横の比率が同じく保たれるようにする
   - HEROとENEMYの領域のサイズを同じ縦横にする
