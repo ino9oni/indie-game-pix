@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Clues from "./Clues.jsx";
 
 export default function EnemyBoard({
@@ -14,7 +14,26 @@ export default function EnemyBoard({
   const resolvedClues = hintData ?? clues ?? {};
   const rowHints = Array.isArray(resolvedClues.rows) ? resolvedClues.rows : [];
   const colHints = Array.isArray(resolvedClues.cols) ? resolvedClues.cols : [];
-  const wrapStyle = { "--cell": `${Math.max(22, Math.min(48, Math.floor(520 / (size + 6))))}px` };
+  const [cellPx, setCellPx] = useState(36);
+
+  const computeCellSize = useCallback(() => {
+    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const columns = vw <= 960 ? 1 : 2;
+    const horizontalBudget = vw * (columns === 1 ? 0.8 : 0.38);
+    const boardBudget = Math.min(vh * 0.72, horizontalBudget);
+    const divisor = size + 8;
+    const px = Math.max(20, Math.min(56, Math.floor(boardBudget / divisor)));
+    setCellPx(px);
+  }, [size]);
+
+  useEffect(() => {
+    computeCellSize();
+    window.addEventListener("resize", computeCellSize);
+    return () => window.removeEventListener("resize", computeCellSize);
+  }, [computeCellSize]);
+
+  const wrapStyle = { "--cell": `${cellPx}px` };
   const renderClues = useMemo(
     () => (
       <Clues

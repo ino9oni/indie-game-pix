@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Clues from "./Clues.jsx";
 import { toggleCell } from "../game/utils.js";
 import audio from "../audio/AudioManager.js";
@@ -28,19 +28,22 @@ export default function GameBoard({
   const [effects, setEffects] = useState([]);
   const overlayRef = useRef(null);
 
-  useEffect(() => {
-    function compute() {
-      const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-      // budget roughly 72% of viewport height for the board including clues and padding
-      const budget = vh * 0.72;
-      const divisor = size + 8; // account for clue rows/cols + padding
-      const px = Math.max(22, Math.min(56, Math.floor(budget / divisor)));
-      setCellPx(px);
-    }
-    compute();
-    window.addEventListener('resize', compute);
-    return () => window.removeEventListener('resize', compute);
+  const computeCellSize = useCallback(() => {
+    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const columns = vw <= 960 ? 1 : 2;
+    const horizontalBudget = vw * (columns === 1 ? 0.8 : 0.38);
+    const boardBudget = Math.min(vh * 0.72, horizontalBudget);
+    const divisor = size + 8; // account for clue rows/cols + padding
+    const px = Math.max(20, Math.min(56, Math.floor(boardBudget / divisor)));
+    setCellPx(px);
   }, [size]);
+
+  useEffect(() => {
+    computeCellSize();
+    window.addEventListener("resize", computeCellSize);
+    return () => window.removeEventListener("resize", computeCellSize);
+  }, [computeCellSize]);
 
   function spawnEffect(target) {
     const overlay = overlayRef.current;

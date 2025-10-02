@@ -44,7 +44,14 @@
       - 表示フォントのサイズはやや大きめにする
       - 画像はキャラクターのSMILE画像を中央に表示する
 - オープニング画面のBGMを固定化する
-  - ファイル：assets/bgm/opening.wav
+  - ファイル：assets/bgm/indie-game-pix-opening.wav
+  - 再生回数：ループ
+- マップモードで敵とEncounterしたときにSEを再生する
+  - ファイル：indie-game-pix-enemy-encount.wav
+  - 再生回数：１回のみ
+- ステージクリアのBGMを鳴らす
+  - ファイル：assets/se/indie-game-pix-stage-clear.wav
+  - 再生回数：１回
 - [done] ピクロスモードで対戦を導入する
   - 左側にHEROのピクロスとキャラクター表示する
   - 右側にENEMYのピクロスとキャラクターを表示する

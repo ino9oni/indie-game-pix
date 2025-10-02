@@ -519,9 +519,15 @@ body {
 
 .battle-panels {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   width: 100%;
+}
+
+@media (max-width: 960px) {
+  .battle-panels {
+    grid-template-columns: 1fr;
+  }
 }
 
 .player-panel,
