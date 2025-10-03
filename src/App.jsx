@@ -221,6 +221,7 @@ export default function App() {
   const [lockedColClues, setLockedColClues] = useState([]);
   const [fadedCells, setFadedCells] = useState([]);
   const [paused, setPaused] = useState(false);
+  const [projectiles, setProjectiles] = useState([]);
   const size = solution.length;
   const clues = useMemo(() => computeClues(solution), [solution]);
 
@@ -268,6 +269,17 @@ export default function App() {
   const ultraPenaltyActiveRef = useRef(false);
   const enemyOrderRef = useRef({ list: [], index: 0 });
   const puzzleSolvedRef = useRef(false);
+
+  const launchProjectile = useCallback((variant) => {
+    setProjectiles((prev) => {
+      const id = `${variant}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const next = [...prev, { id, variant }];
+      setTimeout(() => {
+        setProjectiles((state) => state.filter((p) => p.id !== id));
+      }, 1000);
+      return next;
+    });
+  }, []);
 
   const stopEnemySolver = useCallback(() => {
     if (enemySolverRef.current) {
@@ -366,6 +378,8 @@ export default function App() {
       description: "敵の進捗を巻き戻した",
       image: HERO_IMAGES.angry,
     });
+    audio.playSpellAttack("hero");
+    launchProjectile("hero");
   }, [heroName, logSpell, showSpellOverlay]);
 
   const triggerEnemySpell = useCallback(
@@ -384,6 +398,8 @@ export default function App() {
         description: spell.description,
         image: character?.images?.angry,
       });
+      audio.playSpellAttack("enemy");
+      launchProjectile("enemy");
       const duration = spell.durationMs || 8000;
       const n = solution.length;
       const { row: ctxRow, col: ctxCol, type: ctxType, index: ctxIndex } = context || {};
@@ -744,6 +760,7 @@ export default function App() {
     setSpellLog([]);
     setActiveSpell(null);
     puzzleSolvedRef.current = false;
+    setProjectiles([]);
 
     const sequence = getRandomPuzzlesForSize(n, PUZZLES_PER_BATTLE);
     const prepared = sequence.length
@@ -818,6 +835,7 @@ export default function App() {
       stopEnemySolver();
       clearSpellEffects();
       puzzleSolvedRef.current = false;
+      setProjectiles([]);
       setPuzzleIndex(safeIndex);
       setSolution(nextSolution);
       setGrid(emptyGrid(n));
@@ -961,6 +979,7 @@ export default function App() {
     setEnemyGrid([]);
     setPaused(false);
     puzzleSolvedRef.current = false;
+    setProjectiles([]);
     if (!playerVictory) {
       return;
     }
@@ -1199,6 +1218,7 @@ export default function App() {
     setPlayerWins(0);
     setEnemyWins(0);
     setPaused(false);
+    setProjectiles([]);
     setScreen("route");
   }, [cancelCelebration, stopEnemySolver, clearSpellEffects]);
 
@@ -1601,6 +1621,11 @@ export default function App() {
                   />
                 </div>
               </div>
+            </div>
+            <div className="spell-projectiles">
+              {projectiles.map((proj) => (
+                <span key={proj.id} className={`spell-projectile ${proj.variant}`} />
+              ))}
             </div>
             <ul className="spell-log">
             {spellLog.length === 0 && <li>スペルはまだ発動していません。</li>}

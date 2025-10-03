@@ -140,6 +140,46 @@ class AudioManager {
     this._playSoftClick(1.1, 0.8);
   }
 
+  async playSpellAttack(alignment = "hero") {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const url = await this._getSfxUrl(
+        "spell_attack",
+        /spell_attack|magic_blast|laser|attack|impact/i,
+      );
+      if (url) {
+        const buffer = await this._loadSample("spell_attack", url);
+        const playbackRate = alignment === "enemy" ? 0.92 : 1.08;
+        const sourceGain = alignment === "enemy" ? 0.95 : 0.8;
+        const { ctx, sfxGain } = this;
+        const when = ctx.currentTime + 0.01;
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.playbackRate.setValueAtTime(playbackRate, when);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(sourceGain, when);
+        src.connect(g);
+        g.connect(sfxGain);
+        src.start(when);
+        src.onended = () => {
+          try {
+            src.disconnect();
+            g.disconnect();
+          } catch {}
+        };
+        return;
+      }
+    } catch (_) {
+      /* fall through to synthetic fallback */
+    }
+    const base = alignment === "enemy" ? 220 : 420;
+    this._beep(base * 1.3, 0.12, 0.006);
+    this._beep(base * 1.6, 0.1, 0.006);
+    this._noiseBurst(0.16, alignment === "enemy" ? 1100 : 1600, 280);
+  }
+
   playMove() {
     if (!this.enabled || !this.ctx) return;
     // Simple whoosh-like sweep

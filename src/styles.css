@@ -524,10 +524,83 @@ body {
   width: 100%;
 }
 
+@keyframes projectileHero {
+  0% { transform: translate(-220%, -40%) scale(0.35) rotate(-10deg); opacity: 0; }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(360%, -65%) scale(1.05) rotate(12deg); opacity: 0; }
+}
+
+@keyframes projectileEnemy {
+  0% { transform: translate(220%, -40%) scale(0.35) rotate(6deg); opacity: 0; }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(-360%, -60%) scale(1) rotate(-12deg); opacity: 0; }
+}
+
+.spell-projectiles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 8;
+}
+
+.spell-projectile {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.65));
+  opacity: 0;
+}
+
+.spell-projectile.hero {
+  top: 52%;
+  left: 24%;
+  background: radial-gradient(circle at 35% 35%, #c4f1ff 0%, #60a5fa 38%, rgba(59, 130, 246, 0.08) 75%);
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.6);
+  animation: projectileHero 1s ease-out forwards;
+}
+
+.spell-projectile.enemy {
+  top: 48%;
+  right: 24%;
+  background: radial-gradient(circle at 35% 35%, #fecaca 0%, #f87171 40%, rgba(220, 38, 38, 0.1) 78%);
+  box-shadow: 0 0 24px rgba(248, 113, 113, 0.65);
+  animation: projectileEnemy 1s ease-out forwards;
+}
+
 @media (max-width: 960px) {
   .battle-panels {
     grid-template-columns: 1fr;
   }
+  .spell-projectile.hero {
+    left: 50%;
+    top: 34%;
+    right: auto;
+    animation: projectileHeroStack 1s ease-out forwards;
+  }
+  .spell-projectile.enemy {
+    left: 50%;
+    top: 74%;
+    right: auto;
+    animation: projectileEnemyStack 1s ease-out forwards;
+  }
+}
+
+@keyframes projectileHeroStack {
+  0% { transform: translate(-50%, -200%) scale(0.35); opacity: 0; }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(-50%, 200%) scale(1.05); opacity: 0; }
+}
+
+@keyframes projectileEnemyStack {
+  0% { transform: translate(-50%, 200%) scale(0.35); opacity: 0; }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(-50%, -200%) scale(1.05); opacity: 0; }
 }
 
 .player-panel,
