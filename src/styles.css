@@ -1403,8 +1403,20 @@ button {
   color: #f8fafc;
   text-align: center;
   padding-top: 40px;
+  background: url("/assets/img/background/ending.png") center/cover no-repeat fixed;
+}
+.ending::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.78) 0%, rgba(15, 23, 42, 0.88) 100%);
+  backdrop-filter: blur(2px);
+  z-index: 0;
 }
 .ending-content {
+  position: relative;
+  z-index: 1;
+
   display: grid;
   gap: 32px;
   width: min(90%, 720px);

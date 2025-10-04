@@ -13,7 +13,7 @@
 - [done] ゲーム画面表示時にBGMをオンにする
 - [done] エンディングモードへのBGMを変更・固定化する
   - ファイル：assets/bgm/indie-game-pix-ending.wav
-- エンディングモードの背景画像を固定化する
+- [done] エンディングモードの背景画像を固定化する
   - ファイル：assets/img/backgrounud/ending.png
 - マップモードで、エンディングのノードに到達したときは「EnemyEncounter!」は表示不要にする
 - 名前入力画面の背景画像を変更する
