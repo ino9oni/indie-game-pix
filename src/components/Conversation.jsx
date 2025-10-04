@@ -464,28 +464,23 @@ export default function Conversation({
 
         {/* Dialog window placed to lower third */}
         <div className="dialog-window" style={{ margin: "24px auto 0", marginTop: "auto" }}>
-          <div style={{ fontWeight: 700, marginBottom: 6 }}>
-            <span
-              className={`fade-text ${phase === "in" ? "in" : ""}`}
+          <div className="dialog-content">
+            <div className="dialog-speaker">
+              <span
+                className={`fade-text ${phase === "in" ? "in" : ""}`}
+                style={{ "--fade-target": 0.92 }}
+              >
+                {script[idx]?.speaker}
+              </span>
+            </div>
+            <div
+              className={`fade-text dialog-body ${phase === "in" ? "in" : ""}`}
               style={{ "--fade-target": 0.92 }}
             >
-              {script[idx]?.speaker}
-            </span>
+              {script[idx]?.text}
+            </div>
           </div>
-          <div
-            className={`fade-text dialog-body ${phase === "in" ? "in" : ""}`}
-            style={{ "--fade-target": 0.92 }}
-          >
-            {script[idx]?.text}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginTop: 8,
-              gap: 8,
-            }}
-          >
+          <div className="dialog-actions">
             <button
               className="primary"
               onClick={(e) => {

@@ -1009,6 +1009,34 @@ button {
   overflow: hidden;
 }
 
+.dialog-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  padding: 4px 8px;
+}
+
+.dialog-speaker {
+  font-weight: 700;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.dialog-speaker span {
+  display: inline-block;
+  width: 100%;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .fade-text {
   opacity: 0;
   transition: opacity 200ms ease;
@@ -1020,6 +1048,10 @@ button {
 .dialog-window .dialog-body {
   font-size: calc(18px * var(--font-scale));
   line-height: 1.7;
+  max-width: 90%;
+  text-align: left;
+  margin: 0 auto;
+  white-space: pre-wrap;
 }
 
 /* Name entry */
