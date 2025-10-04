@@ -16,7 +16,7 @@
 - [done] エンディングモードの背景画像を固定化する
   - ファイル：assets/img/backgrounud/ending.png
 - [done] マップモードで、エンディングのノードに到達したときは「EnemyEncounter!」は表示不要にする
-- 名前入力画面の背景画像を変更する
+- [done] 名前入力画面の背景画像を変更する
   - ファイル：assets/img/character/hero/hero_fullbody.png
 - 名前入力モード時の画面レイアウト変更
   - プロローグ終了時のNextボタンと同位置に決定ボタンを配置

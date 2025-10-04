@@ -1521,7 +1521,9 @@ export default function App() {
                 ? "/assets/img/background/ending.png"
                 : screen === "route"
                   ? "/assets/img/background/map.png"
-                  : null
+                  : screen === "name"
+                    ? "/assets/img/character/hero/hero_fullbody.png"
+                    : null
           }
         />
       )}
