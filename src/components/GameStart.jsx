@@ -1,8 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import NameEntry from "./NameEntry.jsx";
 
 // Simple dialog flow for game start with mid-sequence name entry
-export default function GameStart({ heroName, onSetName, onDone }) {
+export default function GameStart({
+  heroName,
+  onSetName,
+  onDone,
+  onNameEntryVisible = () => {},
+}) {
   const [step, setStep] = useState(0);
   const linesBefore = useMemo(
     () => ["ここに一人の人間の若き旅人がいた。", "その名を…"],
@@ -21,6 +26,13 @@ export default function GameStart({ heroName, onSetName, onDone }) {
   // step: 0..linesBefore.length shows dialog, then shows NameEntry, then shows linesAfter
   const showName = step === linesBefore.length;
   const doneAfter = step > linesBefore.length + linesAfter.length;
+
+  useEffect(() => {
+    onNameEntryVisible(showName);
+    return () => {
+      onNameEntryVisible(false);
+    };
+  }, [showName, onNameEntryVisible]);
 
   if (doneAfter) return null;
 

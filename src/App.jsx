@@ -184,6 +184,7 @@ export default function App() {
   const [startedAt, setStartedAt] = useState(null);
   const [remaining, setRemaining] = useState(GAME_SECONDS);
   const [bgSeed, setBgSeed] = useState(0);
+  const [gameStartNameVisible, setGameStartNameVisible] = useState(false);
   const [soundOn, setSoundOn] = useState(() => {
     try {
       return localStorage.getItem("soundOn") === "1";
@@ -1498,6 +1499,12 @@ export default function App() {
     }
   }, [paused, screen]);
 
+  useEffect(() => {
+    if (screen !== "gamestart") {
+      setGameStartNameVisible(false);
+    }
+  }, [screen]);
+
   const showScore = !["prologue", "opening", "gamestart", "name"].includes(screen);
   const puzzleGoal = puzzleSequence.length || PUZZLES_PER_BATTLE;
   const currentRound = Math.max(playerWins, enemyWins);
@@ -1521,7 +1528,7 @@ export default function App() {
                 ? "/assets/img/background/ending.png"
                 : screen === "route"
                   ? "/assets/img/background/map.png"
-                  : screen === "name"
+                  : screen === "name" || (screen === "gamestart" && gameStartNameVisible)
                     ? "/assets/img/character/hero/hero_fullbody.png"
                     : null
           }
@@ -1645,6 +1652,7 @@ export default function App() {
             localStorage.setItem("heroName", n);
           }}
           onDone={() => setScreen("route")}
+          onNameEntryVisible={setGameStartNameVisible}
         />
       )}
 
