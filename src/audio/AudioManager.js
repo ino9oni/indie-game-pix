@@ -298,6 +298,29 @@ class AudioManager {
     await new Promise((r) => setTimeout(r, 160));
   }
 
+  async playEnemyEncounter() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const url = await this._getSfxUrl(
+        "enemy_encount",
+        /indie-game-pix-enemy-encount|enemy_encount|encounter/i,
+      );
+      if (url) {
+        const buffer = await this._loadSample("enemy_encount", url);
+        await this._playBuffer(buffer, 0.9);
+        return;
+      }
+    } catch (_) {
+      /* fall back to synthetic cue */
+    }
+    const base = 520;
+    this._beep(base * 0.75, 0.22, 0.01);
+    this._beep(base, 0.18, 0.01);
+    this._noiseBurst(0.18, 2800, 900);
+  }
+
   _beep(freq, dur = 0.08, attack = 0.01) {
     const { ctx, sfxGain } = this;
     const t0 = ctx.currentTime;
@@ -367,17 +390,19 @@ class AudioManager {
     notes.forEach((f, i) => this._note(f, t0 + i * 0.18, 0.14, 0.02, 0.6));
   }
 
-  async playClearFanfare() {
+  async playStageClear() {
     if (!this.enabled) return;
     this.init();
     if (!this.ctx) return;
-    try {
-      const url = await this._getSfxUrl(
-        "fanfare_melodic",
-        /fanfare_melodic|fanfare|victory|clear/i,
-      );
-      if (url) {
-        const buffer = await this._loadSample("fanfare_melodic", url);
+    const attempts = [
+      { key: "stage_clear", pattern: /indie-game-pix-stage-clear|stage_clear/i },
+      { key: "fanfare_melodic", pattern: /fanfare_melodic|fanfare|victory|clear/i },
+    ];
+    for (const { key, pattern } of attempts) {
+      try {
+        const url = await this._getSfxUrl(key, pattern);
+        if (!url) continue;
+        const buffer = await this._loadSample(key, url);
         if (this._fanfareSource) {
           try {
             this._fanfareSource.stop();
@@ -388,7 +413,7 @@ class AudioManager {
         src.buffer = buffer;
         const gain = this.ctx.createGain();
         const startAt = this.ctx.currentTime + 0.02;
-        gain.gain.setValueAtTime(0.85, startAt);
+        gain.gain.setValueAtTime(0.9, startAt);
         src.connect(gain);
         gain.connect(this.sfxGain);
         src.start(startAt);
@@ -401,15 +426,20 @@ class AudioManager {
           if (this._fanfareSource === src) this._fanfareSource = null;
         };
         return;
+      } catch (_) {
+        /* try next source */
       }
-    } catch (_) {
-      /* fall back to synthetic fanfare */
     }
+    /* fall back to synthetic fanfare */
     if (!this.ctx) return;
     const t0 = this.ctx.currentTime + 0.02;
     const seq = [523, 659, 784, 1047, 784, 659, 523];
     seq.forEach((f, i) => this._brassNote(f, t0 + i * 0.16, 0.2, i < 4 ? 0.85 : 0.7));
     this._brassNote(1175, t0 + 1.12, 0.22, 0.6);
+  }
+
+  async playClearFanfare() {
+    await this.playStageClear();
   }
 
   playGameOver() {
