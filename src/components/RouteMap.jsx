@@ -364,7 +364,7 @@ export default function RouteMap({
               transform={`translate(${bubble.x} ${bubble.y - 36})`}
               pointerEvents="none"
             >
-              <rect x={-56} y={-28} width={112} height={28} rx={10} ry={10} />
+              <rect x={-86} y={-28} width={172} height={28} rx={10} ry={10} />
               <polygon points="0,0 -8,12 8,12" className="bubble-tail" />
               <text x={0} y={-10} textAnchor="middle">
                 Enemy Encount!
