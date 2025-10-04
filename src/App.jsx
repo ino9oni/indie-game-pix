@@ -746,7 +746,7 @@ export default function App() {
         track = null;
         break;
       case "ending":
-        track = TRACKS.route || track;
+        track = TRACKS.ending || track;
         break;
       case "gameover":
         track = TRACKS.route || track;
@@ -763,6 +763,8 @@ export default function App() {
         if (!track) {
           if (previousTrack === TRACKS.picross) {
             await bgm.fadeOutAndStop(300);
+          } else if (previousTrack === TRACKS.ending) {
+            await bgm.fadeOutAndStop(400);
           } else {
             bgm.stop();
           }
@@ -785,9 +787,27 @@ export default function App() {
           return;
         }
 
+        if (track === TRACKS.ending) {
+          await bgm.crossFadeTo(track, track, {
+            fadeOutMs: previousTrack ? 400 : 0,
+            fadeInMs: 400,
+          });
+          if (!cancelled) chosenTrackRef.current = track;
+          return;
+        }
+
         if (previousTrack === TRACKS.picross) {
           await bgm.crossFadeTo(track, track, {
             fadeOutMs: 300,
+            fadeInMs: 350,
+          });
+          if (!cancelled) chosenTrackRef.current = track;
+          return;
+        }
+
+        if (previousTrack === TRACKS.ending) {
+          await bgm.crossFadeTo(track, track, {
+            fadeOutMs: 400,
             fadeInMs: 350,
           });
           if (!cancelled) chosenTrackRef.current = track;

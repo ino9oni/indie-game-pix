@@ -11,7 +11,7 @@
 - [done] マップモードから会話モードへの移行時にBGMが途切れないようにする
 - [done] プロローグモードからオープニングへの移行時にBGMが途切れないようにする
 - [done] ゲーム画面表示時にBGMをオンにする
-- エンディングモードへのBGMを変更・固定化する
+- [done] エンディングモードへのBGMを変更・固定化する
   - ファイル：assets/bgm/indie-game-pix-ending.wav
 - エンディングモードの背景画像を固定化する
   - ファイル：assets/img/backgrounud/ending.png

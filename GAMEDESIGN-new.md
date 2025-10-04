@@ -663,6 +663,8 @@
 - 背景
   - エンディング専用背景画像を表示する。
     - ファイル：assets/img/background/ending.png
+- BGM
+  - エンディングモードでは `assets/bgm/indie-game-pix-ending.wav` をループ再生し、遷移時には他モードの楽曲から約400msでクロスフェードする
 - 画面
   - エンディング種別
     - bad-ending ルート：グリモワールの力を制し切れず、森に眠る光が一時的に失われた結末を描写する。
