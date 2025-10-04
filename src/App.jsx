@@ -1516,6 +1516,28 @@ export default function App() {
     ? Math.min(1, enemyProgressRef.current.filled / totalCells)
     : 0;
 
+  const renderSpellSlot = (side) => {
+    const spell = activeSpell && activeSpell.caster === side ? activeSpell : null;
+    if (spell) {
+      return (
+        <div className={`spell-slot ${side} active`}>
+          {spell.image && <img src={spell.image} alt={spell.name} />}
+          <div className="spell-slot-text">
+            <div className="spell-slot-name">{spell.name}</div>
+            <div className="spell-slot-desc">{spell.description}</div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className={`spell-slot ${side}`}>
+        <span className="spell-slot-placeholder">
+          {side === "hero" ? "スペル待機中" : "敵スペル待機中"}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className="app">
       {screen !== "prologue" && (
@@ -1735,61 +1757,76 @@ export default function App() {
           <div className="game-center">
             <div className="battle-panels">
               <div className="player-panel">
-                <div className="battle-score">
-                  <span>プレイヤー {playerWins}</span>
-                  <span>敵 {enemyWins}</span>
-                </div>
-                <div className="progress-track">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${Math.min(1, playerProgressRatio) * 100}%` }}
-                  />
-                </div>
-                <div className="board-frame hero">
-                  <GameBoard
-                    size={size}
-                    grid={grid}
-                    setGrid={setGrid}
-                    hintData={clues}
-                    clues={clues}
-                    solution={solution}
-                    onCorrectFill={handlePlayerCorrect}
-                    onMistake={handlePlayerMistakeEvent}
-                  onCross={handlePlayerCrossEvent}
-                  hiddenRowClues={hiddenRowClues}
-                  hiddenColClues={hiddenColClues}
-                  lockedRowClues={lockedRowClues}
-                  lockedColClues={lockedColClues}
-                  fadedCells={fadedCells}
-                  disabled={paused}
-                  onGridChange={maybeCompletePuzzle}
-                />
-                  {playerAvatar?.src && (
-                    <figure className="board-portrait hero">
-                      <img src={playerAvatar.src} alt={playerAvatar.alt} />
-                    </figure>
+                <div className="panel-avatar hero">
+                  {playerAvatar?.src ? (
+                    <img src={playerAvatar.src} alt={playerAvatar.alt} />
+                  ) : (
+                    <span className="panel-avatar-placeholder">―</span>
                   )}
+                </div>
+                <div className="panel-spell hero">{renderSpellSlot("hero")}</div>
+                <div className="panel-score hero">
+                  <span className="panel-score-label">プレイヤー</span>
+                  <span className="panel-score-value">{playerWins}</span>
+                  <span className="panel-score-sub">/ {puzzleGoal}</span>
+                </div>
+                <div className="panel-board hero">
+                  <div className="board-frame hero">
+                    <GameBoard
+                      size={size}
+                      grid={grid}
+                      setGrid={setGrid}
+                      hintData={clues}
+                      clues={clues}
+                      solution={solution}
+                      onCorrectFill={handlePlayerCorrect}
+                      onMistake={handlePlayerMistakeEvent}
+                      onCross={handlePlayerCrossEvent}
+                      hiddenRowClues={hiddenRowClues}
+                      hiddenColClues={hiddenColClues}
+                      lockedRowClues={lockedRowClues}
+                      lockedColClues={lockedColClues}
+                      fadedCells={fadedCells}
+                      disabled={paused}
+                      onGridChange={maybeCompletePuzzle}
+                    />
+                  </div>
+                </div>
+                <div className="panel-progress hero">
+                  <div className="progress-track">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${Math.min(1, playerProgressRatio) * 100}%` }}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="enemy-panel">
-                <div className="board-frame enemy">
-                  <EnemyBoard
-                    size={size}
-                    grid={enemyGrid}
-                    hintData={clues}
-                    clues={clues}
-                  />
-                  {enemyAvatar?.src && (
-                    <figure className="board-portrait enemy">
-                      <img src={enemyAvatar.src} alt={enemyAvatar.alt} />
-                    </figure>
+                <div className="panel-avatar enemy">
+                  {enemyAvatar?.src ? (
+                    <img src={enemyAvatar.src} alt={enemyAvatar.alt} />
+                  ) : (
+                    <span className="panel-avatar-placeholder">敵</span>
                   )}
                 </div>
-                <div className="progress-track enemy">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${Math.min(1, enemyProgressRatio) * 100}%` }}
-                  />
+                <div className="panel-spell enemy">{renderSpellSlot("enemy")}</div>
+                <div className="panel-score enemy">
+                  <span className="panel-score-label">敵</span>
+                  <span className="panel-score-value">{enemyWins}</span>
+                  <span className="panel-score-sub">/ {puzzleGoal}</span>
+                </div>
+                <div className="panel-board enemy">
+                  <div className="board-frame enemy">
+                    <EnemyBoard size={size} grid={enemyGrid} hintData={clues} clues={clues} />
+                  </div>
+                </div>
+                <div className="panel-progress enemy">
+                  <div className="progress-track enemy">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${Math.min(1, enemyProgressRatio) * 100}%` }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1799,11 +1836,11 @@ export default function App() {
               ))}
             </div>
             <ul className="spell-log">
-            {spellLog.length === 0 && <li>スペルはまだ発動していません。</li>}
-            {spellLog.map((entry) => (
-              <li key={entry.id}>{entry.message}</li>
-            ))}
-          </ul>
+              {spellLog.length === 0 && <li>スペルはまだ発動していません。</li>}
+              {spellLog.map((entry) => (
+                <li key={entry.id}>{entry.message}</li>
+              ))}
+            </ul>
             {paused && (
               <div className="pause-overlay">
                 <div className="pause-box">
@@ -1813,17 +1850,6 @@ export default function App() {
                       Resume
                     </button>
                   </div>
-                </div>
-              </div>
-            )}
-            {activeSpell && (
-              <div className="spell-overlay">
-                {activeSpell.image && (
-                  <img src={activeSpell.image} alt={activeSpell.name} />
-                )}
-                <div>
-                  <div className="spell-name">{activeSpell.name}</div>
-                  <div className="spell-desc">{activeSpell.description}</div>
                 </div>
               </div>
             )}
