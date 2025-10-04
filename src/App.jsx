@@ -10,6 +10,7 @@ import GameBoard from "./components/GameBoard.jsx";
 import EnemyBoard from "./components/EnemyBoard.jsx";
 import Timer from "./components/Timer.jsx";
 import LevelClear from "./components/LevelClear.jsx";
+import PicrossClear from "./components/PicrossClear.jsx";
 import Ending from "./components/Ending.jsx";
 import GameOver from "./components/GameOver.jsx";
 import ScoreDisplay from "./components/ScoreDisplay.jsx";
@@ -18,7 +19,7 @@ import { ROUTE, CHARACTERS } from "./game/route.js";
 import { computeClues, emptyGrid, equalsSolution } from "./game/utils.js";
 import audio from "./audio/AudioManager.js";
 import bgm from "./audio/BgmPlayer.js";
-import { listBgmUrls } from "./audio/library.js";
+import { TRACKS } from "./audio/tracks.js";
 
 const GAME_SECONDS = 20 * 60; // 20 minutes
 const SCORE_BONUS = {
@@ -38,9 +39,21 @@ const PUZZLES_PER_BATTLE = 3;
 const FINAL_NODE_IDS = new Set(["elf-bad-ending", "elf-true-ending"]);
 const LEGACY_FINAL_NODE_ID = "elf-ending";
 const DEFAULT_TRUE_ENDING_NODE = "elf-true-ending";
+const AUTO_BGM_SCREENS = new Set([
+  "prologue",
+  "gamestart",
+  "name",
+  "route",
+  "conversation",
+  "picross",
+  "picross-clear",
+  "ending",
+  "gameover",
+]);
 const HERO_IMAGES = {
   normal: "/assets/img/character/hero/hero_normal.png",
   angry: "/assets/img/character/hero/hero_angry.png",
+  smile: "/assets/img/character/hero/hero_smile.png",
 };
 
 const ENEMY_AI_CONFIG = {
@@ -215,6 +228,7 @@ export default function App() {
   const [enemyGrid, setEnemyGrid] = useState([]);
   const [spellLog, setSpellLog] = useState([]);
   const [activeSpell, setActiveSpell] = useState(null);
+  const [postClearAction, setPostClearAction] = useState(null);
   const [hiddenRowClues, setHiddenRowClues] = useState([]);
   const [hiddenColClues, setHiddenColClues] = useState([]);
   const [lockedRowClues, setLockedRowClues] = useState([]);
@@ -566,6 +580,7 @@ export default function App() {
     setSpellLog([]);
     setActiveSpell(null);
     setEnemyGrid([]);
+    setPostClearAction(null);
   }
 
   useEffect(() => {
@@ -706,24 +721,118 @@ export default function App() {
 
   const chosenTrackRef = useRef(null);
   useEffect(() => {
-    if (soundOn) {
-      if (!chosenTrackRef.current) {
-        const urls = listBgmUrls();
-        if (urls.length) {
-          const idx = Math.floor(Math.random() * urls.length);
-          chosenTrackRef.current = urls[idx];
-        }
-      }
-      const url = chosenTrackRef.current;
-      if (url) bgm.play(url, "global");
-    } else {
+    if (!soundOn) {
       bgm.stop();
       chosenTrackRef.current = null;
+      return;
     }
-  }, [soundOn]);
+
+    let track = TRACKS.route;
+
+    switch (screen) {
+      case "prologue":
+        track = TRACKS.prologue || TRACKS.opening || track;
+        break;
+      case "opening":
+        track = TRACKS.opening || track;
+        break;
+      case "conversation":
+        track = TRACKS.conversation || track;
+        break;
+      case "picross":
+        track = TRACKS.picross || track;
+        break;
+      case "picross-clear":
+        track = null;
+        break;
+      case "ending":
+        track = TRACKS.route || track;
+        break;
+      case "gameover":
+        track = TRACKS.route || track;
+        break;
+      default:
+        track = TRACKS.route || track;
+    }
+
+    const previousTrack = chosenTrackRef.current;
+    let cancelled = false;
+
+    const applyTrack = async () => {
+      try {
+        if (!track) {
+          if (previousTrack === TRACKS.picross) {
+            await bgm.fadeOutAndStop(300);
+          } else {
+            bgm.stop();
+          }
+          if (!cancelled) chosenTrackRef.current = null;
+          return;
+        }
+
+        if (track === previousTrack) {
+          bgm.play(track, track);
+          if (!cancelled) chosenTrackRef.current = track;
+          return;
+        }
+
+        if (track === TRACKS.picross) {
+          await bgm.crossFadeTo(track, track, {
+            fadeOutMs: previousTrack ? 350 : 0,
+            fadeInMs: 350,
+          });
+          if (!cancelled) chosenTrackRef.current = track;
+          return;
+        }
+
+        if (previousTrack === TRACKS.picross) {
+          await bgm.crossFadeTo(track, track, {
+            fadeOutMs: 300,
+            fadeInMs: 350,
+          });
+          if (!cancelled) chosenTrackRef.current = track;
+          return;
+        }
+
+        bgm.play(track, track);
+        if (!cancelled) chosenTrackRef.current = track;
+      } catch (err) {
+        // Swallow playback errors (e.g., autoplay restrictions)
+      }
+    };
+
+    applyTrack();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [screen, soundOn]);
 
   useEffect(() => {
     if (soundOn) bgm.setRate(1);
+  }, [screen, soundOn]);
+
+  useEffect(() => {
+    if (!AUTO_BGM_SCREENS.has(screen)) return;
+    if (soundOn) return;
+    (async () => {
+      try {
+        await audio.enable();
+      } catch {}
+      try {
+        await bgm.resume();
+      } catch {}
+    })();
+    setSoundOn(true);
+  }, [screen, soundOn]);
+
+  useEffect(() => {
+    if (screen === "picross-clear" && soundOn) {
+      audio.playStageClear();
+    }
+    return () => {
+      audio.stopClearFanfare?.();
+    };
   }, [screen, soundOn]);
 
   useEffect(() => {
@@ -983,6 +1092,7 @@ export default function App() {
     if (!playerVictory) {
       return;
     }
+    let nextAction = null;
     if (pendingNode) {
       const clearedNode = normalizeNodeId(pendingNode);
       setCleared((prev) => {
@@ -991,18 +1101,43 @@ export default function App() {
         localStorage.setItem("clearedNodes", JSON.stringify(Array.from(next)));
         return next;
       });
-      if (FINAL_NODE_IDS.has(clearedNode)) {
-        enterEnding(clearedNode);
-        return;
+      const isFinal = FINAL_NODE_IDS.has(clearedNode);
+      if (isFinal) {
+        nextAction = { type: "ending", node: clearedNode };
+        setEndingNode(clearedNode);
+      } else {
+        nextAction = { type: "route", node: clearedNode };
+        setEndingNode(null);
       }
       setLastNode(currentNode);
       setCurrentNode(clearedNode);
       localStorage.setItem("routeNode", clearedNode);
       setPendingNode(null);
     }
+    if (!nextAction) {
+      setEndingNode(null);
+    }
     setPlayerWins(0);
     setEnemyWins(0);
     setBattleNode(null);
+    setPostClearAction(nextAction || { type: "route", node: currentNode });
+    setScreen("picross-clear");
+  }
+
+  function handlePicrossClearContinue() {
+    audio.stopClearFanfare?.();
+    const action = postClearAction;
+    setPostClearAction(null);
+    if (!action) {
+      setEndingNode(null);
+      setScreen("route");
+      return;
+    }
+    if (action.type === "ending") {
+      enterEnding(action.node);
+      return;
+    }
+    setEndingNode(null);
     setScreen("route");
   }
 
@@ -1219,6 +1354,7 @@ export default function App() {
     setEnemyWins(0);
     setPaused(false);
     setProjectiles([]);
+    setPostClearAction(null);
     setScreen("route");
   }, [cancelCelebration, stopEnemySolver, clearSpellEffects]);
 
@@ -1515,9 +1651,14 @@ export default function App() {
               await audio.playFootstep();
             } catch {}
           }}
-          onArrive={(id) => {
+          onArrive={async (id) => {
             const normalized = normalizeNodeId(id);
             if (CHARACTERS[normalized]) {
+              if (soundOn) {
+                try {
+                  await audio.playEnemyEncounter();
+                } catch {}
+              }
               setPendingNode(normalized);
               setScreen("conversation");
             } else {
@@ -1658,6 +1799,14 @@ export default function App() {
             )}
           </div>
         </div>
+      )}
+
+      {screen === "picross-clear" && (
+        <PicrossClear
+          heroName={heroName || "主人公"}
+          heroImage={HERO_IMAGES.smile}
+          onContinue={handlePicrossClearContinue}
+        />
       )}
 
       {screen === "gameover" && (
