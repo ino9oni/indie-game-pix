@@ -1102,11 +1102,25 @@ button {
 .name-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   align-items: stretch;
+  height: 100%;
 }
-.name-actions .kana.confirm {
+.name-actions-top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.name-actions-bottom {
   margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.name-actions-bottom .kana {
+  min-width: 72px;
 }
 .kana {
   padding: 10px 12px;
@@ -1125,13 +1139,11 @@ button {
     grid-template-columns: 1fr;
   }
   .name-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
   }
-  .name-actions .kana.confirm {
-    margin-top: 0;
-    flex-basis: 100%;
+  .name-actions-bottom {
+    justify-content: center;
   }
 }
 

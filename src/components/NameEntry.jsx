@@ -68,6 +68,10 @@ export default function NameEntry({ initial = "", onCancel, onConfirm }) {
     controls.push({ key: "cancel", label: "戻る", action: onCancel });
   }
 
+  const bottomKeys = new Set(["left", "right", "confirm"]);
+  const topControls = controls.filter(({ key }) => !bottomKeys.has(key));
+  const bottomControls = controls.filter(({ key }) => bottomKeys.has(key));
+
   return (
     <main className="screen name-entry">
       <div className="name-card">
@@ -103,16 +107,32 @@ export default function NameEntry({ initial = "", onCancel, onConfirm }) {
             ))}
           </div>
           <div className="name-actions">
-            {controls.map(({ key, label, action, extraClass }) => (
-              <button
-                key={key}
-                type="button"
-                className={`kana ${extraClass || ""}`.trim()}
-                onClick={action}
-              >
-                {label}
-              </button>
-            ))}
+            {topControls.length > 0 && (
+              <div className="name-actions-top">
+                {topControls.map(({ key, label, action, extraClass }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`kana ${extraClass || ""}`.trim()}
+                    onClick={action}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="name-actions-bottom">
+              {bottomControls.map(({ key, label, action, extraClass }) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`kana ${extraClass || ""}`.trim()}
+                  onClick={action}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
