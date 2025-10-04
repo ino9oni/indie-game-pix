@@ -60,12 +60,14 @@ export default function Prologue({ onNext }) {
   return (
     <main className="screen prologue">
       <div className="prologue-window">
-        <p
-          className={`fade-text ${phase === "in" ? "in" : ""}`}
-          style={{ "--fade-target": 0.92 }}
-        >
-          {text === "" ? "\u00a0" : text}
-        </p>
+        <div className="prologue-text">
+          <p
+            className={`fade-text ${phase === "in" ? "in" : ""}`}
+            style={{ "--fade-target": 0.92 }}
+          >
+            {text === "" ? "\u00a0" : text}
+          </p>
+        </div>
         <div className="prologue-actions">
           <button className="primary" type="button" onClick={skipPrologue}>
             Skip
