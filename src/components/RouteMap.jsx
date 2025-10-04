@@ -243,8 +243,14 @@ export default function RouteMap({
         animFrameRef.current = null;
         if (!mountedRef.current) return;
         setHeroPos(to);
-        setBubble({ x: to.x, y: to.y });
-        const isEncounter = nodes[targetId]?.type === "elf";
+        const targetNode = nodes[targetId];
+        const showEncounterBubble = targetNode?.type !== "end";
+        if (showEncounterBubble) {
+          setBubble({ x: to.x, y: to.y });
+        } else {
+          setBubble(null);
+        }
+        const isEncounter = targetNode?.type === "elf";
         if (isEncounter) {
           setEncountering(true);
           if (encounterTimerRef.current) {

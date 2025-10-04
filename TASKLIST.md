@@ -15,7 +15,7 @@
   - ファイル：assets/bgm/indie-game-pix-ending.wav
 - [done] エンディングモードの背景画像を固定化する
   - ファイル：assets/img/backgrounud/ending.png
-- マップモードで、エンディングのノードに到達したときは「EnemyEncounter!」は表示不要にする
+- [done] マップモードで、エンディングのノードに到達したときは「EnemyEncounter!」は表示不要にする
 - 名前入力画面の背景画像を変更する
   - ファイル：assets/img/character/hero/hero_fullbody.png
 - 名前入力モード時の画面レイアウト変更
