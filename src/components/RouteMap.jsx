@@ -96,12 +96,15 @@ export default function RouteMap({
   const [heroPos, setHeroPos] = useState(() => nodes[current] || { x: 0, y: 0 });
   const [bubble, setBubble] = useState(null);
 
+  const [encountering, setEncountering] = useState(false);
+
   const heroPosRef = useRef(heroPos);
   useEffect(() => {
     heroPosRef.current = heroPos;
   }, [heroPos]);
 
   const bubbleTimerRef = useRef(null);
+  const encounterTimerRef = useRef(null);
   const animFrameRef = useRef(null);
   const mountedRef = useRef(true);
 
@@ -110,6 +113,7 @@ export default function RouteMap({
       mountedRef.current = false;
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (bubbleTimerRef.current) clearTimeout(bubbleTimerRef.current);
+      if (encounterTimerRef.current) clearTimeout(encounterTimerRef.current);
     };
   }, []);
 
@@ -147,6 +151,11 @@ export default function RouteMap({
       clearTimeout(bubbleTimerRef.current);
       bubbleTimerRef.current = null;
     }
+    if (encounterTimerRef.current) {
+      clearTimeout(encounterTimerRef.current);
+      encounterTimerRef.current = null;
+    }
+    setEncountering(false);
   };
 
   const beginTravel = (targetId) => {
@@ -235,6 +244,20 @@ export default function RouteMap({
         if (!mountedRef.current) return;
         setHeroPos(to);
         setBubble({ x: to.x, y: to.y });
+        const isEncounter = nodes[targetId]?.type === "elf";
+        if (isEncounter) {
+          setEncountering(true);
+          if (encounterTimerRef.current) {
+            clearTimeout(encounterTimerRef.current);
+          }
+          encounterTimerRef.current = setTimeout(() => {
+            encounterTimerRef.current = null;
+            if (!mountedRef.current) return;
+            setEncountering(false);
+          }, 700);
+        } else {
+          setEncountering(false);
+        }
         bubbleTimerRef.current = setTimeout(() => {
           bubbleTimerRef.current = null;
           if (!mountedRef.current) return;
@@ -250,7 +273,12 @@ export default function RouteMap({
 
   return (
     <main className="screen route">
-      <div className="route-canvas">
+      <div
+        className={`route-canvas${encountering ? " encounter-zoom" : ""}`}
+      >
+        <div
+          className={`route-encounter-overlay${encountering ? " active" : ""}`}
+        />
         <svg
           viewBox={viewBox}
           className="route-svg"

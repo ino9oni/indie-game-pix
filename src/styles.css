@@ -1108,6 +1108,8 @@ button {
   background: #0c122680;
   border: 1px solid #2b2f55;
   border-radius: 12px;
+  position: relative;
+  overflow: hidden;
   padding: clamp(12px, 2vw, 32px);
   width: min(92vw, 1200px);
   height: min(78vh, 860px);
@@ -1118,6 +1120,67 @@ button {
 .route-svg {
   width: 100%;
   height: 100%;
+}
+
+.route-canvas.encounter-zoom {
+  animation: route-encounter-zoom 0.7s ease-in-out;
+}
+
+.route-encounter-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 77, 77, 0.3);
+  pointer-events: none;
+  opacity: 0;
+  border-radius: inherit;
+  z-index: 2;
+}
+
+.route-encounter-overlay.active {
+  animation: route-encounter-flash 0.7s ease-in-out forwards;
+}
+
+@keyframes route-encounter-zoom {
+  0% {
+    transform: scale(1);
+  }
+  20% {
+    transform: scale(1.15);
+  }
+  40% {
+    transform: scale(1);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  80% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes route-encounter-flash {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.35;
+  }
+  25% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 0.32;
+  }
+  60% {
+    opacity: 0;
+  }
+  80% {
+    opacity: 0.18;
+  }
 }
 .route-edge {
   stroke: #94a3b8;
