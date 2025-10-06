@@ -70,6 +70,20 @@ const HERO_SPELL = {
   revertRatio: 0.1,
 };
 
+const SPELL_SPEECH_DURATION = 4000;
+
+const SPELL_DIALOGUE = {
+  hero: "「迷宮への閃光、道を切り拓け！」",
+  enemy: {
+    practice: "「翠門よ、旅人の視界を閉ざせ！」",
+    easy: "「木霊たち、印を跳ね散らせ！」",
+    middle: "「紋章の秘鍵よ、謎を秘せ！」",
+    high: "「花冠の霧よ、盤面を霞ませなさい！」",
+    ultra: "「森羅の審判、侵入者を裁け！」",
+    default: "「森の精霊よ、力を貸して！」",
+  },
+};
+
 const ENEMY_SPELLS = {
   practice: {
     name: "翠門の封緘",
@@ -216,6 +230,7 @@ export default function App() {
   );
   const spedUpRef = useRef(false);
   const resumeOnceRef = useRef(false);
+  const initialPrologueBgmRef = useRef(false);
   const [currentNode, setCurrentNode] = useState(() => readStoredNode());
   const [lastNode, setLastNode] = useState("");
   const [pendingNode, setPendingNode] = useState(null);
@@ -229,6 +244,7 @@ export default function App() {
   const [enemyGrid, setEnemyGrid] = useState([]);
   const [spellLog, setSpellLog] = useState([]);
   const [activeSpell, setActiveSpell] = useState(null);
+  const [spellSpeech, setSpellSpeech] = useState({ hero: null, enemy: null });
   const [postClearAction, setPostClearAction] = useState(null);
   const [hiddenRowClues, setHiddenRowClues] = useState([]);
   const [hiddenColClues, setHiddenColClues] = useState([]);
@@ -276,6 +292,7 @@ export default function App() {
   const enemySolverRef = useRef(null);
   const hiddenTimersRef = useRef({ hidden: null, locked: null, faded: null });
   const spellOverlayTimeoutRef = useRef(null);
+  const speechTimeoutRef = useRef({ hero: null, enemy: null });
   const heroStateRef = useRef({});
   const heroSpellRef = useRef({ threshold: 0, used: false });
   const enemySpellStateRef = useRef({ used: new Set() });
@@ -323,6 +340,14 @@ export default function App() {
     setLockedColClues([]);
     setFadedCells([]);
     ultraPenaltyActiveRef.current = false;
+    setSpellSpeech({ hero: null, enemy: null });
+    const speechTimers = speechTimeoutRef.current;
+    Object.keys(speechTimers).forEach((side) => {
+      if (speechTimers[side]) {
+        clearTimeout(speechTimers[side]);
+        speechTimers[side] = null;
+      }
+    });
     if (spellOverlayTimeoutRef.current) {
       clearTimeout(spellOverlayTimeoutRef.current);
       spellOverlayTimeoutRef.current = null;
@@ -345,10 +370,31 @@ export default function App() {
       spellOverlayTimeoutRef.current = null;
     }
     setActiveSpell(payload);
+
+    const caster = payload?.caster;
+    const spellId = payload?.spellId;
+    let speechText = payload?.speech;
+    if (!speechText && caster === "hero") {
+      speechText = SPELL_DIALOGUE.hero;
+    } else if (!speechText && caster === "enemy") {
+      speechText = SPELL_DIALOGUE.enemy[spellId] || SPELL_DIALOGUE.enemy.default;
+    }
+
+    if (caster && speechText) {
+      if (speechTimeoutRef.current[caster]) {
+        clearTimeout(speechTimeoutRef.current[caster]);
+      }
+      setSpellSpeech((prev) => ({ ...prev, [caster]: speechText }));
+      speechTimeoutRef.current[caster] = setTimeout(() => {
+        setSpellSpeech((prev) => ({ ...prev, [caster]: null }));
+        speechTimeoutRef.current[caster] = null;
+      }, SPELL_SPEECH_DURATION);
+    }
+
     spellOverlayTimeoutRef.current = setTimeout(() => {
       setActiveSpell(null);
       spellOverlayTimeoutRef.current = null;
-    }, 4000);
+    }, SPELL_SPEECH_DURATION);
   }, []);
 
   const triggerHeroSpell = useCallback(() => {
@@ -389,6 +435,7 @@ export default function App() {
     logSpell(`${casterName} が「${HERO_SPELL.name}」を放った`);
     showSpellOverlay({
       caster: "hero",
+      spellId: "hero",
       name: HERO_SPELL.name,
       description: "敵の進捗を巻き戻した",
       image: HERO_IMAGES.angry,
@@ -409,6 +456,7 @@ export default function App() {
       logSpell(`${enemyName} が「${spell.name}」を発動`);
       showSpellOverlay({
         caster: "enemy",
+        spellId,
         name: spell.name,
         description: spell.description,
         image: character?.images?.angry,
@@ -723,7 +771,9 @@ export default function App() {
   const chosenTrackRef = useRef(null);
   useEffect(() => {
     if (!soundOn) {
-      bgm.stop();
+      try {
+        bgm.stop();
+      } catch {}
       chosenTrackRef.current = null;
       return;
     }
@@ -834,8 +884,13 @@ export default function App() {
   }, [screen, soundOn]);
 
   useEffect(() => {
-    if (!AUTO_BGM_SCREENS.has(screen)) return;
-    if (soundOn) return;
+    if (screen !== "prologue") return;
+    if (soundOn) {
+      initialPrologueBgmRef.current = true;
+      return;
+    }
+    if (initialPrologueBgmRef.current) return;
+    initialPrologueBgmRef.current = true;
     (async () => {
       try {
         await audio.enable();
@@ -878,6 +933,16 @@ export default function App() {
   useEffect(() => {
     spedUpRef.current = false;
   }, [remaining, screen]);
+
+  useEffect(() => () => {
+    const timers = speechTimeoutRef.current;
+    Object.keys(timers).forEach((side) => {
+      if (timers[side]) {
+        clearTimeout(timers[side]);
+        timers[side] = null;
+      }
+    });
+  }, []);
 
   function beginPicrossForNode(nodeId) {
     const normalizedId = normalizeNodeId(nodeId);
@@ -1500,10 +1565,38 @@ export default function App() {
   }, [paused, screen]);
 
   useEffect(() => {
+    if (screen === "picross") return;
+    setSpellSpeech({ hero: null, enemy: null });
+    const timers = speechTimeoutRef.current;
+    Object.keys(timers).forEach((side) => {
+      if (timers[side]) {
+        clearTimeout(timers[side]);
+        timers[side] = null;
+      }
+    });
+  }, [screen]);
+
+  useEffect(() => {
     if (screen !== "gamestart") {
       setGameStartNameVisible(false);
     }
   }, [screen]);
+
+  const conversationBackground = useMemo(() => {
+    if (screen !== "conversation") return null;
+    if (!pendingNode) return null;
+    const enemy = CHARACTERS[pendingNode];
+    if (!enemy?.images) return null;
+    return enemy.images.fullbody || enemy.images.normal || null;
+  }, [pendingNode, screen]);
+
+  const battleBackground = useMemo(() => {
+    if (screen !== "picross") return null;
+    if (!battleNode) return null;
+    const enemy = CHARACTERS[battleNode];
+    if (!enemy?.images) return null;
+    return enemy.images.fullbody || enemy.images.normal || null;
+  }, [battleNode, screen]);
 
   const showScore = !["prologue", "opening", "gamestart", "name"].includes(screen);
   const puzzleGoal = puzzleSequence.length || PUZZLES_PER_BATTLE;
@@ -1544,7 +1637,11 @@ export default function App() {
         <Background
           seed={bgSeed}
           fixedUrl={
-            screen === "opening"
+            (screen === "conversation" && conversationBackground)
+              ? conversationBackground
+              : (screen === "picross" && battleBackground)
+                ? battleBackground
+                : screen === "opening"
               ? "/assets/img/title.png"
               : screen === "ending"
                 ? "/assets/img/background/ending.png"
@@ -1763,6 +1860,11 @@ export default function App() {
                   ) : (
                     <span className="panel-avatar-placeholder">―</span>
                   )}
+                  {spellSpeech.hero && (
+                    <div className="spell-speech hero">
+                      <span className="spell-speech-text">{spellSpeech.hero}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="panel-spell hero">{renderSpellSlot("hero")}</div>
                 <div className="panel-score hero">
@@ -1807,6 +1909,11 @@ export default function App() {
                     <img src={enemyAvatar.src} alt={enemyAvatar.alt} />
                   ) : (
                     <span className="panel-avatar-placeholder">敵</span>
+                  )}
+                  {spellSpeech.enemy && (
+                    <div className="spell-speech enemy">
+                      <span className="spell-speech-text">{spellSpeech.enemy}</span>
+                    </div>
                   )}
                 </div>
                 <div className="panel-spell enemy">{renderSpellSlot("enemy")}</div>

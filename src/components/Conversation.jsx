@@ -27,6 +27,12 @@ const HERO_IMAGES = {
   angry: "/assets/img/character/hero/hero_angry.png",
 };
 
+const BASE_PORTRAIT_WIDTH = 380;
+const BASE_PORTRAIT_HEIGHT = 487;
+const PORTRAIT_RATIO = BASE_PORTRAIT_HEIGHT / BASE_PORTRAIT_WIDTH;
+const PORTRAIT_SCALE = 1.5;
+const MAX_PORTRAIT_WIDTH = Math.round(BASE_PORTRAIT_WIDTH * PORTRAIT_SCALE);
+
 function buildScript(difficultyId, heroName, enemyName) {
   const hero = heroName?.trim() ? heroName : "主人公";
   const enemy = enemyName?.trim() ? enemyName : "敵";
@@ -238,7 +244,11 @@ export default function Conversation({
   );
   const [idx, setIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const [portraitSize, setPortraitSize] = useState({ w: 380, h: 487 });
+  const [portraitSize, setPortraitSize] = useState(() => {
+    const w = MAX_PORTRAIT_WIDTH;
+    const h = Math.round(w * PORTRAIT_RATIO);
+    return { w, h };
+  });
   const [phase, setPhase] = useState("in");
   const timers = useRef([]);
 
@@ -257,14 +267,29 @@ export default function Conversation({
 
   // Responsive portrait sizing: shrink on narrow screens
   useEffect(() => {
-    const RATIO = 487 / 380; // h/w
     function recalc() {
       const ww = window.innerWidth || 1024;
-      let w = 380;
-      if (ww <= 480) w = 240; // phones
-      else if (ww <= 768) w = 300; // tablets / small screens
-      const h = Math.round(w * RATIO);
-      setPortraitSize({ w, h });
+      const horizontalPadding = 16; // padding in container (8px left/right)
+      const portraitGap = 12; // flex gap between portraits
+      const availablePerPortrait =
+        (ww - horizontalPadding - portraitGap) / 2;
+      const safeAvailable = Math.max(0, Math.floor(availablePerPortrait));
+      const responsiveMinimum = Math.round(BASE_PORTRAIT_WIDTH * 0.75);
+      let clampedWidth;
+      if (safeAvailable <= 0) {
+        clampedWidth = MAX_PORTRAIT_WIDTH;
+      } else {
+        const candidate =
+          safeAvailable < responsiveMinimum
+            ? safeAvailable
+            : Math.min(MAX_PORTRAIT_WIDTH, safeAvailable);
+        clampedWidth = Math.min(
+          Math.max(160, candidate),
+          safeAvailable,
+        );
+      }
+      const h = Math.round(clampedWidth * PORTRAIT_RATIO);
+      setPortraitSize({ w: clampedWidth, h });
     }
     recalc();
     window.addEventListener("resize", recalc);
@@ -313,6 +338,9 @@ export default function Conversation({
   const enemySet = ENEMY_IMAGES[difficultyId] || {};
   const enemyImg = enemySet[enemyEmotion] || enemySet.normal;
 
+  const heroLabel = heroName?.trim() ? heroName : "主人公";
+  const enemyLabel = enemyName?.trim() ? enemyName : "敵";
+
   const heroActive = current.who === "hero";
   const enemyActive = current.who === "enemy";
   const heroOpacity = mounted ? (heroActive ? 1 : 0.45) : 0;
@@ -351,6 +379,7 @@ export default function Conversation({
                 display: "grid",
                 placeItems: "center",
                 overflow: "hidden",
+                flexShrink: 0,
                 boxShadow: heroActive
                   ? "0 0 32px #60a5fa66"
                   : "0 6px 20px #03081566",
@@ -360,7 +389,7 @@ export default function Conversation({
               <img
                 key={`${heroEmotion}-${idx}`}
                 src={HERO_IMAGES[heroEmotion] || HERO_IMAGES.normal}
-                alt={heroName || "主人公"}
+                alt={heroLabel}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -389,7 +418,7 @@ export default function Conversation({
                 transform: heroActive ? "translateY(0)" : "translateY(2px)",
               }}
             >
-              {heroName}
+              {heroLabel}
             </div>
           </div>
 
@@ -406,6 +435,7 @@ export default function Conversation({
                 display: "grid",
                 placeItems: "center",
                 overflow: enemyImg ? "hidden" : "visible",
+                flexShrink: 0,
                 boxShadow: enemyActive
                   ? "0 0 32px #f9731699"
                   : "0 6px 20px #03081566",
@@ -416,7 +446,7 @@ export default function Conversation({
                 <img
                   key={`${enemyEmotion}-${idx}`}
                   src={enemyImg}
-                  alt={enemyName}
+                  alt={enemyLabel}
                   style={{
                     width: "100%",
                     height: "100%",
@@ -457,7 +487,7 @@ export default function Conversation({
                 transform: enemyActive ? "translateY(0)" : "translateY(2px)",
               }}
             >
-              {enemyName}
+              {enemyLabel}
             </div>
           </div>
         </div>

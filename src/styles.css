@@ -644,6 +644,7 @@ body {
   grid-area: avatar;
   display: flex;
   align-items: center;
+  position: relative;
 }
 
 .panel-avatar img {
@@ -680,6 +681,95 @@ body {
 .enemy-panel .panel-avatar-placeholder {
   border-color: rgba(248, 113, 113, 0.4);
   color: rgba(248, 113, 113, 0.65);
+}
+
+.spell-speech {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 12px);
+  transform: translateY(-50%);
+  min-width: 180px;
+  max-width: 240px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 255, 0.45);
+  color: #f8fafc;
+  background: rgba(30, 41, 59, 0.9);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.45);
+  pointer-events: none;
+  z-index: 4;
+  animation: speechFade 160ms ease-out both;
+}
+
+.spell-speech.hero {
+  border-color: rgba(96, 165, 250, 0.55);
+  background: rgba(30, 58, 138, 0.9);
+}
+
+.spell-speech.enemy {
+  border-color: rgba(248, 113, 113, 0.6);
+  background: rgba(127, 29, 29, 0.88);
+}
+
+.spell-speech::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -10px;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 10px 10px 10px 0;
+}
+
+.spell-speech.hero::before {
+  border-color: transparent rgba(30, 58, 138, 0.9) transparent transparent;
+}
+
+.spell-speech.enemy::before {
+  border-color: transparent rgba(127, 29, 29, 0.88) transparent transparent;
+}
+
+.spell-speech-text {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+@keyframes speechFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .spell-speech {
+    top: calc(100% + 10px);
+    left: 0;
+    transform: none;
+    max-width: min(270px, 70vw);
+  }
+
+  .spell-speech::before {
+    top: -10px;
+    left: 18px;
+    transform: none;
+    border-width: 0 10px 10px 10px;
+  }
+
+  .spell-speech.hero::before {
+    border-color: transparent transparent rgba(30, 58, 138, 0.9) transparent;
+  }
+
+  .spell-speech.enemy::before {
+    border-color: transparent transparent rgba(127, 29, 29, 0.88) transparent;
+  }
 }
 
 .panel-spell {
