@@ -269,10 +269,10 @@ export default function Conversation({
   useEffect(() => {
     function recalc() {
       const ww = window.innerWidth || 1024;
-      const horizontalPadding = 16; // padding in container (8px left/right)
-      const portraitGap = 12; // flex gap between portraits
+      const stagePadding = Math.max(24, Math.min(Math.round(ww * 0.08), 72));
+      const portraitGap = Math.max(20, Math.min(Math.round(ww * 0.05), 64));
       const availablePerPortrait =
-        (ww - horizontalPadding - portraitGap) / 2;
+        (ww - stagePadding * 2 - portraitGap) / 2;
       const safeAvailable = Math.max(0, Math.floor(availablePerPortrait));
       const responsiveMinimum = Math.round(BASE_PORTRAIT_WIDTH * 0.75);
       let clampedWidth;
@@ -357,45 +357,24 @@ export default function Conversation({
         }}
       >
         {/* Stage: portraits side by side, natural sizes, no overlap with dialog */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: 12,
-            padding: "8px 8px 0",
-          }}
-        >
-          {/* Hero portrait (left) */}
-          <div style={{ display: "grid", placeItems: "center" }}>
+        <div className="conversation-stage">
+          <div className="conversation-slot hero">
             <div
+              className={`portrait-frame hero ${heroActive ? "active" : ""}`}
               style={{
-                background: "#1e3a8a",
-                border: "3px solid #d1b464",
-                borderRadius: 12,
-                padding: 4,
                 width: portraitSize.w,
                 height: portraitSize.h,
-                display: "grid",
-                placeItems: "center",
-                overflow: "hidden",
-                flexShrink: 0,
                 boxShadow: heroActive
                   ? "0 0 32px #60a5fa66"
                   : "0 6px 20px #03081566",
-                transition: "box-shadow 320ms ease",
               }}
             >
               <img
                 key={`${heroEmotion}-${idx}`}
                 src={HERO_IMAGES[heroEmotion] || HERO_IMAGES.normal}
                 alt={heroLabel}
+                className="portrait-image hero"
                 style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  objectPosition: "center",
-                  display: "block",
                   opacity: heroOpacity,
                   transform: heroActive
                     ? "translateY(-2px) scale(1.02)"
@@ -403,18 +382,14 @@ export default function Conversation({
                   filter: heroActive
                     ? "drop-shadow(0 0 14px #7dd3fc88) saturate(1.05)"
                     : "grayscale(18%) brightness(0.82)",
-                  transition:
-                    "opacity 260ms ease, transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 360ms ease",
                 }}
               />
             </div>
             <div
+              className="portrait-label hero"
               style={{
-                textAlign: "center",
                 fontWeight: heroActive ? 800 : 700,
-                marginTop: 4,
                 opacity: mounted ? (heroActive ? 1 : 0.7) : 0,
-                transition: "opacity 240ms ease, transform 240ms ease",
                 transform: heroActive ? "translateY(0)" : "translateY(2px)",
               }}
             >
@@ -422,24 +397,18 @@ export default function Conversation({
             </div>
           </div>
 
-          {/* Enemy portrait (right) */}
-          <div style={{ display: "grid", placeItems: "center" }}>
+          <div className="conversation-slot enemy">
             <div
+              className={`portrait-frame enemy ${enemyActive ? "active" : ""}`}
               style={{
-                background: "#1e3a8a",
-                border: enemyImg ? "3px solid #d1b464" : "1px solid #2b2f55",
-                borderRadius: 12,
-                padding: enemyImg ? 4 : 0,
                 width: portraitSize.w,
                 height: portraitSize.h,
-                display: "grid",
-                placeItems: "center",
+                padding: enemyImg ? 4 : 0,
+                border: enemyImg ? "3px solid #d1b464" : "1px solid #2b2f55",
                 overflow: enemyImg ? "hidden" : "visible",
-                flexShrink: 0,
                 boxShadow: enemyActive
                   ? "0 0 32px #f9731699"
                   : "0 6px 20px #03081566",
-                transition: "box-shadow 320ms ease",
               }}
             >
               {enemyImg ? (
@@ -447,12 +416,8 @@ export default function Conversation({
                   key={`${enemyEmotion}-${idx}`}
                   src={enemyImg}
                   alt={enemyLabel}
+                  className="portrait-image enemy"
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    objectPosition: "center",
-                    display: "block",
                     opacity: enemyOpacity,
                     transform: enemyActive
                       ? "translateY(-2px) scale(1.02)"
@@ -460,30 +425,17 @@ export default function Conversation({
                     filter: enemyActive
                       ? "drop-shadow(0 0 14px #fb923c99) saturate(1.05)"
                       : "grayscale(18%) brightness(0.82)",
-                    transition:
-                      "opacity 260ms ease, transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 360ms ease",
                   }}
                 />
               ) : (
-                <div
-                  style={{
-                    background: "#dc2626",
-                    borderRadius: 12,
-                    padding: "12px 16px",
-                    fontWeight: 800,
-                  }}
-                >
-                  {enemyName}
-                </div>
+                <div className="portrait-placeholder">{enemyName}</div>
               )}
             </div>
             <div
+              className="portrait-label enemy"
               style={{
-                textAlign: "center",
                 fontWeight: enemyActive ? 800 : 700,
-                marginTop: 4,
                 opacity: mounted ? (enemyActive ? 1 : 0.7) : 0,
-                transition: "opacity 240ms ease, transform 240ms ease",
                 transform: enemyActive ? "translateY(0)" : "translateY(2px)",
               }}
             >

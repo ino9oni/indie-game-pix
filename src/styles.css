@@ -109,6 +109,99 @@ body {
   gap: 10px;
 }
 
+.conversation-stage {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: clamp(20px, 5vw, 64px);
+  padding: clamp(12px, 4vw, 48px) clamp(16px, 6vw, 72px) 0;
+  width: 100%;
+}
+
+.conversation-slot {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.conversation-slot.hero {
+  align-items: flex-start;
+}
+
+.conversation-slot.enemy {
+  align-items: flex-end;
+}
+
+.portrait-frame {
+  position: relative;
+  background: #1e3a8a;
+  border: 3px solid #d1b464;
+  border-radius: 12px;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: box-shadow 320ms ease;
+}
+
+.portrait-frame.enemy {
+  background: #3f1a57;
+}
+
+.portrait-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transition:
+    opacity 260ms ease,
+    transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 360ms ease;
+}
+
+.portrait-label {
+  min-width: 120px;
+  text-align: center;
+  font-size: calc(16px * var(--font-scale));
+  letter-spacing: 0.04em;
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+
+.portrait-placeholder {
+  background: #dc2626;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+@media (max-width: 960px) {
+  .conversation-stage {
+    gap: clamp(16px, 4vw, 48px);
+    padding: clamp(12px, 3vw, 32px) 24px 0;
+  }
+  .conversation-slot {
+    flex: 1 1 50%;
+  }
+}
+
+@media (max-width: 640px) {
+  .conversation-stage {
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 20px 0;
+  }
+  .conversation-slot,
+  .conversation-slot.hero,
+  .conversation-slot.enemy {
+    align-items: center;
+  }
+}
+
 .score-hud {
   display: inline-flex;
   align-items: center;
