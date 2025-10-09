@@ -1305,81 +1305,6 @@ export default function App() {
     [completePuzzle, grid, screen, solution],
   );
 
-  const handlePicrossCellAction = useCallback(
-    (mode) => {
-      if (screen !== "picross") return;
-      if (!solution.length) return;
-      const { row, col } = gamepadCursorRef.current;
-      if (
-        row == null ||
-        col == null ||
-        row < 0 ||
-        col < 0 ||
-        row >= solution.length ||
-        col >= solution.length
-      ) {
-        return;
-      }
-
-      if (mode === "clear") {
-        setGrid((prev) => {
-          const previous = prev[row]?.[col];
-          if (previous == null || previous === 0) return prev;
-          const next = prev.map((line) => line.slice());
-          next[row][col] = 0;
-          const shouldFill = solution[row]?.[col] ?? false;
-          if (shouldFill && previous === 1) {
-            handlePlayerMistakeEvent(row, col, { type: "unfill" }, next);
-          }
-          maybeCompletePuzzle(next);
-          return next;
-        });
-        return;
-      }
-
-      setGrid((prev) => {
-        const previous = prev[row]?.[col];
-        if (previous == null) return prev;
-        const next = toggleCell(prev, row, col, mode);
-        const currentValue = next[row]?.[col];
-        const shouldFill = solution[row]?.[col] ?? false;
-
-        if (mode === "fill") {
-          if (previous !== 1 && currentValue === 1) {
-            if (shouldFill) {
-              handlePlayerCorrect(row, col, next);
-            } else {
-              handlePlayerMistakeEvent(row, col, { type: "fill" }, next);
-            }
-          }
-          if (previous === 1 && currentValue !== 1 && shouldFill) {
-            handlePlayerMistakeEvent(row, col, { type: "unfill" }, next);
-          }
-          audio.playFill();
-        } else if (mode === "cross") {
-          if (currentValue === -1 && shouldFill) {
-            handlePlayerMistakeEvent(row, col, { type: "cross" }, next);
-          }
-          audio.playMark();
-        } else if (mode === "maybe") {
-          audio.playMark();
-        }
-
-        maybeCompletePuzzle(next);
-        return next;
-      });
-    },
-    [handlePlayerCorrect, handlePlayerMistakeEvent, maybeCompletePuzzle, screen, solution.length, solution],
-  );
-
-  const handlePicrossReset = useCallback(() => {
-    if (screen !== "picross") return;
-    if (!solution.length) return;
-    const fresh = emptyGrid(solution.length);
-    setGrid(fresh);
-    maybeCompletePuzzle(fresh);
-  }, [maybeCompletePuzzle, screen, solution.length]);
-
   const moveGamepadCursor = useCallback(
     (dx, dy) => {
       if (screen !== "picross") return;
@@ -1667,6 +1592,81 @@ export default function App() {
     },
     [handleHeroCross],
   );
+
+  const handlePicrossCellAction = useCallback(
+    (mode) => {
+      if (screen !== "picross") return;
+      if (!solution.length) return;
+      const { row, col } = gamepadCursorRef.current;
+      if (
+        row == null ||
+        col == null ||
+        row < 0 ||
+        col < 0 ||
+        row >= solution.length ||
+        col >= solution.length
+      ) {
+        return;
+      }
+
+      if (mode === "clear") {
+        setGrid((prev) => {
+          const previous = prev[row]?.[col];
+          if (previous == null || previous === 0) return prev;
+          const next = prev.map((line) => line.slice());
+          next[row][col] = 0;
+          const shouldFill = solution[row]?.[col] ?? false;
+          if (shouldFill && previous === 1) {
+            handlePlayerMistakeEvent(row, col, { type: "unfill" }, next);
+          }
+          maybeCompletePuzzle(next);
+          return next;
+        });
+        return;
+      }
+
+      setGrid((prev) => {
+        const previous = prev[row]?.[col];
+        if (previous == null) return prev;
+        const next = toggleCell(prev, row, col, mode);
+        const currentValue = next[row]?.[col];
+        const shouldFill = solution[row]?.[col] ?? false;
+
+        if (mode === "fill") {
+          if (previous !== 1 && currentValue === 1) {
+            if (shouldFill) {
+              handlePlayerCorrect(row, col, next);
+            } else {
+              handlePlayerMistakeEvent(row, col, { type: "fill" }, next);
+            }
+          }
+          if (previous === 1 && currentValue !== 1 && shouldFill) {
+            handlePlayerMistakeEvent(row, col, { type: "unfill" }, next);
+          }
+          audio.playFill();
+        } else if (mode === "cross") {
+          if (currentValue === -1 && shouldFill) {
+            handlePlayerMistakeEvent(row, col, { type: "cross" }, next);
+          }
+          audio.playMark();
+        } else if (mode === "maybe") {
+          audio.playMark();
+        }
+
+        maybeCompletePuzzle(next);
+        return next;
+      });
+    },
+    [handlePlayerCorrect, handlePlayerMistakeEvent, maybeCompletePuzzle, screen, solution.length, solution],
+  );
+
+  const handlePicrossReset = useCallback(() => {
+    if (screen !== "picross") return;
+    if (!solution.length) return;
+    const fresh = emptyGrid(solution.length);
+    setGrid(fresh);
+    maybeCompletePuzzle(fresh);
+  }, [maybeCompletePuzzle, screen, solution.length]);
 
   const togglePaused = useCallback(() => {
     setPaused((prev) => {
