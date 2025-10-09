@@ -1,0 +1,3 @@
+- After implementing changes, run `make lint` and any relevant manual checks (tests currently stubbed) before handing off.
+- Follow repository guidelines for versioning: major for feature/functionality changes, minor for text/UI/bug fixes.
+- Update TASKLIST.md labels to `[done]` when completing tasks if applicable.

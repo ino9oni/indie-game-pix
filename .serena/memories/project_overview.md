@@ -1,0 +1,4 @@
+- React + Vite Picross/nonogram game named "elfpix".
+- Runs in browser via `src/App.jsx` with multiple screens (prologue, conversation, picross puzzle gameplay).
+- Assets/audio pulled from `assets/`; Android build artifacts live under `mobile/android` via sync task.
+- Current release target version listed in README is 1.1.5 while package.json version is 1.4.0.

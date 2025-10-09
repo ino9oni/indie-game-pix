@@ -1,0 +1,3 @@
+- Issue #12 "Improve Picross cell click feedback" implemented and closed.
+- Changes merged into branch feature/rewrite-from-gamedesign with commits d162c4c and cee2fc7; release tagged v2.1.0.
+- Tasklist updated to mark the Picross click SFX/FX improvement as done.

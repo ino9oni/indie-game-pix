@@ -199,6 +199,7 @@ export default function App() {
   const [remaining, setRemaining] = useState(GAME_SECONDS);
   const [bgSeed, setBgSeed] = useState(0);
   const [gameStartNameVisible, setGameStartNameVisible] = useState(false);
+  const [gameStartPhase, setGameStartPhase] = useState("before");
   const [soundOn, setSoundOn] = useState(() => {
     try {
       return localStorage.getItem("soundOn") === "1";
@@ -218,6 +219,9 @@ export default function App() {
   const [score, setScore] = useState(() => readStoredScore());
   const [displayScore, setDisplayScore] = useState(() => readStoredScore());
   const [scoreAnimating, setScoreAnimating] = useState(false);
+  const [enemyScore, setEnemyScore] = useState(0);
+  const [displayEnemyScore, setDisplayEnemyScore] = useState(0);
+  const [enemyScoreAnimating, setEnemyScoreAnimating] = useState(false);
   const [debugMode, setDebugMode] = useState(() => {
     try {
       return localStorage.getItem("debugMode") === "1";
@@ -238,7 +242,7 @@ export default function App() {
   const [cleared, setCleared] = useState(() => readStoredClearedSet());
   const [endingNode, setEndingNode] = useState(null);
   const [puzzleSequence, setPuzzleSequence] = useState([]);
-  const [puzzleIndex, setPuzzleIndex] = useState(0);
+  const [heroPuzzleIndex, setHeroPuzzleIndex] = useState(0);
   const [playerWins, setPlayerWins] = useState(0);
   const [enemyWins, setEnemyWins] = useState(0);
   const [enemyGrid, setEnemyGrid] = useState([]);
@@ -275,10 +279,6 @@ export default function App() {
   }, [battleNode]);
 
   const cancelCelebration = useCallback(() => {
-    if (celebrationDelayRef.current) {
-      clearTimeout(celebrationDelayRef.current);
-      celebrationDelayRef.current = null;
-    }
     if (typeof audio.stopClearFanfare === "function") {
       audio.stopClearFanfare();
     }
@@ -287,8 +287,10 @@ export default function App() {
   const scoreRef = useRef(score);
   const displayScoreRef = useRef(displayScore);
   const scoreAnimTimerRef = useRef(null);
+  const enemyScoreRef = useRef(enemyScore);
+  const displayEnemyScoreRef = useRef(displayEnemyScore);
+  const enemyScoreAnimTimerRef = useRef(null);
   const realtimeBonusRef = useRef(new Set());
-  const celebrationDelayRef = useRef(null);
   const enemySolverRef = useRef(null);
   const hiddenTimersRef = useRef({ hidden: null, locked: null, faded: null });
   const spellOverlayTimeoutRef = useRef(null);
@@ -301,6 +303,8 @@ export default function App() {
   const ultraPenaltyActiveRef = useRef(false);
   const enemyOrderRef = useRef({ list: [], index: 0 });
   const puzzleSolvedRef = useRef(false);
+  const enemySolutionRef = useRef([]);
+  const [enemySolutionVersion, setEnemySolutionVersion] = useState(0);
 
   const launchProjectile = useCallback((variant) => {
     setProjectiles((prev) => {
@@ -623,7 +627,9 @@ export default function App() {
     setCleared(new Set());
     setEndingNode(null);
     setPuzzleSequence([]);
-    setPuzzleIndex(0);
+    setHeroPuzzleIndex(0);
+    enemySolutionRef.current = [];
+    setEnemySolutionVersion((v) => v + 1);
     setPlayerWins(0);
     setEnemyWins(0);
     setSpellLog([]);
@@ -663,6 +669,14 @@ export default function App() {
   }, [displayScore]);
 
   useEffect(() => {
+    enemyScoreRef.current = enemyScore;
+  }, [enemyScore]);
+
+  useEffect(() => {
+    displayEnemyScoreRef.current = displayEnemyScore;
+  }, [displayEnemyScore]);
+
+  useEffect(() => {
     try {
       if (score <= 0) {
         localStorage.removeItem("score");
@@ -680,6 +694,20 @@ export default function App() {
       localStorage.setItem("fontScale", String(fontScale));
     } catch {}
   }, [fontScale]);
+
+  const stopEnemyScoreAnimation = useCallback((nextValue) => {
+    if (enemyScoreAnimTimerRef.current) {
+      clearInterval(enemyScoreAnimTimerRef.current);
+      enemyScoreAnimTimerRef.current = null;
+    }
+    if (typeof audio.stopScoreCount === "function") {
+      audio.stopScoreCount();
+    }
+    setEnemyScoreAnimating(false);
+    if (typeof nextValue === "number") {
+      setDisplayEnemyScore(nextValue);
+    }
+  }, []);
 
   const stopScoreAnimation = useCallback(
     (nextValue) => {
@@ -703,7 +731,11 @@ export default function App() {
     scoreRef.current = 0;
     setScore(0);
     setDisplayScore(0);
-  }, [stopScoreAnimation]);
+    stopEnemyScoreAnimation(0);
+    enemyScoreRef.current = 0;
+    setEnemyScore(0);
+    setDisplayEnemyScore(0);
+  }, [stopEnemyScoreAnimation, stopScoreAnimation]);
 
   const addScore = useCallback(
     (amount) => {
@@ -741,6 +773,42 @@ export default function App() {
     [stopScoreAnimation],
   );
 
+  const addEnemyScore = useCallback(
+    (amount) => {
+      const value = Math.max(0, Math.floor(amount || 0));
+      if (value <= 0) {
+        return { applied: 0, durationMs: 0 };
+      }
+      stopEnemyScoreAnimation(displayEnemyScoreRef.current);
+      const target = enemyScoreRef.current + value;
+      enemyScoreRef.current = target;
+      setEnemyScore(target);
+      setEnemyScoreAnimating(true);
+      if (typeof audio.startScoreCount === "function") {
+        audio.startScoreCount();
+      }
+      const from = displayEnemyScoreRef.current;
+      setDisplayEnemyScore(from);
+      const duration = Math.min(2400, Math.max(900, value * 4));
+      const stepMs = 50;
+      const steps = Math.max(1, Math.round(duration / stepMs));
+      const durationMs = steps * stepMs;
+      let tick = 0;
+      enemyScoreAnimTimerRef.current = setInterval(() => {
+        tick += 1;
+        const progress = Math.min(1, tick / steps);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const animated = Math.round(from + (target - from) * eased);
+        setDisplayEnemyScore(animated);
+        if (tick >= steps) {
+          stopEnemyScoreAnimation(target);
+        }
+      }, stepMs);
+      return { applied: value, durationMs };
+    },
+    [stopEnemyScoreAnimation],
+  );
+
   const awardScore = useCallback(
     (nodeId, remainingSeconds) => {
       const bonus = SCORE_BONUS[nodeId] ?? 0;
@@ -750,6 +818,17 @@ export default function App() {
       return { earned, durationMs };
     },
     [addScore],
+  );
+
+  const awardEnemyScore = useCallback(
+    (nodeId, remainingSeconds) => {
+      const bonus = SCORE_BONUS[nodeId] ?? 0;
+      const seconds = Math.max(0, Math.floor(remainingSeconds || 0));
+      const earned = seconds + bonus;
+      const { durationMs } = addEnemyScore(earned);
+      return { earned, durationMs };
+    },
+    [addEnemyScore],
   );
 
   const awardRealtimeBonus = useCallback(
@@ -765,6 +844,10 @@ export default function App() {
   useEffect(() => {
     return () => stopScoreAnimation(scoreRef.current);
   }, [stopScoreAnimation]);
+
+  useEffect(() => {
+    return () => stopEnemyScoreAnimation(enemyScoreRef.current);
+  }, [stopEnemyScoreAnimation]);
 
   useEffect(() => cancelCelebration, [cancelCelebration]);
 
@@ -785,6 +868,10 @@ export default function App() {
         track = TRACKS.prologue || TRACKS.opening || track;
         break;
       case "opening":
+        track = TRACKS.opening || track;
+        break;
+      case "gamestart":
+      case "name":
         track = TRACKS.opening || track;
         break;
       case "conversation":
@@ -975,13 +1062,18 @@ export default function App() {
               : "ultra",
     );
     setPuzzleSequence(prepared);
-    setPuzzleIndex(0);
-    setSolution(firstSolution.map((row) => row.slice()));
+    setHeroPuzzleIndex(0);
+    const heroSolution = firstSolution.map((row) => row.slice());
+    setSolution(heroSolution);
     setGrid(emptyGrid(n));
-    setEnemyGrid(emptyGrid(n));
     realtimeBonusRef.current = new Set();
+    stopEnemyScoreAnimation(0);
+    enemyScoreRef.current = 0;
+    setEnemyScore(0);
+    setDisplayEnemyScore(0);
+    setEnemyScoreAnimating(false);
 
-    const total = firstSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
+    const total = heroSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
     totalCellsRef.current = total;
     heroSpellRef.current = {
       threshold: Math.max(1, Math.ceil(total * HERO_SPELL.ratio)),
@@ -1000,8 +1092,15 @@ export default function App() {
       noMistakeTriggered: false,
     };
     enemySpellStateRef.current = { used: new Set() };
-    enemyProgressRef.current = { filled: 0, total };
+    const enemySolution = firstSolution.map((row) => row.slice());
+    enemySolutionRef.current = enemySolution;
+    enemyProgressRef.current = {
+      filled: 0,
+      total: enemySolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
+    };
     enemyOrderRef.current = { list: [], index: 0 };
+    setEnemyGrid(emptyGrid(enemySolution.length));
+    setEnemySolutionVersion((v) => v + 1);
     ultraPenaltyActiveRef.current = false;
     setPlayerWins(0);
     setEnemyWins(0);
@@ -1019,7 +1118,7 @@ export default function App() {
     } catch {}
   }
 
-  const prepareNextPuzzle = useCallback(
+  const loadHeroPuzzle = useCallback(
     (index) => {
       if (!puzzleSequence.length) return;
       const safeIndex = Math.min(index, puzzleSequence.length - 1);
@@ -1027,14 +1126,12 @@ export default function App() {
       if (!next) return;
       const nextSolution = cloneSolution(next);
       const n = nextSolution.length;
-      stopEnemySolver();
       clearSpellEffects();
       puzzleSolvedRef.current = false;
       setProjectiles([]);
-      setPuzzleIndex(safeIndex);
+      setHeroPuzzleIndex(safeIndex);
       setSolution(nextSolution);
       setGrid(emptyGrid(n));
-      setEnemyGrid(emptyGrid(n));
       realtimeBonusRef.current = new Set();
       const total = nextSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
       totalCellsRef.current = total;
@@ -1054,16 +1151,34 @@ export default function App() {
         noMistakeStart: Date.now(),
         noMistakeTriggered: false,
       };
-      enemySpellStateRef.current = { used: new Set() };
-      enemyProgressRef.current = { filled: 0, total };
-      enemyOrderRef.current = { list: [], index: 0 };
-      ultraPenaltyActiveRef.current = false;
       setStartedAt(Date.now());
       setRemaining(GAME_SECONDS);
       setBgSeed((s) => s + 1);
       spedUpRef.current = false;
     },
-    [puzzleSequence, stopEnemySolver, clearSpellEffects],
+    [puzzleSequence, clearSpellEffects],
+  );
+
+  const loadEnemyPuzzle = useCallback(
+    (index) => {
+      if (!puzzleSequence.length) return;
+      const safeIndex = Math.min(index, puzzleSequence.length - 1);
+      const next = puzzleSequence[safeIndex];
+      if (!next) return;
+      const nextSolution = cloneSolution(next);
+      const n = nextSolution.length;
+      stopEnemySolver();
+      enemySpellStateRef.current = { used: new Set() };
+      enemySolutionRef.current = nextSolution;
+      enemyProgressRef.current = {
+        filled: 0,
+        total: nextSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
+      };
+      enemyOrderRef.current = { list: [], index: 0 };
+      setEnemyGrid(emptyGrid(n));
+      setEnemySolutionVersion((v) => v + 1);
+    },
+    [puzzleSequence, stopEnemySolver],
   );
 
   function enterEnding(nodeId) {
@@ -1101,36 +1216,25 @@ export default function App() {
     localStorage.removeItem("clearedNodes");
   }
 
-  const scheduleAfterAnimation = useCallback((durationMs, callback) => {
-    if (celebrationDelayRef.current) {
-      clearTimeout(celebrationDelayRef.current);
-    }
-    const delay = Math.max(0, durationMs || 0) + 60;
-    celebrationDelayRef.current = setTimeout(() => {
-      celebrationDelayRef.current = null;
-      callback?.();
-    }, delay);
-  }, []);
-
   const completePuzzle = useCallback(() => {
     if (puzzleSolvedRef.current) return;
     puzzleSolvedRef.current = true;
     stopEnemySolver();
     cancelCelebration();
-    const { durationMs } = battleNode ? awardScore(battleNode, remaining) : { durationMs: 0 };
+    awardScore(battleNode, remaining);
     const totalNeeded = puzzleSequence.length || PUZZLES_PER_BATTLE;
-    const nextIndex = puzzleIndex + 1;
+    const nextIndex = heroPuzzleIndex + 1;
     const nextWins = playerWins + 1;
     const isFinal = nextWins >= totalNeeded;
-    scheduleAfterAnimation(durationMs, () => {
-      setPlayerWins(nextWins);
-      if (isFinal) {
-        handleCloseResult(true);
-      } else {
-        prepareNextPuzzle(nextIndex);
-      }
-    });
-  }, [awardScore, battleNode, cancelCelebration, handleCloseResult, playerWins, prepareNextPuzzle, puzzleIndex, puzzleSequence.length, remaining, scheduleAfterAnimation, stopEnemySolver]);
+    setPlayerWins(nextWins);
+    if (isFinal) {
+      handleCloseResult(true);
+    } else {
+      setTimeout(() => {
+        loadHeroPuzzle(nextIndex);
+      }, 0);
+    }
+  }, [awardScore, battleNode, cancelCelebration, handleCloseResult, heroPuzzleIndex, loadHeroPuzzle, playerWins, puzzleSequence.length, remaining, stopEnemySolver]);
 
   const maybeCompletePuzzle = useCallback(
     (candidateGrid) => {
@@ -1170,7 +1274,10 @@ export default function App() {
     clearSpellEffects();
     setActiveSpell(null);
     setPuzzleSequence([]);
-    setPuzzleIndex(0);
+    setHeroPuzzleIndex(0);
+    enemySolutionRef.current = [];
+    setEnemySolutionVersion((v) => v + 1);
+    setSolution([]);
     setEnemyGrid([]);
     setPaused(false);
     puzzleSolvedRef.current = false;
@@ -1233,8 +1340,10 @@ export default function App() {
     const character = battleNode ? CHARACTERS[battleNode] : null;
     const enemyName = character?.name || "敵";
     logSpell(`${enemyName} がパズルを解いた (${nextWins}/${totalNeeded})`);
-    if (nextWins >= totalNeeded) {
-      stopEnemySolver();
+    stopEnemySolver();
+    const isFinal = nextWins >= totalNeeded;
+    awardEnemyScore(battleNode, remaining);
+    if (isFinal) {
       setEnemyWins(nextWins);
       showSpellOverlay({
         caster: "enemy",
@@ -1246,13 +1355,17 @@ export default function App() {
       clearSpellEffects();
       resetScore();
       setPuzzleSequence([]);
-      setPuzzleIndex(0);
+      setHeroPuzzleIndex(0);
+      enemySolutionRef.current = [];
+      setEnemySolutionVersion((v) => v + 1);
       setScreen("gameover");
     } else {
       setEnemyWins(nextWins);
-      prepareNextPuzzle(nextWins);
+      setTimeout(() => {
+        loadEnemyPuzzle(nextWins);
+      }, 0);
     }
-  }, [battleNode, enemyWins, puzzleSequence.length, logSpell, showSpellOverlay, stopEnemySolver, cancelCelebration, clearSpellEffects, resetScore, prepareNextPuzzle]);
+  }, [awardEnemyScore, battleNode, cancelCelebration, clearSpellEffects, enemyWins, loadEnemyPuzzle, logSpell, puzzleSequence.length, remaining, resetScore, showSpellOverlay, stopEnemySolver]);
 
   const handleHeroCorrectFill = useCallback(
     (row, col, nextGrid) => {
@@ -1428,12 +1541,15 @@ export default function App() {
     stopEnemySolver();
   }, [paused, stopEnemySolver]);
 
-  const handleQuitPicross = useCallback(() => {
+  const quitToOpening = useCallback(() => {
     cancelCelebration();
     stopEnemySolver();
     clearSpellEffects();
+    resetScore();
     setPuzzleSequence([]);
-    setPuzzleIndex(0);
+    setHeroPuzzleIndex(0);
+    enemySolutionRef.current = [];
+    setEnemySolutionVersion((v) => v + 1);
     setPendingNode(null);
     setBattleNode(null);
     setPlayerWins(0);
@@ -1441,8 +1557,30 @@ export default function App() {
     setPaused(false);
     setProjectiles([]);
     setPostClearAction(null);
-    setScreen("route");
-  }, [cancelCelebration, stopEnemySolver, clearSpellEffects]);
+    setRemaining(GAME_SECONDS);
+    if (!soundOn) {
+      (async () => {
+        try {
+          await audio.enable();
+        } catch {}
+        try {
+          await bgm.resume();
+        } catch {}
+      })();
+      setSoundOn(true);
+    } else {
+      (async () => {
+        try {
+          await bgm.resume();
+        } catch {}
+      })();
+    }
+    setScreen("opening");
+  }, [cancelCelebration, clearSpellEffects, resetScore, setSoundOn, soundOn, stopEnemySolver]);
+
+  const handleQuitPicross = useCallback(() => {
+    quitToOpening();
+  }, [quitToOpening]);
 
   useEffect(() => {
     setBgSeed((s) => s + 1);
@@ -1458,7 +1596,9 @@ export default function App() {
       setActiveSpell(null);
       setEnemyGrid([]);
       setPuzzleSequence([]);
-      setPuzzleIndex(0);
+      setHeroPuzzleIndex(0);
+      enemySolutionRef.current = [];
+      setEnemySolutionVersion((v) => v + 1);
       setPlayerWins(0);
       setEnemyWins(0);
     }
@@ -1468,14 +1608,15 @@ export default function App() {
   useEffect(() => {
     if (screen !== "picross") return;
     if (!battleNode) return;
-    if (!solution.length) return;
+    const enemySolution = enemySolutionRef.current;
+    if (!enemySolution.length) return;
     if (paused) {
       stopEnemySolver();
       return;
     }
     const config = ENEMY_AI_CONFIG[battleNode] || DEFAULT_ENEMY_CONFIG;
     const coords = [];
-    solution.forEach((row, r) =>
+    enemySolution.forEach((row, r) =>
       row.forEach((cell, c) => {
         if (cell) coords.push({ r, c });
       }),
@@ -1488,7 +1629,7 @@ export default function App() {
         filled: 0,
         total: coords.length,
       };
-      setEnemyGrid(emptyGrid(solution.length));
+      setEnemyGrid(emptyGrid(enemySolution.length));
     }
     stopEnemySolver();
     const timer = setInterval(() => {
@@ -1516,7 +1657,7 @@ export default function App() {
       const { r, c } = target;
       setEnemyGrid((prev) => {
         if (prev[r]?.[c] === 1) return prev;
-        const next = prev.length ? prev.map((row) => row.slice()) : emptyGrid(solution.length);
+        const next = prev.length ? prev.map((row) => row.slice()) : emptyGrid(enemySolution.length);
         next[r][c] = 1;
         return next;
       });
@@ -1528,7 +1669,7 @@ export default function App() {
     }, Math.max(120, config.interval));
     enemySolverRef.current = timer;
     return () => clearInterval(timer);
-  }, [screen, battleNode, solution, playerWins, enemyWins, puzzleSequence.length, paused, stopEnemySolver, handleEnemyPuzzleClear]);
+  }, [screen, battleNode, enemySolutionVersion, playerWins, enemyWins, puzzleSequence.length, paused, stopEnemySolver, handleEnemyPuzzleClear]);
 
   useEffect(() => {
     if (screen !== "picross") return;
@@ -1579,8 +1720,13 @@ export default function App() {
   useEffect(() => {
     if (screen !== "gamestart") {
       setGameStartNameVisible(false);
+      setGameStartPhase("before");
     }
   }, [screen]);
+
+  const handleGameStartPhase = useCallback((phase) => {
+    setGameStartPhase(phase);
+  }, []);
 
   const conversationBackground = useMemo(() => {
     if (screen !== "conversation") return null;
@@ -1598,7 +1744,9 @@ export default function App() {
     return enemy.images.fullbody || enemy.images.normal || null;
   }, [battleNode, screen]);
 
-  const showScore = !["prologue", "opening", "gamestart", "name"].includes(screen);
+  const showScore =
+    !["prologue", "opening", "gamestart", "name"].includes(screen) &&
+    screen !== "picross";
   const puzzleGoal = puzzleSequence.length || PUZZLES_PER_BATTLE;
   const currentRound = Math.max(playerWins, enemyWins);
   const displayPuzzleStep = Math.min(currentRound + 1, puzzleGoal);
@@ -1642,13 +1790,17 @@ export default function App() {
               : (screen === "picross" && battleBackground)
                 ? battleBackground
                 : screen === "opening"
-              ? "/assets/img/title.png"
+              ? "/assets/img/character/hero_fullbody.png"
+              : screen === "gamestart"
+                ? (gameStartPhase === "before" || gameStartNameVisible
+                    ? "/assets/img/character/hero_fullbody.png"
+                    : null)
               : screen === "ending"
                 ? "/assets/img/background/ending.png"
                 : screen === "route"
                   ? "/assets/img/background/map.png"
-                  : screen === "name" || (screen === "gamestart" && gameStartNameVisible)
-                    ? "/assets/img/character/hero/hero_fullbody.png"
+                  : screen === "name"
+                    ? "/assets/img/character/hero_fullbody.png"
                     : null
           }
         />
@@ -1772,6 +1924,7 @@ export default function App() {
           }}
           onDone={() => setScreen("route")}
           onNameEntryVisible={setGameStartNameVisible}
+          onPhaseChange={handleGameStartPhase}
         />
       )}
 
@@ -1866,7 +2019,13 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                <div className="panel-spell hero">{renderSpellSlot("hero")}</div>
+                <div className="panel-spell hero">
+                  <div className="spell-slot-wrapper">{renderSpellSlot("hero")}</div>
+                  <div className="score-meter hero">
+                    <span className="score-label">Score</span>
+                    <span className="score-value">{Number(displayScore || 0).toLocaleString()}</span>
+                  </div>
+                </div>
                 <div className="panel-score hero">
                   <span className="panel-score-label">プレイヤー</span>
                   <span className="panel-score-value">{playerWins}</span>
@@ -1916,7 +2075,13 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                <div className="panel-spell enemy">{renderSpellSlot("enemy")}</div>
+                <div className="panel-spell enemy">
+                  <div className="spell-slot-wrapper">{renderSpellSlot("enemy")}</div>
+                  <div className="score-meter enemy">
+                    <span className="score-label">Enemy Score</span>
+                    <span className="score-value">{Number(displayEnemyScore || 0).toLocaleString()}</span>
+                  </div>
+                </div>
                 <div className="panel-score enemy">
                   <span className="panel-score-label">敵</span>
                   <span className="panel-score-value">{enemyWins}</span>
@@ -1977,10 +2142,7 @@ export default function App() {
           onContinue={() => {
             if (battleNode) beginPicrossForNode(battleNode);
           }}
-          onQuit={() => {
-            resetScore();
-            setScreen("opening");
-          }}
+          onQuit={quitToOpening}
         />
       )}
 

@@ -7,6 +7,7 @@ export default function GameStart({
   onSetName,
   onDone,
   onNameEntryVisible = () => {},
+  onPhaseChange = () => {},
 }) {
   const [step, setStep] = useState(0);
   const linesBefore = useMemo(
@@ -26,6 +27,13 @@ export default function GameStart({
   // step: 0..linesBefore.length shows dialog, then shows NameEntry, then shows linesAfter
   const showName = step === linesBefore.length;
   const doneAfter = step > linesBefore.length + linesAfter.length;
+  const phase = showName
+    ? "name"
+    : doneAfter
+      ? "done"
+      : step < linesBefore.length
+        ? "before"
+        : "after";
 
   useEffect(() => {
     onNameEntryVisible(showName);
@@ -33,6 +41,10 @@ export default function GameStart({
       onNameEntryVisible(false);
     };
   }, [showName, onNameEntryVisible]);
+
+  useEffect(() => {
+    onPhaseChange(phase);
+  }, [phase, onPhaseChange]);
 
   if (doneAfter) return null;
 
