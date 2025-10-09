@@ -1744,9 +1744,6 @@ export default function App() {
     return enemy.images.fullbody || enemy.images.normal || null;
   }, [battleNode, screen]);
 
-  const showScore =
-    !["prologue", "opening", "gamestart", "name"].includes(screen) &&
-    screen !== "picross";
   const puzzleGoal = puzzleSequence.length || PUZZLES_PER_BATTLE;
   const currentRound = Math.max(playerWins, enemyWins);
   const displayPuzzleStep = Math.min(currentRound + 1, puzzleGoal);
@@ -1792,7 +1789,7 @@ export default function App() {
                 : screen === "opening"
               ? "/assets/img/character/hero_fullbody.png"
               : screen === "gamestart"
-                ? (gameStartPhase === "before" || gameStartNameVisible
+                ? (gameStartPhase === "before" || gameStartPhase === "after" || gameStartNameVisible
                     ? "/assets/img/character/hero_fullbody.png"
                     : null)
               : screen === "ending"
@@ -1811,9 +1808,6 @@ export default function App() {
             <span className="logo">▦</span>
             <span className="title">elfpix</span>
           </div>
-          {showScore && (
-            <ScoreDisplay value={displayScore} animating={scoreAnimating} />
-          )}
         </div>
         <nav className="top-actions">
           <div className="font-scale-group" role="group" aria-label="フォントサイズ">
@@ -1877,6 +1871,7 @@ export default function App() {
           >
             BGM: {soundOn ? "On" : "Off"}
           </button>
+          <ScoreDisplay value={displayScore} animating={scoreAnimating} />
         </nav>
       </header>
 
