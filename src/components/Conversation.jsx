@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const ENEMY_IMAGES = {
   "elf-practice": {
@@ -237,6 +237,7 @@ export default function Conversation({
   difficultyId,
   onDone,
   onSkip,
+  onRegisterGamepad,
 }) {
   const script = useMemo(
     () => buildScript(difficultyId, heroName, enemyName),
@@ -301,24 +302,24 @@ export default function Conversation({
     timers.current = [];
   }, []);
 
-  const queueTimeout = (handler, ms) => {
+  const queueTimeout = useCallback((handler, ms) => {
     const id = setTimeout(handler, ms);
     timers.current.push(id);
     return id;
-  };
+  }, []);
 
-  const clearTimers = () => {
+  const clearTimers = useCallback(() => {
     timers.current.forEach((id) => clearTimeout(id));
     timers.current = [];
-  };
+  }, []);
 
-  function advance() {
+  const advance = useCallback(() => {
     if (phase === "out") return;
     if (idx + 1 >= script.length) {
       clearTimers();
       setPhase("out");
       queueTimeout(() => {
-        onDone && onDone();
+        if (onDone) onDone();
       }, 200);
     } else {
       clearTimers();
@@ -328,7 +329,18 @@ export default function Conversation({
         setPhase("in");
       }, 200);
     }
-  }
+  }, [clearTimers, idx, onDone, phase, queueTimeout, script.length]);
+
+  const handleSkip = useCallback(() => {
+    if (phase === "out") return;
+    clearTimers();
+    setPhase("out");
+    queueTimeout(() => {
+      setIdx(script.length - 1);
+      setPhase("in");
+      if (onSkip) onSkip();
+    }, 200);
+  }, [clearTimers, onSkip, phase, queueTimeout, script.length]);
 
   const current = script[idx] || {};
   const heroEmotion =
@@ -345,6 +357,17 @@ export default function Conversation({
   const enemyActive = current.who === "enemy";
   const heroOpacity = mounted ? (heroActive ? 1 : 0.45) : 0;
   const enemyOpacity = mounted ? (enemyActive ? 1 : 0.45) : 0;
+
+  useEffect(() => {
+    if (!onRegisterGamepad) return;
+    // Expose conversation controls so the parent can trigger them from the gamepad loop.
+    onRegisterGamepad({
+      advance: () => advance(),
+      skip: () => handleSkip(),
+      start: () => handleSkip(),
+    });
+    return () => onRegisterGamepad(null);
+  }, [advance, handleSkip, onRegisterGamepad]);
 
   return (
     <main className="screen dialog" onClick={advance}>
@@ -476,14 +499,7 @@ export default function Conversation({
               className="ghost"
               onClick={(e) => {
                 e.stopPropagation();
-                if (phase === "out") return;
-                clearTimers();
-                setPhase("out");
-                queueTimeout(() => {
-                  setIdx(script.length - 1);
-                  setPhase("in");
-                  onSkip && onSkip();
-                }, 200);
+                handleSkip();
               }}
             >
               Skip

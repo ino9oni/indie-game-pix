@@ -20,6 +20,7 @@ export default function GameBoard({
   fadedCells = [],
   disabled = false,
   onGridChange,
+  highlightCell = null,
 }) {
   const resolvedClues = hintData ?? clues ?? {};
   const rowHints = Array.isArray(resolvedClues.rows) ? resolvedClues.rows : [];
@@ -219,14 +220,17 @@ export default function GameBoard({
           style={{ gridTemplateColumns: `repeat(${size}, var(--cell))` }}
         >
           {grid.map((row, r) =>
-            row.map((cell, c) => (
-              <div
-                key={`${r}-${c}`}
-                className={`cell ${cell === 1 ? "filled" : ""} ${cell === -1 ? "x" : ""} ${cell === 2 ? "maybe" : ""} ${fadedSet.has(cellKey(r, c)) ? "faded" : ""}`}
-                onClick={(e) => onCellClick(r, c, e)}
-                onContextMenu={(e) => onCellClick(r, c, e)}
-              />
-            )),
+            row.map((cell, c) => {
+              const isCursor = highlightCell && highlightCell.row === r && highlightCell.col === c;
+              return (
+                <div
+                  key={`${r}-${c}`}
+                  className={`cell ${cell === 1 ? "filled" : ""} ${cell === -1 ? "x" : ""} ${cell === 2 ? "maybe" : ""} ${fadedSet.has(cellKey(r, c)) ? "faded" : ""} ${isCursor ? "cursor" : ""}`}
+                  onClick={(e) => onCellClick(r, c, e)}
+                  onContextMenu={(e) => onCellClick(r, c, e)}
+                />
+              );
+            }),
           )}
         </div>
       </div>

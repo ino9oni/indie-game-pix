@@ -16,7 +16,7 @@ import GameOver from "./components/GameOver.jsx";
 import ScoreDisplay from "./components/ScoreDisplay.jsx";
 import { getRandomPuzzleForSize, getRandomPuzzlesForSize } from "./game/puzzles.js";
 import { ROUTE, CHARACTERS } from "./game/route.js";
-import { computeClues, emptyGrid, equalsSolution } from "./game/utils.js";
+import { computeClues, emptyGrid, equalsSolution, toggleCell } from "./game/utils.js";
 import audio from "./audio/AudioManager.js";
 import bgm from "./audio/BgmPlayer.js";
 import { TRACKS } from "./audio/tracks.js";
@@ -55,6 +55,22 @@ const HERO_IMAGES = {
   angry: "/assets/img/character/hero/hero_angry.png",
   smile: "/assets/img/character/hero/hero_smile.png",
 };
+
+const GAMEPAD_BUTTON = {
+  A: 0,
+  B: 1,
+  X: 2,
+  Y: 3,
+  SELECT: 8,
+  START: 9,
+  UP: 12,
+  DOWN: 13,
+  LEFT: 14,
+  RIGHT: 15,
+};
+const GAMEPAD_REPEAT_MS = 180;
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const ENEMY_AI_CONFIG = {
   "elf-practice": { interval: 1400, errorRate: 0.15, spellId: "practice" },
@@ -198,6 +214,10 @@ export default function App() {
   const [startedAt, setStartedAt] = useState(null);
   const [remaining, setRemaining] = useState(GAME_SECONDS);
   const [bgSeed, setBgSeed] = useState(0);
+  const [inputMode, setInputMode] = useState("mouse");
+  const [gamepadConnected, setGamepadConnected] = useState(false);
+  const [openingFocus, setOpeningFocus] = useState(0);
+  const [gamepadCursor, setGamepadCursor] = useState({ row: 0, col: 0 });
   const [gameStartNameVisible, setGameStartNameVisible] = useState(false);
   const [gameStartPhase, setGameStartPhase] = useState("before");
   const [soundOn, setSoundOn] = useState(() => {
@@ -295,6 +315,11 @@ export default function App() {
   const hiddenTimersRef = useRef({ hidden: null, locked: null, faded: null });
   const spellOverlayTimeoutRef = useRef(null);
   const speechTimeoutRef = useRef({ hero: null, enemy: null });
+  const conversationControlsRef = useRef(null);
+  const lastGamepadButtonsRef = useRef({});
+  const gamepadRepeatRef = useRef({});
+  const gamepadCursorRef = useRef({ row: 0, col: 0 });
+  const lastGamepadUsedRef = useRef(0);
   const heroStateRef = useRef({});
   const heroSpellRef = useRef({ threshold: 0, used: false });
   const enemySpellStateRef = useRef({ used: new Set() });
@@ -305,6 +330,36 @@ export default function App() {
   const puzzleSolvedRef = useRef(false);
   const enemySolutionRef = useRef([]);
   const [enemySolutionVersion, setEnemySolutionVersion] = useState(0);
+
+  useEffect(() => {
+    gamepadCursorRef.current = gamepadCursor;
+  }, [gamepadCursor]);
+
+  useEffect(() => {
+    if (screen === "picross" && size > 0) {
+      const center = Math.floor(size / 2);
+      setGamepadCursor({ row: center, col: center });
+    }
+  }, [screen, size]);
+
+  useEffect(() => {
+    const handlePointerInput = () => {
+      lastGamepadUsedRef.current = 0;
+      if (inputMode !== "mouse") {
+        setInputMode("mouse");
+      }
+    };
+
+    window.addEventListener("mousemove", handlePointerInput);
+    window.addEventListener("mousedown", handlePointerInput);
+    window.addEventListener("touchstart", handlePointerInput, { passive: true });
+
+    return () => {
+      window.removeEventListener("mousemove", handlePointerInput);
+      window.removeEventListener("mousedown", handlePointerInput);
+      window.removeEventListener("touchstart", handlePointerInput);
+    };
+  }, [inputMode]);
 
   const launchProjectile = useCallback((variant) => {
     setProjectiles((prev) => {
@@ -1250,6 +1305,96 @@ export default function App() {
     [completePuzzle, grid, screen, solution],
   );
 
+  const handlePicrossCellAction = useCallback(
+    (mode) => {
+      if (screen !== "picross") return;
+      if (!solution.length) return;
+      const { row, col } = gamepadCursorRef.current;
+      if (
+        row == null ||
+        col == null ||
+        row < 0 ||
+        col < 0 ||
+        row >= solution.length ||
+        col >= solution.length
+      ) {
+        return;
+      }
+
+      if (mode === "clear") {
+        setGrid((prev) => {
+          const previous = prev[row]?.[col];
+          if (previous == null || previous === 0) return prev;
+          const next = prev.map((line) => line.slice());
+          next[row][col] = 0;
+          const shouldFill = solution[row]?.[col] ?? false;
+          if (shouldFill && previous === 1) {
+            handlePlayerMistakeEvent(row, col, { type: "unfill" }, next);
+          }
+          maybeCompletePuzzle(next);
+          return next;
+        });
+        return;
+      }
+
+      setGrid((prev) => {
+        const previous = prev[row]?.[col];
+        if (previous == null) return prev;
+        const next = toggleCell(prev, row, col, mode);
+        const currentValue = next[row]?.[col];
+        const shouldFill = solution[row]?.[col] ?? false;
+
+        if (mode === "fill") {
+          if (previous !== 1 && currentValue === 1) {
+            if (shouldFill) {
+              handlePlayerCorrect(row, col, next);
+            } else {
+              handlePlayerMistakeEvent(row, col, { type: "fill" }, next);
+            }
+          }
+          if (previous === 1 && currentValue !== 1 && shouldFill) {
+            handlePlayerMistakeEvent(row, col, { type: "unfill" }, next);
+          }
+          audio.playFill();
+        } else if (mode === "cross") {
+          if (currentValue === -1 && shouldFill) {
+            handlePlayerMistakeEvent(row, col, { type: "cross" }, next);
+          }
+          audio.playMark();
+        } else if (mode === "maybe") {
+          audio.playMark();
+        }
+
+        maybeCompletePuzzle(next);
+        return next;
+      });
+    },
+    [handlePlayerCorrect, handlePlayerMistakeEvent, maybeCompletePuzzle, screen, solution.length, solution],
+  );
+
+  const handlePicrossReset = useCallback(() => {
+    if (screen !== "picross") return;
+    if (!solution.length) return;
+    const fresh = emptyGrid(solution.length);
+    setGrid(fresh);
+    maybeCompletePuzzle(fresh);
+  }, [maybeCompletePuzzle, screen, solution.length]);
+
+  const moveGamepadCursor = useCallback(
+    (dx, dy) => {
+      if (screen !== "picross") return;
+      if (!solution.length) return;
+      setGamepadCursor((prev) => {
+        const max = solution.length - 1;
+        const nextRow = clamp(prev.row + dy, 0, max);
+        const nextCol = clamp(prev.col + dx, 0, max);
+        if (nextRow === prev.row && nextCol === prev.col) return prev;
+        return { row: nextRow, col: nextCol };
+      });
+    },
+    [screen, solution.length],
+  );
+
   function handleSubmit() {
     if (puzzleSolvedRef.current) return;
     if (debugMode) {
@@ -1728,6 +1873,12 @@ export default function App() {
     setGameStartPhase(phase);
   }, []);
 
+  useEffect(() => {
+    if (screen === "opening") {
+      setOpeningFocus(0);
+    }
+  }, [screen]);
+
   const conversationBackground = useMemo(() => {
     if (screen !== "conversation") return null;
     if (!pendingNode) return null;
@@ -1743,6 +1894,233 @@ export default function App() {
     if (!enemy?.images) return null;
     return enemy.images.fullbody || enemy.images.normal || null;
   }, [battleNode, screen]);
+
+  const handleOpeningContinue = useCallback(async () => {
+    try {
+      await bgm.resume();
+    } catch {}
+    setScreen("gamestart");
+  }, []);
+
+  const handleOpeningNewGame = useCallback(async () => {
+    resetProgress();
+    localStorage.removeItem("heroName");
+    localStorage.removeItem("routeNode");
+    localStorage.removeItem("clearedNodes");
+    setCurrentNode("start");
+    setLastNode("");
+    setPendingNode(null);
+    setBattleNode(null);
+    if (!soundOn) {
+      try {
+        await audio.enable();
+      } catch {}
+    }
+    setSoundOn(true);
+    try {
+      await bgm.resume();
+    } catch {}
+    setScreen("gamestart");
+  }, [resetProgress, soundOn]);
+
+  useEffect(() => {
+    let animationId;
+
+    const pollGamepad = () => {
+      const pads =
+        typeof navigator !== "undefined" && navigator.getGamepads
+          ? Array.from(navigator.getGamepads()).filter(Boolean)
+          : [];
+      const pad = pads.find((candidate) => candidate && candidate.connected);
+
+      if (!pad) {
+        if (gamepadConnected) {
+          setGamepadConnected(false);
+          lastGamepadButtonsRef.current = {};
+        }
+        animationId = requestAnimationFrame(pollGamepad);
+        return;
+      }
+
+      if (!gamepadConnected) {
+        setGamepadConnected(true);
+      }
+
+      const now = performance.now();
+      const previousButtons = lastGamepadButtonsRef.current;
+      const nextButtons = {};
+      const repeatState = gamepadRepeatRef.current;
+
+      const markPressed = () => {
+        lastGamepadUsedRef.current = now;
+      };
+
+      const processButton = (index, handler, allowRepeat = false) => {
+        const pressed = !!pad.buttons[index]?.pressed;
+        const wasPressed = previousButtons?.[index] || false;
+        let acted = false;
+
+        if (pressed) {
+          if (!wasPressed) {
+            acted = handler();
+            if (acted && allowRepeat) repeatState[index] = now;
+          } else if (allowRepeat) {
+            const last = repeatState[index] || 0;
+            if (now - last >= GAMEPAD_REPEAT_MS) {
+              acted = handler();
+              if (acted) repeatState[index] = now;
+            }
+          }
+        } else {
+          repeatState[index] = 0;
+        }
+
+        if (acted) {
+          markPressed();
+        }
+
+        nextButtons[index] = pressed;
+        return acted;
+      };
+
+      const moveHorizontal = (delta) => {
+        if (screen === "opening") {
+          setOpeningFocus((prev) => {
+            const options = 2;
+            const next = (prev + options + delta) % options;
+            return next;
+          });
+          return true;
+        }
+        if (screen === "picross") {
+          moveGamepadCursor(delta, 0);
+          return true;
+        }
+        return false;
+      };
+
+      const moveVertical = (delta) => {
+        if (screen === "opening") {
+          setOpeningFocus((prev) => {
+            const options = 2;
+            const next = (prev + options + delta) % options;
+            return next;
+          });
+          return true;
+        }
+        if (screen === "picross") {
+          moveGamepadCursor(0, delta);
+          return true;
+        }
+        return false;
+      };
+
+      const handleConfirm = () => {
+        if (screen === "opening") {
+          if (openingFocus === 0) {
+            handleOpeningNewGame();
+          } else {
+            handleOpeningContinue();
+          }
+          return true;
+        }
+        if (screen === "conversation") {
+          conversationControlsRef.current?.advance?.();
+          return true;
+        }
+        if (screen === "picross") {
+          handlePicrossCellAction("fill");
+          return true;
+        }
+        return false;
+      };
+
+      const handleCancel = () => {
+        if (screen === "conversation") {
+          conversationControlsRef.current?.skip?.();
+          return true;
+        }
+        if (screen === "picross") {
+          handlePicrossCellAction("cross");
+          return true;
+        }
+        return false;
+      };
+
+      const handleMaybe = () => {
+        if (screen === "picross") {
+          handlePicrossCellAction("maybe");
+          return true;
+        }
+        return false;
+      };
+
+      const handleClear = () => {
+        if (screen === "picross") {
+          handlePicrossCellAction("clear");
+          return true;
+        }
+        return false;
+      };
+
+      const handleStartInput = () => {
+        if (screen === "conversation") {
+          conversationControlsRef.current?.start?.();
+          return true;
+        }
+        if (screen === "picross") {
+          togglePaused();
+          return true;
+        }
+        return false;
+      };
+
+      const handleSelect = () => {
+        if (screen === "picross") {
+          handlePicrossReset();
+          return true;
+        }
+        return false;
+      };
+
+      const anyDirection =
+        processButton(GAMEPAD_BUTTON.LEFT, () => moveHorizontal(-1), true) ||
+        processButton(GAMEPAD_BUTTON.RIGHT, () => moveHorizontal(1), true) ||
+        processButton(GAMEPAD_BUTTON.UP, () => moveVertical(-1), true) ||
+        processButton(GAMEPAD_BUTTON.DOWN, () => moveVertical(1), true);
+
+      const anyAction =
+        processButton(GAMEPAD_BUTTON.A, handleConfirm) ||
+        processButton(GAMEPAD_BUTTON.B, handleCancel) ||
+        processButton(GAMEPAD_BUTTON.Y, handleMaybe) ||
+        processButton(GAMEPAD_BUTTON.X, handleClear) ||
+        processButton(GAMEPAD_BUTTON.START, handleStartInput) ||
+        processButton(GAMEPAD_BUTTON.SELECT, handleSelect);
+
+      if ((anyDirection || anyAction) && inputMode !== "gamepad") {
+        setInputMode("gamepad");
+      }
+
+      lastGamepadButtonsRef.current = nextButtons;
+
+      animationId = requestAnimationFrame(pollGamepad);
+    };
+
+    animationId = requestAnimationFrame(pollGamepad);
+    return () => cancelAnimationFrame(animationId);
+  }, [
+    gamepadConnected,
+    handleOpeningContinue,
+    handleOpeningNewGame,
+    handlePicrossCellAction,
+    handlePicrossReset,
+    inputMode,
+    moveGamepadCursor,
+    openingFocus,
+    screen,
+    setInputMode,
+    togglePaused,
+  ]);
 
   const puzzleGoal = puzzleSequence.length || PUZZLES_PER_BATTLE;
   const currentRound = Math.max(playerWins, enemyWins);
@@ -1881,32 +2259,10 @@ export default function App() {
 
       {screen === "opening" && (
         <Opening
-          onStart={async () => {
-            try {
-              await bgm.resume();
-            } catch {}
-            setScreen("gamestart");
-          }}
-          onNewGame={async () => {
-            resetProgress();
-            localStorage.removeItem("heroName");
-            localStorage.removeItem("routeNode");
-            localStorage.removeItem("clearedNodes");
-            setCurrentNode("start");
-            setLastNode("");
-            setPendingNode(null);
-            setBattleNode(null);
-            if (!soundOn) {
-              try {
-                await audio.enable();
-              } catch {}
-            }
-            setSoundOn(true);
-            try {
-              await bgm.resume();
-            } catch {}
-            setScreen("gamestart");
-          }}
+          onStart={handleOpeningContinue}
+          onNewGame={handleOpeningNewGame}
+          focusedIndex={openingFocus}
+          usingGamepad={inputMode === "gamepad"}
         />
       )}
 
@@ -1972,6 +2328,9 @@ export default function App() {
           difficultyId={pendingNode}
           onDone={() => beginPicrossForNode(pendingNode)}
           onSkip={() => beginPicrossForNode(pendingNode)}
+          onRegisterGamepad={(controls) => {
+            conversationControlsRef.current = controls;
+          }}
         />
       )}
 
@@ -2045,6 +2404,11 @@ export default function App() {
                       fadedCells={fadedCells}
                       disabled={paused}
                       onGridChange={maybeCompletePuzzle}
+                      highlightCell={
+                        inputMode === "gamepad" && screen === "picross"
+                          ? gamepadCursor
+                          : null
+                      }
                     />
                   </div>
                 </div>
