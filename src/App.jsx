@@ -1784,14 +1784,14 @@ export default function App() {
           fixedUrl={
             (screen === "conversation" && conversationBackground)
               ? conversationBackground
-              : (screen === "picross" && battleBackground)
-                ? battleBackground
-                : screen === "opening"
-              ? "/assets/img/character/hero_fullbody.png"
-              : screen === "gamestart"
-                ? (gameStartPhase === "before" || gameStartPhase === "after" || gameStartNameVisible
-                    ? "/assets/img/character/hero_fullbody.png"
-                    : null)
+                : (screen === "picross" && battleBackground)
+                  ? battleBackground
+                  : screen === "opening"
+                ? "/assets/img/title.png"
+                : screen === "gamestart"
+                  ? (gameStartPhase === "before" || gameStartPhase === "after" || gameStartNameVisible
+                      ? "/assets/img/character/hero_fullbody.png"
+                      : null)
               : screen === "ending"
                 ? "/assets/img/background/ending.png"
                 : screen === "route"

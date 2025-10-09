@@ -49,6 +49,8 @@
 - [done] 名前入力画面後の背景を差し替え
   - ファイル：assets/img/character/hero/hero_fullbody.png
 - [done] トータルスコアの表示位置は常に画面の一番右上に他のボタンと同程度のサイズで配置
+- [done] タイトル画面の背景を差し替える
+  - ファイル：assets/img/title.png
 
 ## Priority: normal
 
