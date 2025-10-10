@@ -2,7 +2,13 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: 1.5.0
+Current release: 1.0.0
+
+## Release Highlights (1.0.0)
+
+- タイトル画面とゲーム開始フローを刷新し、ゲームパッドでも操作できるフルコントローラサポートを追加。
+- 会話・ピクロス画面でのポートレート配置やナビゲーションを調整し、視認性と操作感を改善。
+- ゲーム全体の背景・BGM 設定をアップデートし、統一感のあるアートデザインと演出を実現。
 
 ## Quickstart
 
