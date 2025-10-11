@@ -738,6 +738,10 @@ body {
   .score-value {
     font-size: 1.1rem;
   }
+  .combo-badge {
+    right: 16px;
+    bottom: 8px;
+  }
   .spell-projectile.hero {
     left: 50%;
     top: 34%;
@@ -749,6 +753,26 @@ body {
     top: 74%;
     right: auto;
     animation: projectileEnemyStack 1s ease-out forwards;
+  }
+}
+
+@media (max-width: 768px) {
+  .spell-slot {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .combo-badge {
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 4px;
+    transform: scale(0.94);
+  }
+  .combo-badge.visible {
+    transform: scale(1);
   }
 }
 
@@ -929,6 +953,7 @@ body {
   align-items: center;
   gap: 12px;
   transition: border-color 200ms ease, box-shadow 200ms ease;
+  position: relative;
 }
 
 .spell-slot.hero {
@@ -1027,6 +1052,56 @@ body {
   font-size: 0.85rem;
   color: var(--muted);
   letter-spacing: 0.04em;
+}
+
+.combo-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(6px) scale(0.92);
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 180ms ease;
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.25);
+}
+
+.combo-badge.hero {
+  background: linear-gradient(135deg, rgba(76, 181, 255, 0.92), rgba(14, 116, 227, 0.82));
+  color: #e0f2fe;
+}
+
+.combo-badge.enemy {
+  background: linear-gradient(135deg, rgba(255, 98, 98, 0.92), rgba(220, 38, 38, 0.82));
+  color: #fee2e2;
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.25);
+}
+
+.combo-badge.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.combo-badge-text {
+  display: inline-block;
+  animation: comboPulse 180ms ease-out forwards;
+}
+
+@keyframes comboPulse {
+  0% {
+    transform: scale(0.88);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .panel-score {

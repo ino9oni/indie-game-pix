@@ -206,6 +206,15 @@ function countCorrectFilled(grid, solution) {
   return count;
 }
 
+function createComboTrack() {
+  return {
+    count: 0,
+    show: false,
+    label: 0,
+    pulse: 0,
+  };
+}
+
 export default function App() {
   const [screen, setScreen] = useState("prologue");
   const [level, setLevel] = useState("easy");
@@ -277,8 +286,42 @@ export default function App() {
   const [fadedCells, setFadedCells] = useState([]);
   const [paused, setPaused] = useState(false);
   const [projectiles, setProjectiles] = useState([]);
+  const [comboState, setComboState] = useState(() => ({
+    hero: createComboTrack(),
+    enemy: createComboTrack(),
+  }));
   const size = solution.length;
   const clues = useMemo(() => computeClues(solution), [solution]);
+
+  const resetCombo = useCallback((side) => {
+    setComboState((prev) => {
+      const nextTrack = createComboTrack();
+      if (prev[side].count === 0 && !prev[side].show) return prev;
+      return { ...prev, [side]: nextTrack };
+    });
+  }, []);
+
+  const resetAllCombos = useCallback(() => {
+    setComboState({
+      hero: createComboTrack(),
+      enemy: createComboTrack(),
+    });
+  }, []);
+
+  const incrementCombo = useCallback((side) => {
+    setComboState((prev) => {
+      const current = prev[side];
+      const nextCount = current.count + 1;
+      const shouldShow = nextCount >= 2;
+      const nextTrack = {
+        count: nextCount,
+        show: shouldShow,
+        label: nextCount,
+        pulse: shouldShow ? current.pulse + 1 : current.pulse,
+      };
+      return { ...prev, [side]: nextTrack };
+    });
+  }, []);
 
   const playerAvatar = useMemo(
     () => ({
@@ -489,6 +532,7 @@ export default function App() {
         list: pending.concat(shuffle(removed)),
         index: 0,
       };
+      resetCombo("enemy");
     }
     const casterName = heroName || "主人公";
     logSpell(`${casterName} が「${HERO_SPELL.name}」を放った`);
@@ -501,7 +545,7 @@ export default function App() {
     });
     audio.playSpellAttack("hero");
     launchProjectile("hero");
-  }, [heroName, logSpell, showSpellOverlay]);
+  }, [heroName, logSpell, resetCombo, showSpellOverlay]);
 
   const triggerEnemySpell = useCallback(
     (spellId, context = {}) => {
@@ -1098,6 +1142,7 @@ export default function App() {
     setActiveSpell(null);
     puzzleSolvedRef.current = false;
     setProjectiles([]);
+    resetAllCombos();
 
     const sequence = getRandomPuzzlesForSize(n, PUZZLES_PER_BATTLE);
     const prepared = sequence.length
@@ -1184,6 +1229,7 @@ export default function App() {
       clearSpellEffects();
       puzzleSolvedRef.current = false;
       setProjectiles([]);
+      resetAllCombos();
       setHeroPuzzleIndex(safeIndex);
       setSolution(nextSolution);
       setGrid(emptyGrid(n));
@@ -1211,7 +1257,7 @@ export default function App() {
       setBgSeed((s) => s + 1);
       spedUpRef.current = false;
     },
-    [puzzleSequence, clearSpellEffects],
+    [puzzleSequence, clearSpellEffects, resetAllCombos],
   );
 
   const loadEnemyPuzzle = useCallback(
@@ -1232,8 +1278,9 @@ export default function App() {
       enemyOrderRef.current = { list: [], index: 0 };
       setEnemyGrid(emptyGrid(n));
       setEnemySolutionVersion((v) => v + 1);
+      resetAllCombos();
     },
-    [puzzleSequence, stopEnemySolver],
+    [puzzleSequence, resetAllCombos, stopEnemySolver],
   );
 
   function enterEnding(nodeId) {
@@ -1276,6 +1323,7 @@ export default function App() {
     puzzleSolvedRef.current = true;
     stopEnemySolver();
     cancelCelebration();
+    resetAllCombos();
     awardScore(battleNode, remaining);
     const totalNeeded = puzzleSequence.length || PUZZLES_PER_BATTLE;
     const nextIndex = heroPuzzleIndex + 1;
@@ -1289,7 +1337,19 @@ export default function App() {
         loadHeroPuzzle(nextIndex);
       }, 0);
     }
-  }, [awardScore, battleNode, cancelCelebration, handleCloseResult, heroPuzzleIndex, loadHeroPuzzle, playerWins, puzzleSequence.length, remaining, stopEnemySolver]);
+  }, [
+    awardScore,
+    battleNode,
+    cancelCelebration,
+    handleCloseResult,
+    heroPuzzleIndex,
+    loadHeroPuzzle,
+    playerWins,
+    puzzleSequence.length,
+    remaining,
+    resetAllCombos,
+    stopEnemySolver,
+  ]);
 
   const maybeCompletePuzzle = useCallback(
     (candidateGrid) => {
@@ -1342,6 +1402,7 @@ export default function App() {
     cancelCelebration();
     stopEnemySolver();
     clearSpellEffects();
+    resetAllCombos();
     setActiveSpell(null);
     setPuzzleSequence([]);
     setHeroPuzzleIndex(0);
@@ -1411,6 +1472,7 @@ export default function App() {
     const enemyName = character?.name || "敵";
     logSpell(`${enemyName} がパズルを解いた (${nextWins}/${totalNeeded})`);
     stopEnemySolver();
+    resetAllCombos();
     const isFinal = nextWins >= totalNeeded;
     awardEnemyScore(battleNode, remaining);
     if (isFinal) {
@@ -1435,7 +1497,21 @@ export default function App() {
         loadEnemyPuzzle(nextWins);
       }, 0);
     }
-  }, [awardEnemyScore, battleNode, cancelCelebration, clearSpellEffects, enemyWins, loadEnemyPuzzle, logSpell, puzzleSequence.length, remaining, resetScore, showSpellOverlay, stopEnemySolver]);
+  }, [
+    awardEnemyScore,
+    battleNode,
+    cancelCelebration,
+    clearSpellEffects,
+    enemyWins,
+    loadEnemyPuzzle,
+    logSpell,
+    puzzleSequence.length,
+    remaining,
+    resetAllCombos,
+    resetScore,
+    showSpellOverlay,
+    stopEnemySolver,
+  ]);
 
   const handleHeroCorrectFill = useCallback(
     (row, col, nextGrid) => {
@@ -1444,6 +1520,7 @@ export default function App() {
       heroState.crossStreak = 0;
       heroState.sameLineStreak = 0;
       heroState.correctStreak += 1;
+      incrementCombo("hero");
 
       const prev = heroState.lastCorrect;
       const isAdjacent =
@@ -1498,7 +1575,7 @@ export default function App() {
         triggerEnemySpell("ultra");
       }
     },
-    [battleNode, triggerHeroSpell, triggerEnemySpell, solution],
+    [battleNode, incrementCombo, triggerHeroSpell, triggerEnemySpell, solution],
   );
 
   const handleHeroMistake = useCallback(
@@ -1509,6 +1586,7 @@ export default function App() {
       heroState.lastCorrect = null;
       heroState.crossStreak = 0;
       heroState.blockChain = { type: null, index: null, length: 1 };
+      resetCombo("hero");
       const prevRow = heroState.sameLineRow;
       const prevCol = heroState.sameLineCol;
       const sameRow = typeof prevRow === "number" && row === prevRow;
@@ -1552,7 +1630,7 @@ export default function App() {
         });
       }
     },
-    [battleNode, setGrid, solution, triggerEnemySpell],
+    [battleNode, resetCombo, setGrid, solution, triggerEnemySpell],
   );
 
   const handleHeroCross = useCallback(
@@ -1665,21 +1743,23 @@ export default function App() {
     if (!solution.length) return;
     const fresh = emptyGrid(solution.length);
     setGrid(fresh);
+    resetAllCombos();
     maybeCompletePuzzle(fresh);
-  }, [maybeCompletePuzzle, screen, solution.length]);
+  }, [maybeCompletePuzzle, resetAllCombos, screen, solution.length]);
 
   const togglePaused = useCallback(() => {
     setPaused((prev) => {
       const next = !prev;
       if (next) {
         stopEnemySolver();
+        resetAllCombos();
       } else {
         heroStateRef.current.noMistakeStart = Date.now();
         heroStateRef.current.noMistakeTriggered = false;
       }
       return next;
     });
-  }, [stopEnemySolver]);
+  }, [resetAllCombos, stopEnemySolver]);
 
   useEffect(() => {
     if (!paused) return;
@@ -1730,6 +1810,12 @@ export default function App() {
   useEffect(() => {
     setBgSeed((s) => s + 1);
   }, [screen]);
+
+  useEffect(() => {
+    if (screen !== "picross") {
+      resetAllCombos();
+    }
+  }, [screen, resetAllCombos]);
 
   const prevScreenRef = useRef(screen);
   useEffect(() => {
@@ -1800,12 +1886,17 @@ export default function App() {
         return;
       }
       const { r, c } = target;
+      let placed = false;
       setEnemyGrid((prev) => {
         if (prev[r]?.[c] === 1) return prev;
         const next = prev.length ? prev.map((row) => row.slice()) : emptyGrid(enemySolution.length);
         next[r][c] = 1;
+        placed = true;
         return next;
       });
+      if (placed) {
+        incrementCombo("enemy");
+      }
       enemyProgressRef.current.filled += 1;
       if (enemyProgressRef.current.filled >= enemyProgressRef.current.total) {
         stopEnemySolver();
@@ -1814,7 +1905,18 @@ export default function App() {
     }, Math.max(120, config.interval));
     enemySolverRef.current = timer;
     return () => clearInterval(timer);
-  }, [screen, battleNode, enemySolutionVersion, playerWins, enemyWins, puzzleSequence.length, paused, stopEnemySolver, handleEnemyPuzzleClear]);
+  }, [
+    screen,
+    battleNode,
+    enemySolutionVersion,
+    playerWins,
+    enemyWins,
+    puzzleSequence.length,
+    paused,
+    stopEnemySolver,
+    handleEnemyPuzzleClear,
+    incrementCombo,
+  ]);
 
   useEffect(() => {
     if (screen !== "picross") return;
@@ -2134,6 +2236,17 @@ export default function App() {
 
   const renderSpellSlot = (side) => {
     const spell = activeSpell && activeSpell.caster === side ? activeSpell : null;
+    const combo = comboState[side] || createComboTrack();
+    const comboVisible = combo.show && combo.label >= 2;
+    const comboBadge = (
+      <div className={`combo-badge ${side} ${comboVisible ? "visible" : ""}`}>
+        {comboVisible && (
+          <span key={`${side}-${combo.pulse}`} className="combo-badge-text">
+            Combo x{combo.label}
+          </span>
+        )}
+      </div>
+    );
     if (spell) {
       return (
         <div className={`spell-slot ${side} active`}>
@@ -2142,6 +2255,7 @@ export default function App() {
             <div className="spell-slot-name">{spell.name}</div>
             <div className="spell-slot-desc">{spell.description}</div>
           </div>
+          {comboBadge}
         </div>
       );
     }
@@ -2150,6 +2264,7 @@ export default function App() {
         <span className="spell-slot-placeholder">
           {side === "hero" ? "スペル待機中" : "敵スペル待機中"}
         </span>
+        {comboBadge}
       </div>
     );
   };
