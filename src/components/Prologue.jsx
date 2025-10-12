@@ -1,9 +1,20 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 const HOLD_MS = 1200;
 const FADE_MS = 200;
 
-export default function Prologue({ onNext }) {
+const Prologue = forwardRef(function Prologue(
+  { onNext, focusIndex = 0, usingGamepad = false },
+  ref,
+) {
   const lines = useMemo(
     () => [
       "森深くに隠されたエルフの集落には、",
@@ -27,10 +38,27 @@ export default function Prologue({ onNext }) {
     timers.current = [];
   }, []);
 
+  const finishPrologue = useCallback(() => {
+    clearTimers();
+    onNext?.();
+  }, [clearTimers, onNext]);
+
+  const advanceLine = useCallback(() => {
+    clearTimers();
+    if (index >= lines.length - 1) {
+      finishPrologue();
+      return true;
+    }
+    if (phase === "out") return false;
+    setPhase("out");
+    return true;
+  }, [clearTimers, finishPrologue, index, lines.length, phase]);
+
   const skipPrologue = useCallback(() => {
     clearTimers();
-    if (onNext) onNext();
-  }, [clearTimers, onNext]);
+    finishPrologue();
+    return true;
+  }, [clearTimers, finishPrologue]);
 
   useEffect(() => {
     clearTimers();
@@ -41,7 +69,7 @@ export default function Prologue({ onNext }) {
           setTimeout(() => setPhase("out"), HOLD_MS),
         );
       } else {
-        timers.current.push(setTimeout(() => onNext && onNext(), 2000));
+        timers.current.push(setTimeout(finishPrologue, 2000));
       }
     } else if (phase === "out") {
       timers.current.push(
@@ -53,9 +81,18 @@ export default function Prologue({ onNext }) {
     }
 
     return clearTimers;
-  }, [index, phase, lines.length, onNext, clearTimers]);
+  }, [clearTimers, finishPrologue, index, lines.length, phase]);
 
   const text = lines[index] ?? "";
+
+  const handleNext = useCallback(() => {
+    advanceLine();
+  }, [advanceLine]);
+
+  useImperativeHandle(ref, () => ({
+    advance: () => advanceLine(),
+    skip: () => skipPrologue(),
+  }));
 
   return (
     <main className="screen prologue">
@@ -69,11 +106,24 @@ export default function Prologue({ onNext }) {
           </p>
         </div>
         <div className="prologue-actions">
-          <button className="primary" type="button" onClick={skipPrologue}>
+          <button
+            className={`primary${usingGamepad && focusIndex === 0 ? " focused" : ""}`}
+            type="button"
+            onClick={handleNext}
+          >
+            Next
+          </button>
+          <button
+            className={`ghost${usingGamepad && focusIndex === 1 ? " focused" : ""}`}
+            type="button"
+            onClick={skipPrologue}
+          >
             Skip
           </button>
         </div>
       </div>
     </main>
   );
-}
+});
+
+export default Prologue;
