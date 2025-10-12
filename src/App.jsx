@@ -69,28 +69,6 @@ const GAMEPAD_BUTTON = {
   RIGHT: 15,
 };
 const GAMEPAD_REPEAT_MS = 180;
-const GAMEPAD_AXIS_THRESHOLD = 0.5;
-const HAT_TOLERANCE = 0.2;
-
-function decodeHatAxis(value) {
-  if (typeof value !== "number") return { x: 0, y: 0 };
-  const patterns = [
-    { value: -1, x: 0, y: -1 },
-    { value: -0.714, x: 1, y: -1 },
-    { value: -0.428, x: 1, y: 0 },
-    { value: -0.142, x: 1, y: 1 },
-    { value: 0.142, x: 0, y: 1 },
-    { value: 0.428, x: -1, y: 1 },
-    { value: 0.714, x: -1, y: 0 },
-    { value: 1, x: -1, y: -1 },
-  ];
-  for (const pattern of patterns) {
-    if (Math.abs(value - pattern.value) <= HAT_TOLERANCE) {
-      return { x: pattern.x, y: pattern.y };
-    }
-  }
-  return { x: 0, y: 0 };
-}
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -312,7 +290,6 @@ export default function App() {
     hero: createComboTrack(),
     enemy: createComboTrack(),
   }));
-  const [prologueFocus, setPrologueFocus] = useState(0);
   const size = solution.length;
   const clues = useMemo(() => computeClues(solution), [solution]);
 
@@ -381,12 +358,9 @@ export default function App() {
   const hiddenTimersRef = useRef({ hidden: null, locked: null, faded: null });
   const spellOverlayTimeoutRef = useRef(null);
   const speechTimeoutRef = useRef({ hero: null, enemy: null });
-  const prologueControlsRef = useRef(null);
-  const nameEntryRef = useRef(null);
   const conversationControlsRef = useRef(null);
   const lastGamepadButtonsRef = useRef({});
   const gamepadRepeatRef = useRef({});
-  const gamepadAxisLatchRef = useRef({ x: 0, y: 0 });
   const gamepadCursorRef = useRef({ row: 0, col: 0 });
   const lastGamepadUsedRef = useRef(0);
   const heroStateRef = useRef({});
@@ -2007,18 +1981,6 @@ export default function App() {
     }
   }, [screen]);
 
-  useEffect(() => {
-    if (screen === "prologue") {
-      setPrologueFocus(0);
-    }
-  }, [screen]);
-
-  useEffect(() => {
-    if (screen === "name") {
-      nameEntryRef.current?.resetFocus?.();
-    }
-  }, [screen]);
-
   const conversationBackground = useMemo(() => {
     if (screen !== "conversation") return null;
     if (!pendingNode) return null;
@@ -2078,8 +2040,6 @@ export default function App() {
           setGamepadConnected(false);
           lastGamepadButtonsRef.current = {};
         }
-        gamepadAxisLatchRef.current.x = 0;
-        gamepadAxisLatchRef.current.y = 0;
         animationId = requestAnimationFrame(pollGamepad);
         return;
       }
@@ -2126,16 +2086,6 @@ export default function App() {
       };
 
       const moveHorizontal = (delta) => {
-        if (screen === "prologue") {
-          setPrologueFocus((prev) => {
-            const options = 2;
-            return (prev + options + delta) % options;
-          });
-          return true;
-        }
-        if (screen === "name") {
-          return nameEntryRef.current?.moveHorizontal?.(delta) || false;
-        }
         if (screen === "opening") {
           setOpeningFocus((prev) => {
             const options = 2;
@@ -2152,16 +2102,6 @@ export default function App() {
       };
 
       const moveVertical = (delta) => {
-        if (screen === "prologue") {
-          setPrologueFocus((prev) => {
-            const options = 2;
-            return (prev + options + delta) % options;
-          });
-          return true;
-        }
-        if (screen === "name") {
-          return nameEntryRef.current?.moveVertical?.(delta) || false;
-        }
         if (screen === "opening") {
           setOpeningFocus((prev) => {
             const options = 2;
@@ -2178,14 +2118,6 @@ export default function App() {
       };
 
       const handleConfirm = () => {
-        if (screen === "prologue") {
-          if (prologueFocus === 0) {
-            prologueControlsRef.current?.advance?.();
-          } else {
-            prologueControlsRef.current?.skip?.();
-          }
-          return true;
-        }
         if (screen === "opening") {
           if (openingFocus === 0) {
             handleOpeningNewGame();
@@ -2198,9 +2130,6 @@ export default function App() {
           conversationControlsRef.current?.advance?.();
           return true;
         }
-        if (screen === "name") {
-          return nameEntryRef.current?.confirm?.() || false;
-        }
         if (screen === "picross") {
           handlePicrossCellAction("fill");
           return true;
@@ -2209,16 +2138,9 @@ export default function App() {
       };
 
       const handleCancel = () => {
-        if (screen === "prologue") {
-          prologueControlsRef.current?.skip?.();
-          return true;
-        }
         if (screen === "conversation") {
           conversationControlsRef.current?.skip?.();
           return true;
-        }
-        if (screen === "name") {
-          return nameEntryRef.current?.cancel?.() || false;
         }
         if (screen === "picross") {
           handlePicrossCellAction("cross");
@@ -2277,63 +2199,7 @@ export default function App() {
         processButton(GAMEPAD_BUTTON.START, handleStartInput) ||
         processButton(GAMEPAD_BUTTON.SELECT, handleSelect);
 
-      const axisLatch = gamepadAxisLatchRef.current;
-      let anyAxis = false;
-      const processAxis = (value, negativeHandler, positiveHandler, key) => {
-        if (value <= -GAMEPAD_AXIS_THRESHOLD) {
-          if (axisLatch[key] !== -1) {
-            const handled = negativeHandler();
-            if (handled) {
-              markPressed();
-              anyAxis = true;
-            }
-            axisLatch[key] = -1;
-          }
-        } else if (value >= GAMEPAD_AXIS_THRESHOLD) {
-          if (axisLatch[key] !== 1) {
-            const handled = positiveHandler();
-            if (handled) {
-              markPressed();
-              anyAxis = true;
-            }
-            axisLatch[key] = 1;
-          }
-        } else {
-          axisLatch[key] = 0;
-        }
-      };
-
-      const axisX = Array.isArray(pad.axes) ? pad.axes[0] ?? 0 : 0;
-      const axisY = Array.isArray(pad.axes) ? pad.axes[1] ?? 0 : 0;
-      processAxis(axisX, () => moveHorizontal(-1), () => moveHorizontal(1), "x");
-      processAxis(axisY, () => moveVertical(-1), () => moveVertical(1), "y");
-
-      if (Array.isArray(pad.axes) && pad.axes.length >= 10) {
-        const hat = pad.axes[9];
-        const hatVector = decodeHatAxis(hat);
-        if (hatVector.x !== 0) {
-          processAxis(
-            hatVector.x,
-            () => moveHorizontal(-1),
-            () => moveHorizontal(1),
-            "hatX",
-          );
-        } else {
-          axisLatch.hatX = 0;
-        }
-        if (hatVector.y !== 0) {
-          processAxis(
-            hatVector.y,
-            () => moveVertical(-1),
-            () => moveVertical(1),
-            "hatY",
-          );
-        } else {
-          axisLatch.hatY = 0;
-        }
-      }
-
-      if ((anyDirection || anyAction || anyAxis) && inputMode !== "gamepad") {
+      if ((anyDirection || anyAction) && inputMode !== "gamepad") {
         setInputMode("gamepad");
       }
 
@@ -2353,10 +2219,8 @@ export default function App() {
     inputMode,
     moveGamepadCursor,
     openingFocus,
-    prologueFocus,
     screen,
     setInputMode,
-    setPrologueFocus,
     togglePaused,
   ]);
 
@@ -2505,12 +2369,7 @@ export default function App() {
       </header>
 
       {screen === "prologue" && (
-        <Prologue
-          ref={prologueControlsRef}
-          onNext={() => setScreen("opening")}
-          focusIndex={prologueFocus}
-          usingGamepad={inputMode === "gamepad"}
-        />
+        <Prologue onNext={() => setScreen("opening")} />
       )}
 
       {screen === "opening" && (
@@ -2537,9 +2396,7 @@ export default function App() {
 
       {screen === "name" && (
         <NameEntry
-          ref={nameEntryRef}
           initial={heroName}
-          usingGamepad={inputMode === "gamepad"}
           onConfirm={(n) => {
             setHeroName(n);
             localStorage.setItem("heroName", n);

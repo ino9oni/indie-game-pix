@@ -1497,11 +1497,6 @@ button {
   margin-top: auto;
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-}
-.prologue-actions button.focused {
-  outline: 2px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
 }
 /* Generic dialog window */
 .dialog {
@@ -1643,10 +1638,6 @@ button {
   justify-content: center;
   align-items: center;
   min-height: 44px;
-}
-.kana.focused {
-  outline: 2px solid rgba(59, 130, 246, 0.85);
-  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.35);
 }
 .kana.blank {
   visibility: hidden;
