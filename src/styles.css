@@ -1723,63 +1723,140 @@ button {
 }
 
 .route-canvas.encounter-zoom {
-  animation: route-encounter-zoom 0.7s ease-in-out;
+  animation: route-encounter-zoom 900ms ease-in-out;
 }
 
 .route-encounter-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 77, 77, 0.3);
   pointer-events: none;
-  opacity: 0;
   border-radius: inherit;
-  z-index: 2;
+  z-index: 4;
+  overflow: hidden;
 }
 
-.route-encounter-overlay.active {
-  animation: route-encounter-flash 0.7s ease-in-out forwards;
+.route-encounter-overlay .encounter-dimmer,
+.route-encounter-overlay .encounter-fracture,
+.route-encounter-overlay .encounter-shard {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.route-encounter-overlay .encounter-dimmer {
+  background: radial-gradient(circle at center, rgba(254, 226, 226, 0.45) 10%, rgba(7, 11, 24, 0.82) 62%);
+}
+
+.route-encounter-overlay .encounter-fracture {
+  inset: -12%;
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.25) 0%, transparent 55%),
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(255, 255, 255, 0.08) 0deg 4deg,
+      transparent 4deg 12deg
+    );
+  mix-blend-mode: screen;
+  filter: blur(0.6px);
+}
+
+.route-encounter-overlay .encounter-shard {
+  inset: -10%;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.05)),
+    radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.55), transparent 60%);
+  border-radius: 24px;
+  transform: translate(0, 0) scale(1) rotate(var(--shard-rotate, 0deg));
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.35));
+  mix-blend-mode: screen;
+  --shard-tx: 0%;
+  --shard-ty: 0%;
+  --shard-delay: 0ms;
+}
+
+.route-encounter-overlay.active .encounter-dimmer {
+  animation: encounter-dimmer-fade 900ms ease-in-out forwards;
+}
+
+.route-encounter-overlay.active .encounter-fracture {
+  animation: encounter-fracture 900ms ease-out forwards;
+}
+
+.route-encounter-overlay.active .encounter-shard {
+  animation: encounter-shard 900ms ease-in-out forwards;
+  animation-delay: var(--shard-delay, 0ms);
 }
 
 @keyframes route-encounter-zoom {
   0% {
     transform: scale(1);
   }
-  20% {
-    transform: scale(1.15);
+  18% {
+    transform: scale(1.14);
   }
-  40% {
-    transform: scale(1);
+  36% {
+    transform: scale(1.04);
   }
-  60% {
-    transform: scale(1.12);
-  }
-  80% {
-    transform: scale(1);
+  58% {
+    transform: scale(1.1);
   }
   100% {
     transform: scale(1);
   }
 }
 
-@keyframes route-encounter-flash {
-  0%,
+@keyframes encounter-dimmer-fade {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.7;
+  }
+  55% {
+    opacity: 0.4;
+  }
   100% {
     opacity: 0;
   }
-  10% {
-    opacity: 0.35;
-  }
-  25% {
+}
+
+@keyframes encounter-fracture {
+  0% {
     opacity: 0;
+    transform: scale(0.96) rotate(0deg);
   }
-  45% {
-    opacity: 0.32;
+  18% {
+    opacity: 0.85;
+    transform: scale(1.02) rotate(3deg);
   }
-  60% {
+  58% {
+    opacity: 0.55;
+    transform: scale(1.08) rotate(-2deg);
+  }
+  100% {
     opacity: 0;
+    transform: scale(1.1) rotate(0deg);
   }
-  80% {
-    opacity: 0.18;
+}
+
+@keyframes encounter-shard {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(1) rotate(var(--shard-rotate, 0deg));
+  }
+  18% {
+    opacity: 0.95;
+    transform: translate(0, 0) scale(1.05) rotate(var(--shard-rotate, 0deg));
+  }
+  58% {
+    opacity: 0.45;
+    transform: translate(var(--shard-tx), var(--shard-ty)) scale(1.08) rotate(var(--shard-rotate, 0deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--shard-tx) * 1.35), calc(var(--shard-ty) * 1.35))
+      scale(1.12)
+      rotate(var(--shard-rotate, 0deg));
   }
 }
 .route-edge {

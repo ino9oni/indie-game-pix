@@ -5,6 +5,14 @@ const MAP_MARGIN = 48;
 const MIN_VIEWBOX_WIDTH = 480;
 const MIN_VIEWBOX_HEIGHT = 320;
 
+const ENCOUNTER_SHARDS = [
+  { key: "shard-1", rotate: -14, tx: "-12%", ty: "-6%", delay: "40ms" },
+  { key: "shard-2", rotate: 9, tx: "8%", ty: "-10%", delay: "80ms" },
+  { key: "shard-3", rotate: -4, tx: "-6%", ty: "10%", delay: "120ms" },
+  { key: "shard-4", rotate: 16, tx: "10%", ty: "12%", delay: "160ms" },
+  { key: "shard-5", rotate: 3, tx: "4%", ty: "-4%", delay: "0ms" },
+];
+
 export default function RouteMap({
   graph,
   current,
@@ -105,6 +113,7 @@ export default function RouteMap({
 
   const bubbleTimerRef = useRef(null);
   const encounterTimerRef = useRef(null);
+  const ENCOUNTER_DURATION_MS = 900;
   const animFrameRef = useRef(null);
   const mountedRef = useRef(true);
 
@@ -245,13 +254,16 @@ export default function RouteMap({
         setHeroPos(to);
         const targetNode = nodes[targetId];
         const showEncounterBubble = targetNode?.type !== "end";
-        if (showEncounterBubble) {
-          setBubble({ x: to.x, y: to.y });
-        } else {
-          setBubble(null);
-        }
         const isEncounter = targetNode?.type === "elf";
+        const nextBubble = showEncounterBubble ? { x: to.x, y: to.y } : null;
+
+        if (bubbleTimerRef.current) {
+          clearTimeout(bubbleTimerRef.current);
+          bubbleTimerRef.current = null;
+        }
+
         if (isEncounter) {
+          setBubble(nextBubble);
           setEncountering(true);
           if (encounterTimerRef.current) {
             clearTimeout(encounterTimerRef.current);
@@ -260,17 +272,30 @@ export default function RouteMap({
             encounterTimerRef.current = null;
             if (!mountedRef.current) return;
             setEncountering(false);
-          }, 700);
+          }, ENCOUNTER_DURATION_MS);
+
+          bubbleTimerRef.current = setTimeout(() => {
+            bubbleTimerRef.current = null;
+            if (!mountedRef.current) return;
+            setBubble(null);
+            setAnimating(false);
+            if (onArrive) onArrive(targetId);
+          }, ENCOUNTER_DURATION_MS);
         } else {
+          if (encounterTimerRef.current) {
+            clearTimeout(encounterTimerRef.current);
+            encounterTimerRef.current = null;
+          }
           setEncountering(false);
+          setBubble(nextBubble);
+          bubbleTimerRef.current = setTimeout(() => {
+            bubbleTimerRef.current = null;
+            if (!mountedRef.current) return;
+            setBubble(null);
+            setAnimating(false);
+            if (onArrive) onArrive(targetId);
+          }, 820);
         }
-        bubbleTimerRef.current = setTimeout(() => {
-          bubbleTimerRef.current = null;
-          if (!mountedRef.current) return;
-          setBubble(null);
-          setAnimating(false);
-          if (onArrive) onArrive(targetId);
-        }, 820);
       }
     };
 
@@ -284,7 +309,22 @@ export default function RouteMap({
       >
         <div
           className={`route-encounter-overlay${encountering ? " active" : ""}`}
-        />
+        >
+          <div className="encounter-dimmer" />
+          <div className="encounter-fracture" />
+          {ENCOUNTER_SHARDS.map((shard) => (
+            <span
+              key={shard.key}
+              className={`encounter-shard ${shard.key}`}
+              style={{
+                "--shard-rotate": `${shard.rotate}deg`,
+                "--shard-tx": shard.tx,
+                "--shard-ty": shard.ty,
+                "--shard-delay": shard.delay,
+              }}
+            />
+          ))}
+        </div>
         <svg
           viewBox={viewBox}
           className="route-svg"
