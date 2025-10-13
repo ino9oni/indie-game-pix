@@ -238,6 +238,7 @@ export default function Conversation({
   onDone,
   onSkip,
   onRegisterGamepad,
+  transition = "none",
 }) {
   const script = useMemo(
     () => buildScript(difficultyId, heroName, enemyName),
@@ -369,8 +370,29 @@ export default function Conversation({
     return () => onRegisterGamepad(null);
   }, [advance, handleSkip, onRegisterGamepad]);
 
+  const shouldFadeIn = transition === "encounter";
+  const [entered, setEntered] = useState(() => !shouldFadeIn);
+
+  useEffect(() => {
+    if (!shouldFadeIn) return undefined;
+    const id = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(id);
+  }, [shouldFadeIn]);
+
+  const rootStyle = shouldFadeIn
+    ? {
+        opacity: entered ? 1 : 0,
+        transition: "opacity 220ms ease-out",
+      }
+    : undefined;
+
   return (
-    <main className="screen dialog" onClick={advance}>
+    <main
+      className="screen dialog"
+      onClick={advance}
+      style={rootStyle}
+      data-transition={transition}
+    >
       <div
         style={{
           width: "100%",

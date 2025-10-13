@@ -278,6 +278,7 @@ export default function App() {
   const [spellLog, setSpellLog] = useState([]);
   const [activeSpell, setActiveSpell] = useState(null);
   const [spellSpeech, setSpellSpeech] = useState({ hero: null, enemy: null });
+  const [conversationTransition, setConversationTransition] = useState("none");
   const [postClearAction, setPostClearAction] = useState(null);
   const [hiddenRowClues, setHiddenRowClues] = useState([]);
   const [hiddenColClues, setHiddenColClues] = useState([]);
@@ -2428,6 +2429,7 @@ export default function App() {
                 } catch {}
               }
               setPendingNode(normalized);
+              setConversationTransition("encounter");
               setScreen("conversation");
             } else {
               enterEnding(normalized);
@@ -2441,8 +2443,15 @@ export default function App() {
           heroName={heroName || "主人公"}
           enemyName={CHARACTERS[pendingNode]?.name || "敵"}
           difficultyId={pendingNode}
-          onDone={() => beginPicrossForNode(pendingNode)}
-          onSkip={() => beginPicrossForNode(pendingNode)}
+          transition={conversationTransition}
+          onDone={() => {
+            setConversationTransition("none");
+            beginPicrossForNode(pendingNode);
+          }}
+          onSkip={() => {
+            setConversationTransition("none");
+            beginPicrossForNode(pendingNode);
+          }}
           onRegisterGamepad={(controls) => {
             conversationControlsRef.current = controls;
           }}
