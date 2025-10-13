@@ -30,7 +30,7 @@ const HERO_IMAGES = {
 const BASE_PORTRAIT_WIDTH = 380;
 const BASE_PORTRAIT_HEIGHT = 487;
 const PORTRAIT_RATIO = BASE_PORTRAIT_HEIGHT / BASE_PORTRAIT_WIDTH;
-const PORTRAIT_SCALE = 1.5;
+const PORTRAIT_SCALE = 1.125; // 75% of the previous 1.5x upscale (~428px width)
 const MAX_PORTRAIT_WIDTH = Math.round(BASE_PORTRAIT_WIDTH * PORTRAIT_SCALE);
 
 function buildScript(difficultyId, heroName, enemyName) {
