@@ -1859,25 +1859,93 @@ button {
       rotate(var(--shard-rotate, 0deg));
   }
 }
-.route-edge {
-  stroke: #94a3b8;
+.route-edge-group {
+  pointer-events: none;
+}
+
+.route-edge-shadow {
+  stroke: rgba(15, 23, 42, 0.35);
   stroke-width: 3px;
-  opacity: 0.6;
+  opacity: 0.45;
+  filter: blur(0.6px);
 }
+
+.route-edge {
+  stroke: url(#route-edge-gradient);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+.route-edge-glow {
+  stroke: #5ee7ff;
+  stroke-width: 5px;
+  stroke-linecap: round;
+  stroke-dasharray: 1 12;
+  stroke-dashoffset: 0;
+  animation: route-edge-glow 180ms linear infinite;
+  filter: drop-shadow(0 0 6px rgba(94, 231, 255, 0.7));
+}
+
+@keyframes route-edge-glow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -13;
+  }
+}
+
 .route-node {
-  fill: #0ea5e9;
-  stroke: #1f2937;
-  stroke-width: 2px;
+  transition: transform 160ms ease;
 }
-.route-node.current {
-  fill: #22c55e;
+
+.route-node-shadow {
+  fill: rgba(8, 15, 35, 0.28);
+  filter: blur(6px);
+  opacity: 0.85;
 }
-.route-node.start {
-  fill: #f59e0b;
+
+
+.route-node-top {
+  transition: filter 160ms ease;
 }
-.route-node.end {
-  fill: #a78bfa;
+
+.route-node-side-front,
+.route-node-side-back {
+  transition: filter 160ms ease;
 }
+
+.route-node.interactive:hover .route-node-top,
+.route-node.interactive:focus-visible .route-node-top,
+.route-node.interactive:hover .route-node-side-front,
+.route-node.interactive:focus-visible .route-node-side-front,
+.route-node.interactive:hover .route-node-side-back,
+.route-node.interactive:focus-visible .route-node-side-back {
+  filter: brightness(1.12);
+}
+
+.route-node-highlight {
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 1.2px;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.route-node-highlight-front {
+  stroke-width: 1.4px;
+}
+
+.route-node-highlight-back {
+  stroke: rgba(255, 255, 255, 0.18);
+}
+
+.route-node.interactive:hover .route-node-highlight,
+.route-node.interactive:focus-visible .route-node-highlight {
+  opacity: 1;
+}
+
 .route-label-bubble {
   fill: rgba(30, 41, 59, 0.9);
   stroke: rgba(148, 163, 184, 0.7);
