@@ -21,7 +21,7 @@ import audio from "./audio/AudioManager.js";
 import bgm from "./audio/BgmPlayer.js";
 import { TRACKS } from "./audio/tracks.js";
 
-const GAME_SECONDS = 20 * 60; // 20 minutes
+const GAME_SECONDS = 30 * 60; // 30 minutes
 const SCORE_BONUS = {
   "elf-practice": 1000,
   "elf-easy": 5000,
