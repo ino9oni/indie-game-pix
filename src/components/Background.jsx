@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 // Load all images under ./assets/img (png, jpg, jpeg, webp, gif)
 // Path is relative to this file (src/components)
-const modules = import.meta.glob("../../assets/img/*.{png,jpg,jpeg,webp,gif}", {
+const modules = import.meta.glob("../../public/assets/img/*.{png,jpg,jpeg,webp,gif}", {
   eager: true,
   as: "url",
 });

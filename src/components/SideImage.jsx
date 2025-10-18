@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const modules = import.meta.glob("../../assets/img/*.{png,jpg,jpeg,webp,gif}", {
+const modules = import.meta.glob("../../public/assets/img/*.{png,jpg,jpeg,webp,gif}", {
   eager: true,
   as: "url",
 });

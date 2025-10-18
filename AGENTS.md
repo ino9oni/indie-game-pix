@@ -7,7 +7,7 @@ This guide keeps contributions consistent and predictable. Prefer small, focused
 - Code: `src/` (packages and modules). CLIs/scripts in `scripts/` or `bin/`.
 - Tests: `tests/` mirrors `src/` (e.g., `tests/pkg/test_utils.py`).
 - Config: `config/` and `.env.example` (never commit real secrets). Runtime env lives in `.env` (gitignored).
-- Assets & docs: `assets/`, `public/`, `docs/`, and root `README.md`.
+- Assets & docs: `public/assets/`, `public/`, `docs/`, and root `README.md`.
 
 ## Build, Test, and Development Commands
 
