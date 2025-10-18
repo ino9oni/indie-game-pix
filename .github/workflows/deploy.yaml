@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'feature/rewrite-from-gamedesign'
+
   workflow_dispatch:
 
 permissions:
@@ -36,9 +37,9 @@ jobs:
 
       - name: Show dist tree
         run: |
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          ls -alR dist | sed 's/^/    /' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          # echo '```' >> $GITHUB_STEP_SUMMARY
+          ls -alR dist | sed 's/^/    /' # >> $GITHUB_STEP_SUMMARY
+          # echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
