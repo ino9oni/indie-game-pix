@@ -2,13 +2,18 @@ import React, { useEffect, useMemo, useState } from "react";
 
 // Load all images under public/assets/img (png, jpg, jpeg, webp, gif)
 // Path is relative to this file (src/components), navigating into public/
+import { assetPath, normalizeAssetUrl } from "../utils/assetPath.js";
+
 const modules = import.meta.glob("../../public/assets/img/*.{png,jpg,jpeg,webp,gif}", {
   eager: true,
   as: "url",
 });
 
 export default function Background({ seed = 0, fixedUrl = null }) {
-  const urls = useMemo(() => Object.values(modules), []);
+  const urls = useMemo(
+    () => Object.values(modules).map(normalizeAssetUrl),
+    [],
+  );
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
@@ -22,10 +27,11 @@ export default function Background({ seed = 0, fixedUrl = null }) {
   }, [urls.length, seed]);
 
   if (fixedUrl) {
+    const resolved = normalizeAssetUrl(fixedUrl);
     return (
       <div
         className="bg-image"
-        style={{ backgroundImage: `url(${fixedUrl})` }}
+        style={{ backgroundImage: `url(${resolved})` }}
         aria-hidden="true"
       />
     );

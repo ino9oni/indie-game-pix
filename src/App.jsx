@@ -20,6 +20,7 @@ import { computeClues, emptyGrid, equalsSolution, toggleCell } from "./game/util
 import audio from "./audio/AudioManager.js";
 import bgm from "./audio/BgmPlayer.js";
 import { TRACKS } from "./audio/tracks.js";
+import { assetPath } from "./utils/assetPath.js";
 
 const GAME_SECONDS = 30 * 60; // 30 minutes
 const SCORE_BONUS = {
@@ -51,10 +52,14 @@ const AUTO_BGM_SCREENS = new Set([
   "gameover",
 ]);
 const HERO_IMAGES = {
-  normal: "/assets/img/character/hero/hero_normal.png",
-  angry: "/assets/img/character/hero/hero_angry.png",
-  smile: "/assets/img/character/hero/hero_smile.png",
+  normal: assetPath("assets/img/character/hero/hero_normal.png"),
+  angry: assetPath("assets/img/character/hero/hero_angry.png"),
+  smile: assetPath("assets/img/character/hero/hero_smile.png"),
 };
+const TITLE_IMAGE = assetPath("assets/img/title.png");
+const HERO_FULLBODY = assetPath("assets/img/character/hero_fullbody.png");
+const ENDING_BACKGROUND_IMAGE = assetPath("assets/img/background/ending.png");
+const MAP_BACKGROUND_IMAGE = assetPath("assets/img/background/map.png");
 
 const GAMEPAD_BUTTON = {
   A: 0,
@@ -2278,20 +2283,20 @@ export default function App() {
           fixedUrl={
             (screen === "conversation" && conversationBackground)
               ? conversationBackground
-                : (screen === "picross" && battleBackground)
+              : (screen === "picross" && battleBackground)
                   ? battleBackground
                   : screen === "opening"
-                ? "/assets/img/title.png"
+                ? TITLE_IMAGE
                 : screen === "gamestart"
                   ? (gameStartPhase === "before" || gameStartPhase === "after" || gameStartNameVisible
-                      ? "/assets/img/character/hero_fullbody.png"
+                      ? HERO_FULLBODY
                       : null)
               : screen === "ending"
-                ? "/assets/img/background/ending.png"
+                ? ENDING_BACKGROUND_IMAGE
                 : screen === "route"
-                  ? "/assets/img/background/map.png"
+                  ? MAP_BACKGROUND_IMAGE
                   : screen === "name"
-                    ? "/assets/img/character/hero_fullbody.png"
+                    ? HERO_FULLBODY
                     : null
           }
         />

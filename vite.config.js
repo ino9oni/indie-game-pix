@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 // from a subpath (avoids asset 404s like "page not found").
 export default defineConfig({
   //base: "./",
-  base: "./",
+  base: "/indie-game-pix/",
   plugins: [react()],
   //server: { port: 5173, open: false },
   build: {

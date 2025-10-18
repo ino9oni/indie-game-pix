@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { assetPath } from "../utils/assetPath.js";
 
 // Route map with neighbor-only movement, hero sprite, and animated traversal
 const MAP_MARGIN = 48;
@@ -57,7 +58,7 @@ export default function RouteMap({
   const nodes = graph?.nodes ?? {};
   const edges = graph?.edges ?? [];
   const parents = graph?.parents ?? {};
-  const heroImg = "/assets/img/character/hero/00083-826608146.png";
+const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
 
   const viewBox = useMemo(() => {
     const points = Object.values(nodes).filter(

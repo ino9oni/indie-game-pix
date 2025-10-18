@@ -1,4 +1,5 @@
 // Define route graph and character meta
+import { assetPath } from "../utils/assetPath.js";
 
 export const ROUTE = {
   nodes: {
@@ -36,45 +37,45 @@ export const CHARACTERS = {
     name: "リーネ",
     size: 5,
     images: {
-      normal: "/assets/img/character/enemies/practice/riene_normal.png",
-      angry: "/assets/img/character/enemies/practice/riene_angry.png",
-      fullbody: "/assets/img/character/enemies/practice/riene_fullbody.png",
+      normal: assetPath("assets/img/character/enemies/practice/riene_normal.png"),
+      angry: assetPath("assets/img/character/enemies/practice/riene_angry.png"),
+      fullbody: assetPath("assets/img/character/enemies/practice/riene_fullbody.png"),
     },
   },
   "elf-easy": {
     name: "エフィナ",
     size: 10,
     images: {
-      normal: "/assets/img/character/enemies/easy/efina_normal.png",
-      angry: "/assets/img/character/enemies/easy/efina_angry.png",
-      fullbody: "/assets/img/character/enemies/easy/efina_fullbody.png",
+      normal: assetPath("assets/img/character/enemies/easy/efina_normal.png"),
+      angry: assetPath("assets/img/character/enemies/easy/efina_angry.png"),
+      fullbody: assetPath("assets/img/character/enemies/easy/efina_fullbody.png"),
     },
   },
   "elf-middle": {
     name: "セリス",
     size: 15,
     images: {
-      normal: "/assets/img/character/enemies/normal/cerys_normal.png",
-      angry: "/assets/img/character/enemies/normal/cerys_angry.png",
-      fullbody: "/assets/img/character/enemies/normal/cerys_fullbody.png",
+      normal: assetPath("assets/img/character/enemies/normal/cerys_normal.png"),
+      angry: assetPath("assets/img/character/enemies/normal/cerys_angry.png"),
+      fullbody: assetPath("assets/img/character/enemies/normal/cerys_fullbody.png"),
     },
   },
   "elf-hard": {
     name: "フローリア",
     size: 20,
     images: {
-      normal: "/assets/img/character/enemies/hard/floria_normal.png",
-      angry: "/assets/img/character/enemies/hard/floria_angry.png",
-      fullbody: "/assets/img/character/enemies/hard/floria_fullbody.png",
+      normal: assetPath("assets/img/character/enemies/hard/floria_normal.png"),
+      angry: assetPath("assets/img/character/enemies/hard/floria_angry.png"),
+      fullbody: assetPath("assets/img/character/enemies/hard/floria_fullbody.png"),
     },
   },
   "elf-ultra": {
     name: "アルティナ",
     size: 25,
     images: {
-      normal: "/assets/img/character/enemies/ultra/altina_normal.png",
-      angry: "/assets/img/character/enemies/ultra/altina_angry.png",
-      fullbody: "/assets/img/character/enemies/ultra/altina_fullbody.png",
+      normal: assetPath("assets/img/character/enemies/ultra/altina_normal.png"),
+      angry: assetPath("assets/img/character/enemies/ultra/altina_angry.png"),
+      fullbody: assetPath("assets/img/character/enemies/ultra/altina_fullbody.png"),
     },
   },
 };

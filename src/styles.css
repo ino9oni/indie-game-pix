@@ -2117,7 +2117,10 @@ button {
   color: #f8fafc;
   text-align: center;
   padding-top: 40px;
-  background: url("/assets/img/background/ending.png") center/cover no-repeat fixed;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 .ending::before {
   content: "";

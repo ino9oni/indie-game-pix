@@ -1,4 +1,6 @@
 // Eagerly import SFX files so Vite bundles them and we get URLs at runtime
+import { assetPath } from "../utils/assetPath.js";
+
 const SFX_FILES = [
   "chisel_tap.wav",
   "coin_rush.wav",
@@ -13,7 +15,7 @@ const SFX_FILES = [
 ];
 
 const sfxMap = Object.fromEntries(
-  SFX_FILES.map((name) => [name, `/assets/se/${name}`]),
+  SFX_FILES.map((name) => [name, assetPath(`assets/se/${name}`)]),
 );
 
 export function findSfxUrl(pattern) {

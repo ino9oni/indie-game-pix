@@ -1,8 +1,10 @@
+import { assetPath } from "../utils/assetPath.js";
+
 export const TRACKS = {
-  prologue: "/assets/bgm/indie-game-pix-opening.wav",
-  opening: "/assets/bgm/indie-game-pix-opening.wav",
-  route: "/assets/bgm/20230505_AzureSea.wav",
-  conversation: "/assets/bgm/20230505_AzureSea.wav",
-  picross: "/assets/bgm/indie-game-pix-battle.wav",
-  ending: "/assets/bgm/indie-game-pix-ending.wav",
+  prologue: assetPath("assets/bgm/indie-game-pix-opening.wav"),
+  opening: assetPath("assets/bgm/indie-game-pix-opening.wav"),
+  route: assetPath("assets/bgm/20230505_AzureSea.wav"),
+  conversation: assetPath("assets/bgm/20230505_AzureSea.wav"),
+  picross: assetPath("assets/bgm/indie-game-pix-battle.wav"),
+  ending: assetPath("assets/bgm/indie-game-pix-ending.wav"),
 };

@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { assetPath } from "../utils/assetPath.js";
 
 const STORY_DURATION = 10000;
 const FIN_DURATION = 4000;
 const CREDIT_PER_LINE = 4200;
+const ENDING_BACKGROUND = assetPath("assets/img/background/ending.png");
 
 export default function Ending({ heroName = "主人公", endingNode = "elf-true-ending", onDone }) {
   const [stage, setStage] = useState("story");
@@ -54,7 +56,10 @@ export default function Ending({ heroName = "主人公", endingNode = "elf-true-
   }, [stage, credits.length, onDone]);
 
   return (
-    <main className="screen ending">
+    <main
+      className="screen ending"
+      style={{ backgroundImage: `url(${ENDING_BACKGROUND})` }}
+    >
       <div className="ending-content">
         <div className={`story-container ${stage === "story" ? "play" : ""}`}>
           <div className="story-scroll">

@@ -1,30 +1,31 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { assetPath } from "../utils/assetPath.js";
 
 const ENEMY_IMAGES = {
   "elf-practice": {
-    normal: "/assets/img/character/enemies/practice/riene_normal.png",
-    angry: "/assets/img/character/enemies/practice/riene_angry.png",
+    normal: assetPath("assets/img/character/enemies/practice/riene_normal.png"),
+    angry: assetPath("assets/img/character/enemies/practice/riene_angry.png"),
   },
   "elf-easy": {
-    normal: "/assets/img/character/enemies/easy/efina_normal.png",
-    angry: "/assets/img/character/enemies/easy/efina_angry.png",
+    normal: assetPath("assets/img/character/enemies/easy/efina_normal.png"),
+    angry: assetPath("assets/img/character/enemies/easy/efina_angry.png"),
   },
   "elf-middle": {
-    normal: "/assets/img/character/enemies/normal/cerys_normal.png",
-    angry: "/assets/img/character/enemies/normal/cerys_angry.png",
+    normal: assetPath("assets/img/character/enemies/normal/cerys_normal.png"),
+    angry: assetPath("assets/img/character/enemies/normal/cerys_angry.png"),
   },
   "elf-hard": {
-    normal: "/assets/img/character/enemies/hard/floria_normal.png",
-    angry: "/assets/img/character/enemies/hard/floria_angry.png",
+    normal: assetPath("assets/img/character/enemies/hard/floria_normal.png"),
+    angry: assetPath("assets/img/character/enemies/hard/floria_angry.png"),
   },
   "elf-ultra": {
-    normal: "/assets/img/character/enemies/ultra/altina_normal.png",
-    angry: "/assets/img/character/enemies/ultra/altina_angry.png",
+    normal: assetPath("assets/img/character/enemies/ultra/altina_normal.png"),
+    angry: assetPath("assets/img/character/enemies/ultra/altina_angry.png"),
   },
 };
 const HERO_IMAGES = {
-  normal: "/assets/img/character/hero/hero_normal.png",
-  angry: "/assets/img/character/hero/hero_angry.png",
+  normal: assetPath("assets/img/character/hero/hero_normal.png"),
+  angry: assetPath("assets/img/character/hero/hero_angry.png"),
 };
 
 const BASE_PORTRAIT_WIDTH = 380;

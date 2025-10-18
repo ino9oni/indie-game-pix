@@ -1,5 +1,7 @@
 // Collect all BGM assets from assets/bgm and also any audio placed in assets/img
 // (wav/mp3/ogg) so Vite bundles them. Returns URLs suitable for HTMLAudioElement.src
+import { assetPath } from "../utils/assetPath.js";
+
 const BGM_FILES = [
   "20230108_StepUp.wav",
   "20230505_AzureSea.wav",
@@ -19,7 +21,7 @@ const BGM_FILES = [
 const EXTRA_AUDIO_FILES = [];
 
 const bgmMap = Object.fromEntries(
-  [...BGM_FILES, ...EXTRA_AUDIO_FILES].map((name) => [name, `/assets/bgm/${name}`]),
+  [...BGM_FILES, ...EXTRA_AUDIO_FILES].map((name) => [name, assetPath(`assets/bgm/${name}`)]),
 );
 
 export function listBgmUrls() {

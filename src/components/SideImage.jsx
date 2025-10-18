@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { normalizeAssetUrl } from "../utils/assetPath.js";
 
 const modules = import.meta.glob("../../public/assets/img/*.{png,jpg,jpeg,webp,gif}", {
   eager: true,
@@ -6,7 +7,10 @@ const modules = import.meta.glob("../../public/assets/img/*.{png,jpg,jpeg,webp,g
 });
 
 export default function SideImage({ seed = 0 }) {
-  const urls = useMemo(() => Object.values(modules), []);
+  const urls = useMemo(
+    () => Object.values(modules).map(normalizeAssetUrl),
+    [],
+  );
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
