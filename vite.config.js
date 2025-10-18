@@ -5,10 +5,17 @@ import react from "@vitejs/plugin-react";
 // from a subpath (avoids asset 404s like "page not found").
 export default defineConfig({
   //base: "./",
-  base: "/indie-game-pix/",
+  base: "/",
   plugins: [react()],
-  //server: { port: 5173, open: false },
+  server: { port: 5173, open: false },
   build: {
     outDir: 'dist'
+    // rollupOptions: {
+    //   output: {
+    //     entryFileNames: `assets/[name].js`,
+    //     chunkFileNames: `assets/[name].js`,
+    //     assetFileNames: `assets/[name].[ext]`
+    //   }
+    // }
   }
 });
