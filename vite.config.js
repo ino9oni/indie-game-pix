@@ -4,7 +4,11 @@ import react from "@vitejs/plugin-react";
 // Use a relative base so the app works when served
 // from a subpath (avoids asset 404s like "page not found").
 export default defineConfig({
-  base: "./",
+  //base: "./",
+  base: "/indie-pix/",
   plugins: [react()],
-  server: { port: 5173, open: false },
+  //server: { port: 5173, open: false },
+  build: {
+    outDir: 'dist'
+  }
 });
