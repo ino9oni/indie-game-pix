@@ -1,15 +1,32 @@
 // Eagerly import SFX files so Vite bundles them and we get URLs at runtime
-const sfxModules = import.meta.glob('../../assets/se/*.{wav,mp3,ogg}', { eager: true, as: 'url' })
+import { assetPath } from "../utils/assetPath.js";
+
+const SFX_FILES = [
+  "chisel_tap.wav",
+  "coin_rush.wav",
+  "fanfare_melodic.wav",
+  "foot_wood.wav",
+  "indie-game-pix-enemy-encount.wav",
+  "indie-game-pix-stage-clear.wav",
+  "picross_click_soft.wav",
+  "score_chiptune.wav",
+  "ui_cancel.wav",
+  "ui_confirm.wav",
+];
+
+const sfxMap = Object.fromEntries(
+  SFX_FILES.map((name) => [name, assetPath(`assets/se/${name}`)]),
+);
 
 export function findSfxUrl(pattern) {
-  const regex = pattern instanceof RegExp ? pattern : new RegExp(String(pattern), 'i')
-  for (const [path, url] of Object.entries(sfxModules)) {
-    if (regex.test(path)) return url
+  const regex =
+    pattern instanceof RegExp ? pattern : new RegExp(String(pattern), "i");
+  for (const [name, url] of Object.entries(sfxMap)) {
+    if (regex.test(name)) return url;
   }
-  return null
+  return null;
 }
 
 export function listSfx() {
-  return Object.values(sfxModules)
+  return Object.values(sfxMap);
 }
-

@@ -1,10 +1,10 @@
-// Import WAV assets so Vite bundles them for production
-// If you add more files, import and map them here.
-import OPENING_PLAY from '../../assets/bgm/20230505_AzureSea.wav'
+import { assetPath } from "../utils/assetPath.js";
 
 export const TRACKS = {
-  opening: OPENING_PLAY,
-  play: OPENING_PLAY,
-  // Optionally: add 'clear' and 'gameover' BGM files here if desired
-}
-
+  prologue: assetPath("assets/bgm/indie-game-pix-opening.wav"),
+  opening: assetPath("assets/bgm/indie-game-pix-opening.wav"),
+  route: assetPath("assets/bgm/20230505_AzureSea.wav"),
+  conversation: assetPath("assets/bgm/20230505_AzureSea.wav"),
+  picross: assetPath("assets/bgm/indie-game-pix-battle.wav"),
+  ending: assetPath("assets/bgm/indie-game-pix-ending.wav"),
+};

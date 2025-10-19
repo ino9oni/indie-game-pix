@@ -1,6 +1,24 @@
-import React from 'react'
+import React from "react";
 
-export default function Opening({ onStart, onNewGame }) {
+export default function Opening({
+  onStart,
+  onNewGame,
+  focusedIndex = 0,
+  usingGamepad = false,
+}) {
+  const buttons = [
+    {
+      label: "New Game",
+      description: "進行状況を消去して新しく開始",
+      onPress: onNewGame,
+    },
+    {
+      label: "Continue",
+      description: "セーブデータをロードします",
+      onPress: onStart,
+    },
+  ];
+
   return (
     <main className="screen opening">
       <div className="opening-hero">
@@ -9,10 +27,23 @@ export default function Opening({ onStart, onNewGame }) {
       </div>
 
       <div className="actions">
-        <button className="ghost" title="セーブデータをロードします" onClick={onStart}>Continue</button>
-        <button className="primary" title="進行状況を消去して新しく開始" onClick={onNewGame}>New Game</button>
+        {buttons.map((btn, index) => {
+          const selected = usingGamepad && focusedIndex === index;
+          const variant = index === 0 ? "primary" : "ghost";
+          return (
+            <button
+              key={btn.label}
+              className={`${variant}${selected ? " focused" : ""}`}
+              title={btn.description}
+              data-selected={selected}
+              onClick={btn.onPress}
+            >
+              {btn.label}
+              {selected && usingGamepad ? <span className="sr-only"> (selected)</span> : null}
+            </button>
+          );
+        })}
       </div>
-      <p className="sub note">Tip: サウンドは右上のトグルで切り替えできます。</p>
     </main>
-  )
+  );
 }

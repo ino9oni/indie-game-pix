@@ -1,7 +1,8 @@
 {
   "name": "picross-react",
-  "version": "1.4.0",
-  "private": true,
+  "homepage" : "https://ino9oni.github.io/indie-game-pix/",
+  "version": "8.0.0",
+  "private": false,
   "type": "module",
   "scripts": {
     "dev": "vite --host --port 15173",
@@ -9,9 +10,12 @@
     "preview": "vite preview --host --port 15173",
     "lint": "eslint --ext .js,.jsx src",
     "fmt": "prettier --write .",
-    "test": "echo 'No tests yet' && exit 0"
+    "test": "echo 'No tests yet' && exit 0",
+    "predeploy": "npm run build",
+    "deploy": "npm run build && gh-pages -d dist -b production"
   },
   "dependencies": {
+    "gh-pages": "^6.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

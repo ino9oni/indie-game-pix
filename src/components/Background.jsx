@@ -1,32 +1,42 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from "react";
 
-// Load all images under ./assets/img (png, jpg, jpeg, webp, gif)
-// Path is relative to this file (src/components)
-const modules = import.meta.glob('../../assets/img/*.{png,jpg,jpeg,webp,gif}', {
+// Load all images under public/assets/img (png, jpg, jpeg, webp, gif)
+// Path is relative to this file (src/components), navigating into public/
+import { assetPath, normalizeAssetUrl } from "../utils/assetPath.js";
+
+const modules = import.meta.glob("../../public/assets/img/*.{png,jpg,jpeg,webp,gif}", {
   eager: true,
-  as: 'url',
-})
+  as: "url",
+});
 
 export default function Background({ seed = 0, fixedUrl = null }) {
-  const urls = useMemo(() => Object.values(modules), [])
-  const [idx, setIdx] = useState(0)
+  const urls = useMemo(
+    () => Object.values(modules).map(normalizeAssetUrl),
+    [],
+  );
+  const [idx, setIdx] = useState(0);
 
   useEffect(() => {
-    if (!urls.length) return
+    if (!urls.length) return;
     setIdx((prev) => {
-      if (urls.length === 1) return 0
-      let r = Math.floor(Math.random() * urls.length)
-      if (r === prev) r = (r + 1) % urls.length
-      return r
-    })
-  }, [urls.length, seed])
+      if (urls.length === 1) return 0;
+      let r = Math.floor(Math.random() * urls.length);
+      if (r === prev) r = (r + 1) % urls.length;
+      return r;
+    });
+  }, [urls.length, seed]);
 
   if (fixedUrl) {
+    const resolved = normalizeAssetUrl(fixedUrl);
     return (
-      <div className="bg-image" style={{ backgroundImage: `url(${fixedUrl})` }} aria-hidden="true" />
-    )
+      <div
+        className="bg-image"
+        style={{ backgroundImage: `url(${resolved})` }}
+        aria-hidden="true"
+      />
+    );
   }
-  if (!urls.length) return null
+  if (!urls.length) return null;
 
   return (
     <div
@@ -34,5 +44,5 @@ export default function Background({ seed = 0, fixedUrl = null }) {
       style={{ backgroundImage: `url(${urls[idx]})` }}
       aria-hidden="true"
     />
-  )
+  );
 }

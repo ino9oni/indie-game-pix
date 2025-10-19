@@ -1,0 +1,3 @@
+- JavaScript/JSX with React functional components; hooks and module-based imports.
+- Repo guidelines specify snake_case file/module names, PascalCase components, snake_case functions/vars, all-spaces indentation, keep modules side-effect free.
+- ESLint + Prettier (via `make lint`/`make fmt`) enforce formatting; code comments should be purposeful.

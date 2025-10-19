@@ -2,7 +2,13 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: 1.1.5
+Current release: 1.0.0
+
+## Release Highlights (1.0.0)
+
+- タイトル画面とゲーム開始フローを刷新し、ゲームパッドでも操作できるフルコントローラサポートを追加。
+- 会話・ピクロス画面でのポートレート配置やナビゲーションを調整し、視認性と操作感を改善。
+- ゲーム全体の背景・BGM 設定をアップデートし、統一感のあるアートデザインと演出を実現。
 
 ## Quickstart
 
@@ -22,7 +28,7 @@ Current release: 1.1.5
 - You have 20 minutes. Submit anytime to check your answer.
 - If your grid matches the solution at end/submit: Clear. Otherwise: Game Over.
 - Clear all 5 in a level to see a level clear screen. For `easy` and `middle`, you’ll be guided to the next level.
- - On failure, you can return to puzzle select or end the game. Ending the game shows a Game Over screen with closing music and a button back to Title.
+- On failure, you can return to puzzle select or end the game. Ending the game shows a Game Over screen with closing music and a button back to Title.
 
 ## Controls
 
