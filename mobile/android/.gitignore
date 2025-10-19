@@ -1,0 +1,7 @@
+# Gradle and build outputs
+.gradle/
+build/
+local.properties
+/.idea/
+/app/build/
+
