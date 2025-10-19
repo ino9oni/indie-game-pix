@@ -14,6 +14,7 @@ import PicrossClear from "./components/PicrossClear.jsx";
 import Ending from "./components/Ending.jsx";
 import GameOver from "./components/GameOver.jsx";
 import ScoreDisplay from "./components/ScoreDisplay.jsx";
+import Tutorial from "./components/Tutorial.jsx";
 import { getRandomPuzzleForSize, getRandomPuzzlesForSize } from "./game/puzzles.js";
 import { ROUTE, CHARACTERS } from "./game/route.js";
 import { computeClues, emptyGrid, equalsSolution, toggleCell } from "./game/utils.js";
@@ -51,7 +52,9 @@ const AUTO_BGM_SCREENS = new Set([
   "picross-clear",
   "ending",
   "gameover",
+  "tutorial",
 ]);
+const OPENING_OPTION_COUNT = 3;
 const HERO_IMAGES = {
   normal: assetPath("assets/img/character/hero/hero_normal.png"),
   angry: assetPath("assets/img/character/hero/hero_angry.png"),
@@ -302,6 +305,7 @@ export default function App() {
   const [spellSpeech, setSpellSpeech] = useState({ hero: null, enemy: null });
   const [conversationTransition, setConversationTransition] = useState("none");
   const [postClearAction, setPostClearAction] = useState(null);
+  const [tutorialCompleted, setTutorialCompleted] = useState(false);
   const [hiddenRowClues, setHiddenRowClues] = useState([]);
   const [hiddenColClues, setHiddenColClues] = useState([]);
   const [lockedRowClues, setLockedRowClues] = useState([]);
@@ -2048,6 +2052,18 @@ export default function App() {
     setScreen("gamestart");
   }, [resetProgress, soundOn, updateHeroName]);
 
+  const handleOpeningTutorial = useCallback(async () => {
+    let proceed = true;
+    if (tutorialCompleted) {
+      proceed = window.confirm("チュートリアルを再度開始しますか？進捗はリセットされます。");
+    }
+    if (!proceed) return;
+    try {
+      await bgm.resume();
+    } catch {}
+    setScreen("tutorial");
+  }, [tutorialCompleted]);
+
   useEffect(() => {
     let animationId;
 
@@ -2111,7 +2127,7 @@ export default function App() {
       const moveHorizontal = (delta) => {
         if (screen === "opening") {
           setOpeningFocus((prev) => {
-            const options = 2;
+            const options = OPENING_OPTION_COUNT;
             const next = (prev + options + delta) % options;
             return next;
           });
@@ -2127,7 +2143,7 @@ export default function App() {
       const moveVertical = (delta) => {
         if (screen === "opening") {
           setOpeningFocus((prev) => {
-            const options = 2;
+            const options = OPENING_OPTION_COUNT;
             const next = (prev + options + delta) % options;
             return next;
           });
@@ -2143,6 +2159,8 @@ export default function App() {
       const handleConfirm = () => {
         if (screen === "opening") {
           if (openingFocus === 0) {
+            handleOpeningTutorial();
+          } else if (openingFocus === 1) {
             handleOpeningNewGame();
           } else {
             handleOpeningContinue();
@@ -2235,6 +2253,7 @@ export default function App() {
     return () => cancelAnimationFrame(animationId);
   }, [
     gamepadConnected,
+    handleOpeningTutorial,
     handleOpeningContinue,
     handleOpeningNewGame,
     handlePicrossCellAction,
@@ -2399,8 +2418,19 @@ export default function App() {
         <Opening
           onStart={handleOpeningContinue}
           onNewGame={handleOpeningNewGame}
+          onTutorial={handleOpeningTutorial}
           focusedIndex={openingFocus}
           usingGamepad={inputMode === "gamepad"}
+        />
+      )}
+
+      {screen === "tutorial" && (
+        <Tutorial
+          onExit={() => setScreen("opening")}
+          onComplete={() => {
+            setTutorialCompleted(true);
+            setScreen("opening");
+          }}
         />
       )}
 
