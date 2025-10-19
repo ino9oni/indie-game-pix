@@ -32,6 +32,12 @@ fmt:
 test:
 	npm run test
 
+predeploy:
+	npm run predeploy
+
+deploy:
+	npm run deploy
+
 coverage:
 	@echo "No coverage setup yet"
 
