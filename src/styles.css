@@ -160,7 +160,8 @@ body {
 }
 
 .portrait-frame.enemy {
-  background: #3f1a57;
+  /* Warm yellow background to contrast hero frame while keeping enemy highlight */
+  background: rgba(250, 204, 21, 0.85);
 }
 
 .portrait-image {
