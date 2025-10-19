@@ -16,6 +16,16 @@
 # Dev Task TODO
 
 ## Priority: high
+- [done] ピクロスゲーム勝利時のSEの変更
+  - ピクロスゲーム勝利モード時に鳴らすSEを以下のSEファイルに変更する
+    - 再生１回のみ
+    - 利用ファイル:public/assets/bgm/indie-game-fanfare.wav
+      - アプリケーションに記載するパスは./assetから始まるように記載
+- ピクロス対戦時のBGMの変更
+  - ピクロス対戦時に鳴らすBGMを以下のBGMファイルに変更する
+    - 再生繰り返し
+    - 利用ファイル:public/assets/bgm/indie-game-pix-battle5.wav
+      - アプリケーションに記載するパスは./assetから始まるように記載
 - [done] ゲームのコントローラーを利用可能にする
   - USBで接続しているゲームのコントローラ―を利用可能にする
 - ゲームのコントローラで、以下の操作を可能にする
