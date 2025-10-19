@@ -8,6 +8,7 @@ const BGM_FILES = [
   "FlyHighly.wav",
   "indie-game-pix-battle-bak.wav",
   "indie-game-pix-battle.wav",
+  "indie-game-pix-battle5.wav",
   "indie-game-pix-ending.wav",
   "indie-game-pix-gamestart-bak.wav",
   "indie-game-pix-gamestart.wav",
@@ -21,7 +22,7 @@ const BGM_FILES = [
 const EXTRA_AUDIO_FILES = [];
 
 const bgmMap = Object.fromEntries(
-  [...BGM_FILES, ...EXTRA_AUDIO_FILES].map((name) => [name, assetPath(`assets/bgm/${name}`)]),
+  [...BGM_FILES, ...EXTRA_AUDIO_FILES].map((name) => [name, assetPath(`./assets/bgm/${name}`)]),
 );
 
 export function listBgmUrls() {

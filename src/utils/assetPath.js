@@ -3,7 +3,8 @@ const BASE_URL = ensureTrailingSlash(import.meta.env.BASE_URL || '/');
 
 export function assetPath(relative = '') {
   if (!relative) return BASE_URL;
-  const normalized = relative.startsWith('/') ? relative.slice(1) : relative;
+  const withoutDot = relative.startsWith('./') ? relative.slice(2) : relative;
+  const normalized = withoutDot.startsWith('/') ? withoutDot.slice(1) : withoutDot;
   return `${BASE_URL}${normalized}`;
 }
 

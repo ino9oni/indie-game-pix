@@ -21,7 +21,7 @@
     - 再生１回のみ
     - 利用ファイル:public/assets/bgm/indie-game-fanfare.wav
       - アプリケーションに記載するパスは./assetから始まるように記載
-- ピクロス対戦時のBGMの変更
+- [done] ピクロス対戦時のBGMの変更
   - ピクロス対戦時に鳴らすBGMを以下のBGMファイルに変更する
     - 再生繰り返し
     - 利用ファイル:public/assets/bgm/indie-game-pix-battle5.wav
