@@ -1,0 +1,6 @@
+- `make install` – install npm dependencies (wraps `npm ci || npm install`).
+- `make dev` – run Vite dev server on http://localhost:15173.
+- `make build` / `make preview` – produce production build and preview locally.
+- `make lint` / `make fmt` – run ESLint and Prettier.
+- `make test` – placeholder tests (currently exits immediately).
+- `make android-sync` – copy built web assets into `mobile/android` assets.
