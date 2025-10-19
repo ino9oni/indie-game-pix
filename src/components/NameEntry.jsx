@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { DEFAULT_HERO_NAME } from "../constants/heroName.js";
 
 // Layout based on GAMEDESIGN.md blocks (4 x 5x5), with control row
 const BLOCKS = [
@@ -12,9 +13,10 @@ function isBlankChar(ch) {
   return !ch || ch === " " || ch === "　";
 }
 
-export default function NameEntry({ initial = "", onCancel, onConfirm }) {
-  const [name, setName] = useState(initial);
-  const [caret, setCaret] = useState(initial.length);
+export default function NameEntry({ initial = DEFAULT_HERO_NAME, onCancel, onConfirm }) {
+  const normalizedInitial = initial && initial.trim().length ? initial : DEFAULT_HERO_NAME;
+  const [name, setName] = useState(normalizedInitial);
+  const [caret, setCaret] = useState(normalizedInitial.length);
   const blocks = useMemo(
     () => BLOCKS.map((rows) => rows.map((r) => r.split(""))),
     [],
@@ -59,7 +61,7 @@ export default function NameEntry({ initial = "", onCancel, onConfirm }) {
     {
       key: "confirm",
       label: "決定",
-      action: () => onConfirm(name || "ナナシ"),
+      action: () => onConfirm(name.trim().length ? name : DEFAULT_HERO_NAME),
       extraClass: "confirm",
     },
   ];

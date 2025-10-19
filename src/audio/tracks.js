@@ -5,6 +5,6 @@ export const TRACKS = {
   opening: assetPath("assets/bgm/indie-game-pix-opening.wav"),
   route: assetPath("assets/bgm/20230505_AzureSea.wav"),
   conversation: assetPath("assets/bgm/20230505_AzureSea.wav"),
-  picross: assetPath("assets/bgm/indie-game-pix-battle.wav"),
+  picross: assetPath("./assets/bgm/indie-game-pix-battle5.wav"),
   ending: assetPath("assets/bgm/indie-game-pix-ending.wav"),
 };

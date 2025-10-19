@@ -1,4 +1,6 @@
 // Simple Web Audio manager for SFX/BGM without external assets
+const VICTORY_FANFARE_URL = "./assets/bgm/indie-game-fanfare.wav"; // Picross victory SE (single-shot)
+
 class AudioManager {
   constructor() {
     this.ctx = null;
@@ -394,47 +396,45 @@ class AudioManager {
     if (!this.enabled) return;
     this.init();
     if (!this.ctx) return;
-    const attempts = [
-      { key: "stage_clear", pattern: /indie-game-pix-stage-clear|stage_clear/i },
-      { key: "fanfare_melodic", pattern: /fanfare_melodic|fanfare|victory|clear/i },
-    ];
-    for (const { key, pattern } of attempts) {
-      try {
-        const url = await this._getSfxUrl(key, pattern);
-        if (!url) continue;
-        const buffer = await this._loadSample(key, url);
-        if (this._fanfareSource) {
-          try {
-            this._fanfareSource.stop();
-          } catch {}
-          this._fanfareSource = null;
-        }
-        const src = this.ctx.createBufferSource();
-        src.buffer = buffer;
-        const gain = this.ctx.createGain();
-        const startAt = this.ctx.currentTime + 0.02;
-        gain.gain.setValueAtTime(0.9, startAt);
-        src.connect(gain);
-        gain.connect(this.sfxGain);
-        src.start(startAt);
-        this._fanfareSource = src;
-        src.onended = () => {
-          try {
-            src.disconnect();
-            gain.disconnect();
-          } catch {}
-          if (this._fanfareSource === src) this._fanfareSource = null;
-        };
-        return;
-      } catch (_) {
-        /* try next source */
+    try {
+      const buffer = await this._loadSample(
+        "victory_fanfare",
+        VICTORY_FANFARE_URL,
+      );
+      if (this._fanfareSource) {
+        try {
+          this._fanfareSource.stop();
+        } catch {}
+        this._fanfareSource = null;
       }
+      const src = this.ctx.createBufferSource();
+      src.buffer = buffer;
+      src.loop = false;
+      const gain = this.ctx.createGain();
+      const startAt = this.ctx.currentTime + 0.02;
+      gain.gain.setValueAtTime(0.75, startAt);
+      src.connect(gain);
+      gain.connect(this.sfxGain);
+      src.start(startAt);
+      this._fanfareSource = src;
+      src.onended = () => {
+        try {
+          src.disconnect();
+          gain.disconnect();
+        } catch {}
+        if (this._fanfareSource === src) this._fanfareSource = null;
+      };
+      return;
+    } catch (_) {
+      /* fall back to synthetic fanfare if asset missing */
     }
     /* fall back to synthetic fanfare */
     if (!this.ctx) return;
     const t0 = this.ctx.currentTime + 0.02;
     const seq = [523, 659, 784, 1047, 784, 659, 523];
-    seq.forEach((f, i) => this._brassNote(f, t0 + i * 0.16, 0.2, i < 4 ? 0.85 : 0.7));
+    seq.forEach((f, i) =>
+      this._brassNote(f, t0 + i * 0.16, 0.2, i < 4 ? 0.85 : 0.7),
+    );
     this._brassNote(1175, t0 + 1.12, 0.22, 0.6);
   }
 
