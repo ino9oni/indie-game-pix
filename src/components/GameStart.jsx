@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import NameEntry from "./NameEntry.jsx";
+import { DEFAULT_HERO_NAME } from "../constants/heroName.js";
 
 // Simple dialog flow for game start with mid-sequence name entry
 export default function GameStart({
@@ -16,7 +17,7 @@ export default function GameStart({
   );
   const linesAfter = useMemo(
     () => [
-      `その名を「${heroName || "ナナシ"}」といった。`,
+      `その名を「${heroName || DEFAULT_HERO_NAME}」といった。`,
       "森の奥に眠る「古代の泉」にたどり着くために、エルフの森へ足を踏み入れようとしていた。",
       "しかし、エルフの守り人たちから「elfpix」の挑戦を突きつけられてしまう。",
       "主人公の知恵と洞察力が、森を抜ける唯一の鍵となる…。",

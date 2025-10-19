@@ -21,6 +21,7 @@ import audio from "./audio/AudioManager.js";
 import bgm from "./audio/BgmPlayer.js";
 import { TRACKS } from "./audio/tracks.js";
 import { assetPath } from "./utils/assetPath.js";
+import { DEFAULT_HERO_NAME } from "./constants/heroName.js";
 
 const GAME_SECONDS = 30 * 60; // 30 minutes
 const SCORE_BONUS = {
@@ -76,6 +77,11 @@ const GAMEPAD_BUTTON = {
 const GAMEPAD_REPEAT_MS = 180;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const normalizeHeroName = (value) => {
+  const trimmed = (value ?? "").trim();
+  return trimmed.length ? trimmed : DEFAULT_HERO_NAME;
+};
 
 const ENEMY_AI_CONFIG = {
   "elf-practice": { interval: 1400, errorRate: 0.15, spellId: "practice" },
@@ -263,9 +269,20 @@ export default function App() {
       return false;
     }
   });
-  const [heroName, setHeroName] = useState(
-    () => localStorage.getItem("heroName") || "",
-  );
+  const [heroName, setHeroName] = useState(() => {
+    try {
+      const stored = localStorage.getItem("heroName");
+      if (stored && stored.trim()) return stored;
+    } catch {}
+    return DEFAULT_HERO_NAME;
+  });
+  const updateHeroName = useCallback((value) => {
+    const normalized = normalizeHeroName(value);
+    setHeroName(normalized);
+    try {
+      localStorage.setItem("heroName", normalized);
+    } catch {}
+  }, []);
   const spedUpRef = useRef(false);
   const resumeOnceRef = useRef(false);
   const initialPrologueBgmRef = useRef(false);
@@ -2012,7 +2029,7 @@ export default function App() {
 
   const handleOpeningNewGame = useCallback(async () => {
     resetProgress();
-    localStorage.removeItem("heroName");
+    updateHeroName(DEFAULT_HERO_NAME);
     localStorage.removeItem("routeNode");
     localStorage.removeItem("clearedNodes");
     setCurrentNode("start");
@@ -2029,7 +2046,7 @@ export default function App() {
       await bgm.resume();
     } catch {}
     setScreen("gamestart");
-  }, [resetProgress, soundOn]);
+  }, [resetProgress, soundOn, updateHeroName]);
 
   useEffect(() => {
     let animationId;
@@ -2390,10 +2407,7 @@ export default function App() {
       {screen === "gamestart" && (
         <GameStart
           heroName={heroName}
-          onSetName={(n) => {
-            setHeroName(n);
-            localStorage.setItem("heroName", n);
-          }}
+          onSetName={updateHeroName}
           onDone={() => setScreen("route")}
           onNameEntryVisible={setGameStartNameVisible}
           onPhaseChange={handleGameStartPhase}
@@ -2404,8 +2418,7 @@ export default function App() {
         <NameEntry
           initial={heroName}
           onConfirm={(n) => {
-            setHeroName(n);
-            localStorage.setItem("heroName", n);
+            updateHeroName(n);
             setScreen("route");
           }}
           onCancel={() => setScreen("gamestart")}
