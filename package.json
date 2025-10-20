@@ -12,7 +12,8 @@
     "fmt": "prettier --write .",
     "test": "echo 'No tests yet' && exit 0",
     "predeploy": "npm run build",
-    "deploy": "npm run build && gh-pages -d dist -b production"
+    "deploy": "npm run build && gh-pages -d dist -b staging",
+    "deploy-prod": "npm run build && gh-pages -d dist -b production"
   },
   "dependencies": {
     "gh-pages": "^6.3.0",
