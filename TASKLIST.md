@@ -124,7 +124,7 @@
     - その際、HERO側の状態はそのままで、HERO側は次のお題に進ませないようにする
     - 次のお題に遷移する際に、スコアのカウントアップを待たずに遷移します。
 - [done] オープニングモードと名前入力モード時の背景画像はHEROの全身画像を利用する
-  - 背景画像：assets/img/character/hero_fullbody.png
+  - 背景画像：public/assets/img/character/hero/hero_fullbody.png
 - [done] オープニングから名前入力画面まで、同じBGMを再生する
   - モードの変化時も音楽が途切れないように再生したままとする
 - [done] Quitボタンを押下した、または、ゲームオーバーとなった後に再度最初からプレイする場合、オープニングモードに遷移
@@ -144,9 +144,9 @@
 - [done] ピクロスモードで「ｘ」（Maybe）を入力すると、盤面で表示が上下にずれる問題の改善
   - ピクロスモードで「ｘ」を入力した際に、マス目に収まるように表示する
 - [done] 名前入力画面前の背景を差し替え
-  - ファイル：assets/img/character/hero/hero_fullbody.png
+  - ファイル：public/assets/img/character/hero/hero_fullbody.png
 - [done] 名前入力画面後の背景を差し替え
-  - ファイル：assets/img/character/hero/hero_fullbody.png
+  - ファイル：public/assets/img/character/hero/hero_fullbody.png
 - [done] トータルスコアの表示位置は常に画面の一番右上に他のボタンと同程度のサイズで配置
 - [done] タイトル画面の背景を差し替える
   - ファイル：assets/img/title.png

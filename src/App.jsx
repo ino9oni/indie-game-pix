@@ -61,7 +61,7 @@ const HERO_IMAGES = {
   smile: assetPath("assets/img/character/hero/hero_smile.png"),
 };
 const TITLE_IMAGE = assetPath("assets/img/title.png");
-const HERO_FULLBODY = assetPath("assets/img/character/hero_fullbody.png");
+const HERO_FULLBODY = assetPath("assets/img/character/hero/hero_fullbody.png");
 const ENDING_BACKGROUND_IMAGE = assetPath("assets/img/background/ending.png");
 const MAP_BACKGROUND_IMAGE = assetPath("assets/img/background/map.png");
 
