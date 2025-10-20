@@ -41,7 +41,7 @@
 
 # Dev Task TODO
 ## Priority: high
-- チュートリアルモードの背景画像の変更
+- [done] チュートリアルモードの背景画像の変更
   - 概要：チュートリアルモードの背景画像を変更する
   - 仕様：
     - 背景画像：public/assets/img/background/tutorial_bg.png
