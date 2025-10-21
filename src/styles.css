@@ -2566,7 +2566,26 @@ button {
   align-items: center;
   justify-content: center;
   padding: clamp(24px, 6vw, 48px);
-  background: radial-gradient(110% 110% at 50% 0%, #0f172a 0%, #111827 55%, #0b1120 100%);
+  position: relative;
+  isolation: isolate;
+  color: #e0f2fe;
+}
+
+.picross-clear-screen::before,
+.picross-clear-screen::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+}
+
+.picross-clear-screen::before {
+  background: url("../assets/img/background/win_bg.png") center / cover no-repeat;
+}
+
+.picross-clear-screen::after {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.82));
+  z-index: -1;
 }
 
 .picross-clear-overlay {
