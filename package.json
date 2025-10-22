@@ -1,7 +1,7 @@
 {
   "name": "picross-react",
-  "homepage" : "https://ino9oni.github.io/indie-game-pix/",
-  "version": "8.0.0",
+  "homepage": "https://ino9oni.github.io/indie-game-pix/",
+  "version": "8.1.0",
   "private": false,
   "type": "module",
   "scripts": {

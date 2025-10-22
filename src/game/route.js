@@ -36,6 +36,7 @@ export const CHARACTERS = {
   "elf-practice": {
     name: "リーネ",
     size: 5,
+    difficulty: "practice",
     images: {
       normal: assetPath("assets/img/character/enemies/practice/riene_normal.png"),
       angry: assetPath("assets/img/character/enemies/practice/riene_angry.png"),
@@ -45,6 +46,7 @@ export const CHARACTERS = {
   "elf-easy": {
     name: "エフィナ",
     size: 10,
+    difficulty: "easy",
     images: {
       normal: assetPath("assets/img/character/enemies/easy/efina_normal.png"),
       angry: assetPath("assets/img/character/enemies/easy/efina_angry.png"),
@@ -53,7 +55,8 @@ export const CHARACTERS = {
   },
   "elf-middle": {
     name: "セリス",
-    size: 15,
+    size: 5,
+    difficulty: "middle",
     images: {
       normal: assetPath("assets/img/character/enemies/normal/cerys_normal.png"),
       angry: assetPath("assets/img/character/enemies/normal/cerys_angry.png"),
@@ -62,7 +65,8 @@ export const CHARACTERS = {
   },
   "elf-hard": {
     name: "フローリア",
-    size: 20,
+    size: 10,
+    difficulty: "hard",
     images: {
       normal: assetPath("assets/img/character/enemies/hard/floria_normal.png"),
       angry: assetPath("assets/img/character/enemies/hard/floria_angry.png"),
@@ -71,7 +75,8 @@ export const CHARACTERS = {
   },
   "elf-ultra": {
     name: "アルティナ",
-    size: 25,
+    size: 10,
+    difficulty: "ultra",
     images: {
       normal: assetPath("assets/img/character/enemies/ultra/altina_normal.png"),
       angry: assetPath("assets/img/character/enemies/ultra/altina_angry.png"),

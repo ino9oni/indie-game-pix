@@ -15,7 +15,7 @@ import Ending from "./components/Ending.jsx";
 import GameOver from "./components/GameOver.jsx";
 import ScoreDisplay from "./components/ScoreDisplay.jsx";
 import Tutorial from "./components/Tutorial.jsx";
-import { getRandomPuzzleForSize, getRandomPuzzlesForSize } from "./game/puzzles.js";
+import { getRandomPuzzlesForNode } from "./game/puzzles.js";
 import { ROUTE, CHARACTERS } from "./game/route.js";
 import { computeClues, emptyGrid, equalsSolution, toggleCell } from "./game/utils.js";
 import audio from "./audio/AudioManager.js";
@@ -38,7 +38,12 @@ const FONT_SIZE_CHOICES = [
   { label: "150%", value: 1.5 },
   { label: "200%", value: 2 },
 ];
-const PUZZLES_PER_BATTLE = 3;
+const DEFAULT_PUZZLES_PER_BATTLE = 3;
+const PUZZLES_PER_BATTLE_BY_NODE = {
+  "elf-middle": 5,
+  "elf-hard": 3,
+  "elf-ultra": 5,
+};
 const FINAL_NODE_IDS = new Set(["elf-bad-ending", "elf-true-ending"]);
 const LEGACY_FINAL_NODE_ID = "elf-ending";
 const DEFAULT_TRUE_ENDING_NODE = "elf-true-ending";
@@ -143,9 +148,23 @@ const ENEMY_SPELLS = {
 
 const DEFAULT_ENEMY_CONFIG = { interval: 1200, errorRate: 0.08, spellId: null };
 
+function deriveDifficultyFromSize(n) {
+  if (n <= 5) return "easy";
+  if (n <= 10) return "middle";
+  if (n <= 15) return "high";
+  if (n <= 20) return "hard";
+  return "ultra";
+}
+
 function normalizeNodeId(id) {
   if (id === LEGACY_FINAL_NODE_ID) return DEFAULT_TRUE_ENDING_NODE;
   return id;
+}
+
+function getPuzzleGoalForNode(nodeId) {
+  if (!nodeId) return DEFAULT_PUZZLES_PER_BATTLE;
+  const normalized = normalizeNodeId(nodeId);
+  return PUZZLES_PER_BATTLE_BY_NODE[normalized] ?? DEFAULT_PUZZLES_PER_BATTLE;
 }
 
 function readStoredNode() {
@@ -1171,28 +1190,20 @@ export default function App() {
     setProjectiles([]);
     resetAllCombos();
 
-    const sequence = getRandomPuzzlesForSize(n, PUZZLES_PER_BATTLE);
+    const puzzleGoal = getPuzzleGoalForNode(normalizedId);
+    const sequence = getRandomPuzzlesForNode(normalizedId, n, puzzleGoal);
     const prepared = sequence.length
       ? sequence.map((grid) => cloneSolution(grid))
-      : Array.from({ length: PUZZLES_PER_BATTLE }, () => cloneSolution(createFallbackSolution(n)));
+      : Array.from({ length: puzzleGoal }, () => cloneSolution(createFallbackSolution(n)));
     const firstSolution = prepared[0] || cloneSolution(createFallbackSolution(n));
+    const boardSize = firstSolution.length;
 
-    setLevel(
-      n <= 5
-        ? "easy"
-        : n <= 10
-          ? "middle"
-          : n <= 15
-            ? "high"
-            : n <= 20
-              ? "hard"
-              : "ultra",
-    );
+    setLevel(meta.difficulty || deriveDifficultyFromSize(n));
     setPuzzleSequence(prepared);
     setHeroPuzzleIndex(0);
     const heroSolution = firstSolution.map((row) => row.slice());
     setSolution(heroSolution);
-    setGrid(emptyGrid(n));
+    setGrid(emptyGrid(boardSize));
     realtimeBonusRef.current = new Set();
     stopEnemyScoreAnimation(0);
     enemyScoreRef.current = 0;
@@ -1352,7 +1363,7 @@ export default function App() {
     cancelCelebration();
     resetAllCombos();
     awardScore(battleNode, remaining);
-    const totalNeeded = puzzleSequence.length || PUZZLES_PER_BATTLE;
+    const totalNeeded = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
     const nextIndex = heroPuzzleIndex + 1;
     const nextWins = playerWins + 1;
     const isFinal = nextWins >= totalNeeded;
@@ -1493,7 +1504,7 @@ export default function App() {
   }
 
   const handleEnemyPuzzleClear = useCallback(() => {
-    const totalNeeded = puzzleSequence.length || PUZZLES_PER_BATTLE;
+    const totalNeeded = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
     const nextWins = enemyWins + 1;
     const character = battleNode ? CHARACTERS[battleNode] : null;
     const enemyName = character?.name || "敵";
@@ -1891,7 +1902,7 @@ export default function App() {
     }
     stopEnemySolver();
     const timer = setInterval(() => {
-      const totalNeeded = puzzleSequence.length || PUZZLES_PER_BATTLE;
+      const totalNeeded = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
       if (playerWins >= totalNeeded || enemyWins >= totalNeeded) {
         stopEnemySolver();
         return;
@@ -2266,7 +2277,7 @@ export default function App() {
     togglePaused,
   ]);
 
-  const puzzleGoal = puzzleSequence.length || PUZZLES_PER_BATTLE;
+  const puzzleGoal = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
   const currentRound = Math.max(playerWins, enemyWins);
   const displayPuzzleStep = Math.min(currentRound + 1, puzzleGoal);
   const totalCells = totalCellsRef.current || 1;
