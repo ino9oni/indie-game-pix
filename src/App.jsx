@@ -16,7 +16,7 @@ import GameOver from "./components/GameOver.jsx";
 import EnemyVictory from "./components/EnemyVictory.jsx";
 import ScoreDisplay from "./components/ScoreDisplay.jsx";
 import Tutorial from "./components/Tutorial.jsx";
-import { getRandomPuzzlesForNode } from "./game/puzzles.js";
+import { generateBattlePuzzles } from "./game/puzzles.js";
 import { ROUTE, CHARACTERS } from "./game/route.js";
 import { computeClues, emptyGrid, equalsSolution, toggleCell } from "./game/utils.js";
 import audio from "./audio/AudioManager.js";
@@ -317,6 +317,7 @@ export default function App() {
   const [cleared, setCleared] = useState(() => readStoredClearedSet());
   const [endingNode, setEndingNode] = useState(null);
   const [puzzleSequence, setPuzzleSequence] = useState([]);
+  const [enemyPuzzleSequence, setEnemyPuzzleSequence] = useState([]);
   const [heroPuzzleIndex, setHeroPuzzleIndex] = useState(0);
   const [playerWins, setPlayerWins] = useState(0);
   const [enemyWins, setEnemyWins] = useState(0);
@@ -774,6 +775,7 @@ export default function App() {
     setCleared(new Set());
     setEndingNode(null);
     setPuzzleSequence([]);
+    setEnemyPuzzleSequence([]);
     setHeroPuzzleIndex(0);
     enemySolutionRef.current = [];
     setEnemySolutionVersion((v) => v + 1);
@@ -1193,15 +1195,24 @@ export default function App() {
     resetAllCombos();
 
     const puzzleGoal = getPuzzleGoalForNode(normalizedId);
-    const sequence = getRandomPuzzlesForNode(normalizedId, n, puzzleGoal);
-    const prepared = sequence.length
-      ? sequence.map((grid) => cloneSolution(grid))
+    const generation = generateBattlePuzzles(normalizedId, n, puzzleGoal, {});
+    const heroSource = generation?.heroPuzzles?.length
+      ? generation.heroPuzzles
       : Array.from({ length: puzzleGoal }, () => cloneSolution(createFallbackSolution(n)));
+    const enemySourceBase = generation?.enemyPuzzles?.length
+      ? generation.enemyPuzzles
+      : shuffle(heroSource).map((grid) => cloneSolution(grid));
+
+    const prepared = heroSource.map((grid) => cloneSolution(grid));
+    const enemyPrepared = enemySourceBase.map((grid) => cloneSolution(grid));
+
     const firstSolution = prepared[0] || cloneSolution(createFallbackSolution(n));
+    const enemyFirstSolution = enemyPrepared[0] || cloneSolution(createFallbackSolution(n));
     const boardSize = firstSolution.length;
 
     setLevel(meta.difficulty || deriveDifficultyFromSize(n));
     setPuzzleSequence(prepared);
+    setEnemyPuzzleSequence(enemyPrepared);
     setHeroPuzzleIndex(0);
     const heroSolution = firstSolution.map((row) => row.slice());
     setSolution(heroSolution);
@@ -1232,7 +1243,7 @@ export default function App() {
       noMistakeTriggered: false,
     };
     enemySpellStateRef.current = { used: new Set() };
-    const enemySolution = firstSolution.map((row) => row.slice());
+    const enemySolution = enemyFirstSolution.map((row) => row.slice());
     enemySolutionRef.current = enemySolution;
     enemyProgressRef.current = {
       filled: 0,
@@ -1302,9 +1313,9 @@ export default function App() {
 
   const loadEnemyPuzzle = useCallback(
     (index) => {
-      if (!puzzleSequence.length) return;
-      const safeIndex = Math.min(index, puzzleSequence.length - 1);
-      const next = puzzleSequence[safeIndex];
+      if (!enemyPuzzleSequence.length) return;
+      const safeIndex = Math.min(index, enemyPuzzleSequence.length - 1);
+      const next = enemyPuzzleSequence[safeIndex];
       if (!next) return;
       const nextSolution = cloneSolution(next);
       const n = nextSolution.length;
@@ -1320,7 +1331,7 @@ export default function App() {
       setEnemySolutionVersion((v) => v + 1);
       resetAllCombos();
     },
-    [puzzleSequence, resetAllCombos, stopEnemySolver],
+    [enemyPuzzleSequence, resetAllCombos, stopEnemySolver],
   );
 
   function enterEnding(nodeId) {
@@ -1365,7 +1376,8 @@ export default function App() {
     cancelCelebration();
     resetAllCombos();
     awardScore(battleNode, remaining);
-    const totalNeeded = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
+    const totalNeeded =
+      puzzleSequence.length || enemyPuzzleSequence.length || getPuzzleGoalForNode(battleNode);
     const nextIndex = heroPuzzleIndex + 1;
     const nextWins = playerWins + 1;
     const isFinal = nextWins >= totalNeeded;
@@ -1386,6 +1398,7 @@ export default function App() {
     loadHeroPuzzle,
     playerWins,
     puzzleSequence.length,
+    enemyPuzzleSequence.length,
     remaining,
     resetAllCombos,
     stopEnemySolver,
@@ -1445,6 +1458,7 @@ export default function App() {
     resetAllCombos();
     setActiveSpell(null);
     setPuzzleSequence([]);
+    setEnemyPuzzleSequence([]);
     setHeroPuzzleIndex(0);
     enemySolutionRef.current = [];
     setEnemySolutionVersion((v) => v + 1);
@@ -1506,7 +1520,8 @@ export default function App() {
   }
 
   const handleEnemyPuzzleClear = useCallback(() => {
-    const totalNeeded = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
+    const totalNeeded =
+      enemyPuzzleSequence.length || puzzleSequence.length || getPuzzleGoalForNode(battleNode);
     const nextWins = enemyWins + 1;
     const character = battleNode ? CHARACTERS[battleNode] : null;
     const enemyName = character?.name || "敵";
@@ -1529,6 +1544,7 @@ export default function App() {
       setActiveSpell(null);
       setProjectiles([]);
       setPuzzleSequence([]);
+      setEnemyPuzzleSequence([]);
       setHeroPuzzleIndex(0);
       enemySolutionRef.current = [];
       setEnemySolutionVersion((v) => v + 1);
@@ -1548,13 +1564,14 @@ export default function App() {
     cancelCelebration,
     clearSpellEffects,
     enemyWins,
+    enemyPuzzleSequence.length,
     loadEnemyPuzzle,
     logSpell,
-    puzzleSequence.length,
     remaining,
     resetAllCombos,
     resetScore,
     setActiveSpell,
+    setEnemyPuzzleSequence,
     setPaused,
     setProjectiles,
     showSpellOverlay,
@@ -1820,6 +1837,7 @@ export default function App() {
     clearSpellEffects();
     resetScore();
     setPuzzleSequence([]);
+    setEnemyPuzzleSequence([]);
     setHeroPuzzleIndex(0);
     enemySolutionRef.current = [];
     setEnemySolutionVersion((v) => v + 1);
@@ -1875,6 +1893,7 @@ export default function App() {
       setActiveSpell(null);
       setEnemyGrid([]);
       setPuzzleSequence([]);
+      setEnemyPuzzleSequence([]);
       setHeroPuzzleIndex(0);
       enemySolutionRef.current = [];
       setEnemySolutionVersion((v) => v + 1);
@@ -2300,7 +2319,8 @@ export default function App() {
     togglePaused,
   ]);
 
-  const puzzleGoal = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
+  const puzzleGoal =
+    puzzleSequence.length || enemyPuzzleSequence.length || getPuzzleGoalForNode(battleNode);
   const currentRound = Math.max(playerWins, enemyWins);
   const displayPuzzleStep = Math.min(currentRound + 1, puzzleGoal);
   const totalCells = totalCellsRef.current || 1;
