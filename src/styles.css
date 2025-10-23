@@ -2388,6 +2388,39 @@ button {
 .gameover {
   text-align: center;
 }
+.enemy-victory {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  min-height: calc(100vh - 120px);
+  color: #f8fafc;
+  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.98) 100%);
+}
+.enemy-victory .headline {
+  margin-top: 0;
+}
+.enemy-victory .portrait {
+  max-width: min(320px, 80vw);
+  margin: 0 auto;
+}
+.enemy-victory .portrait img {
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.enemy-victory .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.enemy-victory .actions .ghost,
+.enemy-victory .actions .primary {
+  min-width: 140px;
+}
 .note {
   color: var(--muted);
 }

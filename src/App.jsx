@@ -13,6 +13,7 @@ import LevelClear from "./components/LevelClear.jsx";
 import PicrossClear from "./components/PicrossClear.jsx";
 import Ending from "./components/Ending.jsx";
 import GameOver from "./components/GameOver.jsx";
+import EnemyVictory from "./components/EnemyVictory.jsx";
 import ScoreDisplay from "./components/ScoreDisplay.jsx";
 import Tutorial from "./components/Tutorial.jsx";
 import { getRandomPuzzlesForNode } from "./game/puzzles.js";
@@ -57,6 +58,7 @@ const AUTO_BGM_SCREENS = new Set([
   "picross-clear",
   "ending",
   "gameover",
+  "enemy-victory",
   "tutorial",
 ]);
 const OPENING_OPTION_COUNT = 3;
@@ -1524,11 +1526,16 @@ export default function App() {
       cancelCelebration();
       clearSpellEffects();
       resetScore();
+      setActiveSpell(null);
+      setProjectiles([]);
       setPuzzleSequence([]);
       setHeroPuzzleIndex(0);
       enemySolutionRef.current = [];
       setEnemySolutionVersion((v) => v + 1);
-      setScreen("gameover");
+      puzzleSolvedRef.current = false;
+      setPaused(false);
+      setScreen("enemy-victory");
+      return;
     } else {
       setEnemyWins(nextWins);
       setTimeout(() => {
@@ -1547,6 +1554,9 @@ export default function App() {
     remaining,
     resetAllCombos,
     resetScore,
+    setActiveSpell,
+    setPaused,
+    setProjectiles,
     showSpellOverlay,
     stopEnemySolver,
   ]);
@@ -2182,6 +2192,12 @@ export default function App() {
           conversationControlsRef.current?.advance?.();
           return true;
         }
+        if (screen === "gameover" || screen === "enemy-victory") {
+          if (battleNode) {
+            beginPicrossForNode(battleNode);
+          }
+          return true;
+        }
         if (screen === "picross") {
           handlePicrossCellAction("fill");
           return true;
@@ -2192,6 +2208,10 @@ export default function App() {
       const handleCancel = () => {
         if (screen === "conversation") {
           conversationControlsRef.current?.skip?.();
+          return true;
+        }
+        if (screen === "gameover" || screen === "enemy-victory") {
+          quitToOpening();
           return true;
         }
         if (screen === "picross") {
@@ -2270,8 +2290,11 @@ export default function App() {
     handlePicrossCellAction,
     handlePicrossReset,
     inputMode,
+    battleNode,
+    beginPicrossForNode,
     moveGamepadCursor,
     openingFocus,
+    quitToOpening,
     screen,
     setInputMode,
     togglePaused,
@@ -2676,6 +2699,16 @@ export default function App() {
           heroName={heroName || "主人公"}
           heroImage={HERO_IMAGES.smile}
           onContinue={handlePicrossClearContinue}
+        />
+      )}
+
+      {screen === "enemy-victory" && (
+        <EnemyVictory
+          heroName={heroName || "主人公"}
+          onContinue={() => {
+            if (battleNode) beginPicrossForNode(battleNode);
+          }}
+          onQuit={quitToOpening}
         />
       )}
 
