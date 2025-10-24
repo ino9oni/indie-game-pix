@@ -1196,6 +1196,12 @@ export default function App() {
 
     const puzzleGoal = getPuzzleGoalForNode(normalizedId);
     const generation = generateBattlePuzzles(normalizedId, n, puzzleGoal, {});
+    if (import.meta?.env?.DEV && generation?.seed !== undefined) {
+      console.debug("[picross] generated puzzles", {
+        node: normalizedId,
+        seed: generation.seed,
+      });
+    }
     const heroSource = generation?.heroPuzzles?.length
       ? generation.heroPuzzles
       : Array.from({ length: puzzleGoal }, () => cloneSolution(createFallbackSolution(n)));

@@ -10,6 +10,10 @@ function clonePuzzle(grid) {
   return grid.map((row) => row.slice());
 }
 
+function pattern(rows) {
+  return rows.map((row) => row.split("").map((ch) => ch === "#"));
+}
+
 // 5x5 puzzles (easy) — 5 puzzles
 const EASY = [
   // Heart
@@ -98,6 +102,82 @@ const MIDDLE = [
   ],
 ];
 
+const PRACTICE_STORY = [
+  pattern([
+    "..#..",
+    ".###.",
+    "#####",
+    ".###.",
+    "#..##",
+  ]),
+  pattern([
+    "..#..",
+    ".#.#.",
+    "#####",
+    ".#.#.",
+    "..#.#",
+  ]),
+  pattern([
+    "#....",
+    "##...",
+    ".###.",
+    "...##",
+    "..#.#",
+  ]),
+  pattern([
+    "###..",
+    "#..#.",
+    "####.",
+    "...#.",
+    ".###.",
+  ]),
+  pattern([
+    ".#.#.",
+    "###..",
+    ".####",
+    "..#.#",
+    "..##.",
+  ]),
+];
+
+const MIDDLE_STORY = [
+  pattern([
+    "#.###",
+    "###..",
+    ".####",
+    "..###",
+    ".###.",
+  ]),
+  pattern([
+    ".###.",
+    "#...#",
+    "#####",
+    ".#.#.",
+    ".###.",
+  ]),
+  pattern([
+    "..#..",
+    ".###.",
+    "#####",
+    ".#.#.",
+    "##.##",
+  ]),
+  pattern([
+    "#..#.",
+    "####.",
+    ".###.",
+    ".####",
+    "#..#.",
+  ]),
+  pattern([
+    ".####",
+    "###..",
+    ".#..#",
+    "..###",
+    "###..",
+  ]),
+];
+
 // 10x10 puzzles — reused for hard/ultra adjustments
 const TEN_BY_TEN = [
   // Space Invader
@@ -167,8 +247,346 @@ const TEN_BY_TEN = [
   ],
 ];
 
-const HARD10 = TEN_BY_TEN.slice(0, 3);
-const ULTRA10 = TEN_BY_TEN;
+const EASY_STORY_TEMPLATES = [
+  pattern([
+    "..####..#.",
+    ".######..#",
+    "##########",
+    "##.#.#.###",
+    "##########",
+    "###.###.##",
+    ".###.###..",
+    "..#####...",
+    "...###....",
+    "....#.....",
+  ]),
+  pattern([
+    "...##.....",
+    "..####....",
+    ".######...",
+    "###.###...",
+    "######.##",
+    ".#####.##",
+    "..###.##.",
+    "...#####.",
+    "....###..",
+    ".....#...",
+  ]),
+  pattern([
+    "..###..##.",
+    ".#####.##.",
+    "#####.###.",
+    "###..####.",
+    "#####.###.",
+    ".#####.##.",
+    ".###.###..",
+    "..######..",
+    "...####...",
+    "....##....",
+  ]),
+  pattern([
+    ".##....##.",
+    "#####.####",
+    "##########",
+    "###.##.###",
+    "##########",
+    "##..##..##",
+    "###.##.###",
+    ".########.",
+    "..######..",
+    "...####...",
+  ]),
+  pattern([
+    "...####...",
+    "..######..",
+    ".########.",
+    "###.##.###",
+    "##########",
+    "..######..",
+    ".###..###.",
+    "###....###",
+    ".##....##.",
+    "..#....#..",
+  ]),
+  pattern([
+    "...###....",
+    "..#####...",
+    ".#######..",
+    "#########.",
+    "###.###.##",
+    "..##.##...",
+    "..#####...",
+    "..#####...",
+    "...###....",
+    "....#.....",
+  ]),
+];
+
+const HARD_STORY_TEMPLATES = [
+  pattern([
+    "..###.....",
+    ".#####....",
+    "#######...",
+    "##.###....",
+    "###.###...",
+    "########..",
+    "..######..",
+    "...####...",
+    "....##....",
+    ".....#....",
+  ]),
+  pattern([
+    "..##..##..",
+    ".###..###.",
+    "####..####",
+    "###....###",
+    "###....###",
+    "##########",
+    ".########.",
+    "..######..",
+    "...####...",
+    "....##....",
+  ]),
+  pattern([
+    "...####...",
+    "..######..",
+    ".########.",
+    ".###..###.",
+    "###....###",
+    "###....###",
+    "###....###",
+    ".###..###.",
+    "..######..",
+    "...####...",
+  ]),
+  pattern([
+    "..######..",
+    ".########.",
+    "##########",
+    "###.##.###",
+    "##..##..##",
+    "##..##..##",
+    "###.##.###",
+    "##########",
+    ".########.",
+    "..######..",
+  ]),
+  pattern([
+    "...###....",
+    "..#####...",
+    ".#######..",
+    "#########.",
+    "###.###.##",
+    "..#####...",
+    "..#####...",
+    "..#####...",
+    "...###....",
+    "....#.....",
+  ]),
+  pattern([
+    "..######..",
+    ".########.",
+    "##########",
+    "###.##.###",
+    "##..##..##",
+    "###.##.###",
+    "###.##.###",
+    "##########",
+    ".########.",
+    "..######..",
+  ]),
+];
+
+const ULTRA_STORY_TEMPLATES = [
+  pattern([
+    "..######..",
+    ".########.",
+    "##########",
+    "###.##.###",
+    "##.#..#.##",
+    "##.#..#.##",
+    "###.##.###",
+    "##########",
+    ".########.",
+    "..######..",
+  ]),
+  pattern([
+    "...####...",
+    "..######..",
+    ".########.",
+    "###.##.###",
+    "##########",
+    "..######..",
+    "..######..",
+    "##########",
+    "..######..",
+    "...####...",
+  ]),
+  pattern([
+    "...###....",
+    "..#.#.#...",
+    ".#..#..#..",
+    "###.#.###.",
+    "##..#..##.",
+    "##..#..##.",
+    "###.#.###.",
+    ".#..#..#..",
+    "..#.#.#...",
+    "...###....",
+  ]),
+  pattern([
+    "..#..#...#",
+    ".##.###.#.",
+    "##########",
+    "###.##.###",
+    "##.#..#.##",
+    "###.##.###",
+    "##########",
+    ".##.###.#.",
+    "..#..#...#",
+    "...##..##.",
+  ]),
+];
+
+const PRACTICE_OVERLAYS = [
+  pattern([
+    ".....",
+    "..#..",
+    ".###.",
+    "..#..",
+    ".....",
+  ]),
+  pattern([
+    "...#.",
+    "..##.",
+    "...#.",
+    ".....",
+    ".....",
+  ]),
+  pattern([
+    "#....",
+    ".#...",
+    "..#..",
+    "...#.",
+    "....#",
+  ]),
+];
+
+const MIDDLE_OVERLAYS = [
+  pattern([
+    ".....",
+    "..#..",
+    ".....",
+    "..#..",
+    ".....",
+  ]),
+  pattern([
+    "#....",
+    ".#...",
+    "..#..",
+    ".#...",
+    "#....",
+  ]),
+];
+
+const EASY_OVERLAYS = [
+  pattern([
+    "....#.....",
+    "...###....",
+    "....#.....",
+    "..........",
+    "....#.....",
+    "...###....",
+    "....#.....",
+    "..........",
+    "..........",
+    "..........",
+  ]),
+  pattern([
+    "..........",
+    "..#...#...",
+    "...#.#....",
+    "....#.....",
+    "..........",
+    "....#.....",
+    "...#.#....",
+    "..#...#...",
+    "..........",
+    "..........",
+  ]),
+  pattern([
+    "..........",
+    "..........",
+    "..##......",
+    "..##......",
+    "..........",
+    "......##..",
+    "......##..",
+    "..........",
+    "..........",
+    "..........",
+  ]),
+];
+
+const HARD_OVERLAYS = [
+  pattern([
+    "...#......",
+    "..###.....",
+    "...#......",
+    "..........",
+    ".....#....",
+    "....###...",
+    ".....#....",
+    "..........",
+    "..........",
+    "..........",
+  ]),
+  pattern([
+    "#.........",
+    ".#........",
+    "..#.......",
+    "...#......",
+    "....#.....",
+    ".....#....",
+    "......#...",
+    ".......#..",
+    "........#.",
+    ".........#",
+  ]),
+];
+
+const ULTRA_OVERLAYS = [
+  pattern([
+    "..........",
+    "..#....#..",
+    "...#..#...",
+    "....##....",
+    "..........",
+    "....##....",
+    "...#..#...",
+    "..#....#..",
+    "..........",
+    "..........",
+  ]),
+  pattern([
+    "....#.....",
+    ".....#....",
+    "......#...",
+    ".......#..",
+    "........#.",
+    ".......#..",
+    "......#...",
+    ".....#....",
+    "....#.....",
+    "...#......",
+  ]),
+];
+
+const PRACTICE_TEMPLATES = [...EASY, ...PRACTICE_STORY];
+const MIDDLE_TEMPLATES = [...MIDDLE, ...MIDDLE_STORY];
+const EASY_TEMPLATES = [...TEN_BY_TEN, ...EASY_STORY_TEMPLATES];
+const HARD10 = [...TEN_BY_TEN.slice(0, 3), ...HARD_STORY_TEMPLATES];
+const ULTRA10 = [...TEN_BY_TEN, ...ULTRA_STORY_TEMPLATES];
 
 // 15x15 puzzles (high) — 5 puzzles
 const HIGH = [
@@ -426,25 +844,25 @@ const ULTRA25 = [
 ];
 
 export const PUZZLES = {
-  easy: EASY,
-  middle: MIDDLE,
+  easy: PRACTICE_TEMPLATES,
+  middle: MIDDLE_TEMPLATES,
   high: HIGH,
   hard: HARD20,
   ultra: ULTRA25,
 };
 
 export const PUZZLES_BY_SIZE = {
-  5: EASY,
-  10: TEN_BY_TEN,
+  5: [...PRACTICE_TEMPLATES, ...MIDDLE_TEMPLATES],
+  10: [...EASY_TEMPLATES, ...HARD10, ...ULTRA10],
   15: HIGH,
   20: HARD20,
   25: ULTRA25,
 };
 
 const NODE_PUZZLES = {
-  "elf-practice": EASY,
-  "elf-easy": TEN_BY_TEN,
-  "elf-middle": MIDDLE,
+  "elf-practice": PRACTICE_TEMPLATES,
+  "elf-easy": EASY_TEMPLATES,
+  "elf-middle": MIDDLE_TEMPLATES,
   "elf-hard": HARD10,
   "elf-ultra": ULTRA10,
 };
@@ -458,11 +876,19 @@ const NODE_TO_DIFFICULTY = {
 };
 
 const DIFFICULTY_TEMPLATES = {
-  practice: EASY,
-  easy: TEN_BY_TEN,
-  middle: MIDDLE,
+  practice: PRACTICE_TEMPLATES,
+  easy: EASY_TEMPLATES,
+  middle: MIDDLE_TEMPLATES,
   hard: HARD10,
   ultra: ULTRA10,
+};
+
+const DIFFICULTY_OVERLAYS = {
+  practice: PRACTICE_OVERLAYS,
+  easy: EASY_OVERLAYS,
+  middle: MIDDLE_OVERLAYS,
+  hard: HARD_OVERLAYS,
+  ultra: ULTRA_OVERLAYS,
 };
 
 const RECENT_LAYOUT_CACHE = new Map();
@@ -530,6 +956,17 @@ function coordsToGrid(coords, size) {
     }
   });
   return grid;
+}
+
+function mergeGrids(primary, secondary) {
+  const size = primary.length;
+  return primary.map((row, y) =>
+    row.map((cell, x) => cell || Boolean(secondary?.[y]?.[x])),
+  );
+}
+
+function deriveSeed(seed, salt) {
+  return normalizeSeed((seed + salt) >>> 0);
 }
 
 function rotateCoord({ x, y }, size, rotation) {
@@ -600,6 +1037,38 @@ function isMirrorSymmetric(grid) {
     }
   }
   return true;
+}
+
+function pruneSparseCells(grid, rng, maxRemovals = 2) {
+  const size = grid.length;
+  const candidateCells = [];
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      if (!grid[y][x]) continue;
+      let neighbors = 0;
+      if (y > 0 && grid[y - 1][x]) neighbors += 1;
+      if (y < size - 1 && grid[y + 1][x]) neighbors += 1;
+      if (x > 0 && grid[y][x - 1]) neighbors += 1;
+      if (x < size - 1 && grid[y][x + 1]) neighbors += 1;
+      if (neighbors <= 1) {
+        candidateCells.push({ x, y });
+      }
+    }
+  }
+  if (!candidateCells.length) return grid;
+
+  const removals = Math.min(maxRemovals, 1 + Math.floor(rng() * candidateCells.length));
+  if (removals <= 0) return grid;
+
+  const result = grid.map((row) => row.slice());
+  for (let i = 0; i < removals && candidateCells.length; i += 1) {
+    const index = Math.floor(rng() * candidateCells.length);
+    const { x, y } = candidateCells.splice(index, 1)[0];
+    result[y][x] = false;
+  }
+
+  const hasFilled = result.some((row) => row.some(Boolean));
+  return hasFilled ? result : grid;
 }
 
 function wasRecentlyGenerated(nodeId, key) {
@@ -749,9 +1218,32 @@ function hasUniqueSolution(grid) {
   return solutions === 1;
 }
 
+function applyOverlays(grid, overlays, size, rng) {
+  if (!overlays || !overlays.length) return grid;
+  let combined = grid;
+  if (rng() < 0.6) {
+    const overlayTemplate = overlays[Math.floor(rng() * overlays.length)];
+    const overlayVariant = applyTemplateTransform(overlayTemplate, size, rng);
+    if (overlayVariant) {
+      const merged = mergeGrids(grid, overlayVariant);
+      if (gridKey(merged) !== gridKey(grid)) {
+        combined = merged;
+      }
+    }
+  }
+  if (rng() < 0.35) {
+    const pruned = pruneSparseCells(combined, rng, 2);
+    if (gridKey(pruned) !== gridKey(combined)) {
+      combined = pruned;
+    }
+  }
+  return combined;
+}
+
 export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   const difficulty = NODE_TO_DIFFICULTY[nodeId] || null;
   const templates = difficulty ? DIFFICULTY_TEMPLATES[difficulty] : null;
+  const overlays = difficulty ? DIFFICULTY_OVERLAYS[difficulty] : null;
   const seedValue = normalizeSeed(options.seed ?? Math.random() * 0xffffffff);
   const rng = createRng(seedValue);
   const results = [];
@@ -764,15 +1256,16 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
     const templatePool = templates && templates.length ? templates : getPuzzlesForSize(size);
     if (!templatePool || !templatePool.length) break;
     const template = templatePool[Math.floor(rng() * templatePool.length)];
-    const variant = applyTemplateTransform(template, size, rng);
-    if (!variant) continue;
-    const key = gridKey(variant);
+    const baseVariant = applyTemplateTransform(template, size, rng);
+    if (!baseVariant) continue;
+    let candidate = applyOverlays(baseVariant, overlays, size, rng);
+    const key = gridKey(candidate);
     if (seen.has(key) || wasRecentlyGenerated(nodeId, key)) continue;
-    if (isMirrorSymmetric(variant) && attempts < maxAttempts / 2) continue;
-    if (!hasUniqueSolution(variant)) continue;
+    if (isMirrorSymmetric(candidate) && attempts < maxAttempts / 2) continue;
+    if (!hasUniqueSolution(candidate)) continue;
     seen.add(key);
     rememberLayout(nodeId, key);
-    results.push(clonePuzzle(variant));
+    results.push(clonePuzzle(candidate));
   }
 
   if (results.length < count) {
@@ -783,8 +1276,10 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
     });
   }
 
-  const heroPuzzles = results.map((grid) => clonePuzzle(grid));
-  const enemyPuzzles = shuffleWithRng(results, rng).map((grid) => clonePuzzle(grid));
+  const heroRng = createRng(deriveSeed(seedValue, 0x9e3779b9));
+  const enemyRng = createRng(deriveSeed(seedValue, 0x41c64e6d));
+  const heroPuzzles = shuffleWithRng(results, heroRng).map((grid) => clonePuzzle(grid));
+  const enemyPuzzles = shuffleWithRng(results, enemyRng).map((grid) => clonePuzzle(grid));
 
   return {
     seed: seedValue,
