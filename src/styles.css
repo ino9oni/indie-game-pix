@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700&display=swap");
+
 :root {
   --bg: #070a12;
   --panel: #0f1220cc;
@@ -1155,8 +1157,8 @@ body {
   top: 50%;
   left: calc(100% + 12px);
   transform: translateY(-50%);
-  min-width: 180px;
-  max-width: 240px;
+  min-width: 200px;
+  max-width: 280px;
   padding: 8px 12px;
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 255, 0.45);
@@ -1200,10 +1202,11 @@ body {
 
 .spell-speech-text {
   display: block;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic Pro", "Rounded Mplus 1c", "Yu Gothic", sans-serif;
+  font-size: 1.8rem;
+  line-height: 1.35;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
 @keyframes speechFade {
@@ -1249,7 +1252,7 @@ body {
 
 .spell-slot {
   width: 100%;
-  min-height: 76px;
+  min-height: 92px;
   border-radius: 14px;
   border: 1px solid #2b2f55;
   background: rgba(17, 22, 58, 0.68);
@@ -1344,19 +1347,23 @@ body {
 
 .spell-slot-name {
   font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
+  font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic Pro", "Rounded Mplus 1c", "Yu Gothic", sans-serif;
+  font-size: 1.33rem;
+  letter-spacing: 0.04em;
 }
 
 .spell-slot-desc {
-  font-size: 0.8rem;
+  font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic Pro", "Rounded Mplus 1c", "Yu Gothic", sans-serif;
+  font-size: 1.12rem;
   opacity: 0.85;
+  line-height: 1.35;
 }
 
 .spell-slot-placeholder {
-  font-size: 0.85rem;
+  font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic Pro", "Rounded Mplus 1c", "Yu Gothic", sans-serif;
+  font-size: 1.19rem;
   color: var(--muted);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
 .combo-badge {
