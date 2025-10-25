@@ -1546,23 +1546,6 @@ body {
     0 0 0 1px rgba(127, 29, 29, 0.58);
 }
 
-.spell-log {
-  margin-top: 16px;
-  min-height: 48px;
-  background: #111634cc;
-  border: 1px solid #312e81;
-  border-radius: 12px;
-  padding: 12px 16px;
-  color: #c7d2fe;
-  font-size: 0.85rem;
-  display: grid;
-  gap: 4px;
-}
-
-.spell-log li {
-  list-style: none;
-}
-
 .pause-overlay {
   position: absolute;
   inset: 0;

@@ -322,7 +322,6 @@ export default function App() {
   const [playerWins, setPlayerWins] = useState(0);
   const [enemyWins, setEnemyWins] = useState(0);
   const [enemyGrid, setEnemyGrid] = useState([]);
-  const [spellLog, setSpellLog] = useState([]);
   const [activeSpell, setActiveSpell] = useState(null);
   const [spellSpeech, setSpellSpeech] = useState({ hero: null, enemy: null });
   const [conversationTransition, setConversationTransition] = useState("none");
@@ -504,17 +503,6 @@ export default function App() {
       spellOverlayTimeoutRef.current = null;
     }
   }, []);
-
-  const logSpell = useCallback((message) => {
-    setSpellLog((prev) => {
-      const entry = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        message,
-      };
-      return [entry, ...prev].slice(0, 6);
-    });
-  }, []);
-
   const showSpellOverlay = useCallback((payload) => {
     if (spellOverlayTimeoutRef.current) {
       clearTimeout(spellOverlayTimeoutRef.current);
@@ -583,8 +571,6 @@ export default function App() {
       };
       resetCombo("enemy");
     }
-    const casterName = heroName || "主人公";
-    logSpell(`${casterName} が「${HERO_SPELL.name}」を放った`);
     showSpellOverlay({
       caster: "hero",
       spellId: "hero",
@@ -594,7 +580,7 @@ export default function App() {
     });
     audio.playSpellAttack("hero");
     launchProjectile("hero");
-  }, [heroName, logSpell, resetCombo, showSpellOverlay]);
+  }, [resetCombo, showSpellOverlay]);
 
   const triggerEnemySpell = useCallback(
     (spellId, context = {}) => {
@@ -605,7 +591,6 @@ export default function App() {
       enemySpellStateRef.current.used.add(spellId);
       const character = CHARACTERS[battleNode];
       const enemyName = character?.name || "敵";
-      logSpell(`${enemyName} が「${spell.name}」を発動`);
       showSpellOverlay({
         caster: "enemy",
         spellId,
@@ -764,7 +749,7 @@ export default function App() {
           break;
       }
     },
-    [battleNode, clues, logSpell, setGrid, showSpellOverlay, solution],
+    [battleNode, clues, setGrid, showSpellOverlay, solution],
   );
 
   function resetProgress() {
@@ -781,7 +766,6 @@ export default function App() {
     setEnemySolutionVersion((v) => v + 1);
     setPlayerWins(0);
     setEnemyWins(0);
-    setSpellLog([]);
     setActiveSpell(null);
     setEnemyGrid([]);
     setPostClearAction(null);
@@ -1188,7 +1172,6 @@ export default function App() {
 
     stopEnemySolver();
     clearSpellEffects();
-    setSpellLog([]);
     setActiveSpell(null);
     puzzleSolvedRef.current = false;
     setProjectiles([]);
@@ -1531,7 +1514,6 @@ export default function App() {
     const nextWins = enemyWins + 1;
     const character = battleNode ? CHARACTERS[battleNode] : null;
     const enemyName = character?.name || "敵";
-    logSpell(`${enemyName} がパズルを解いた (${nextWins}/${totalNeeded})`);
     stopEnemySolver();
     resetAllCombos();
     const isFinal = nextWins >= totalNeeded;
@@ -1572,7 +1554,6 @@ export default function App() {
     enemyWins,
     enemyPuzzleSequence.length,
     loadEnemyPuzzle,
-    logSpell,
     remaining,
     resetAllCombos,
     resetScore,
@@ -1895,7 +1876,6 @@ export default function App() {
     if (prev === "picross" && screen !== "picross") {
       stopEnemySolver();
       clearSpellEffects();
-      setSpellLog([]);
       setActiveSpell(null);
       setEnemyGrid([]);
       setPuzzleSequence([]);
@@ -2698,12 +2678,6 @@ export default function App() {
                 <span key={proj.id} className={`spell-projectile ${proj.variant}`} />
               ))}
             </div>
-            <ul className="spell-log">
-              {spellLog.length === 0 && <li>スペルはまだ発動していません。</li>}
-              {spellLog.map((entry) => (
-                <li key={entry.id}>{entry.message}</li>
-              ))}
-            </ul>
             {paused && (
               <div className="pause-overlay">
                 <div className="pause-box">
