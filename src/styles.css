@@ -2643,6 +2643,8 @@ button {
   object-fit: cover;
   object-position: center;
   display: block;
+  position: relative;
+  z-index: 2;
 }
 
 .picross-clear-glow {
@@ -2651,6 +2653,7 @@ button {
   background: radial-gradient(65% 65% at 50% 45%, rgba(224, 242, 254, 0.55) 0%, rgba(56, 189, 248, 0.18) 60%, transparent 100%);
   filter: blur(16px);
   opacity: 0.8;
+  z-index: 1;
 }
 
 .picross-clear-title {
