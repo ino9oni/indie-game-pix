@@ -1013,6 +1013,9 @@ export default function App() {
       case "picross":
         track = TRACKS.picross || track;
         break;
+      case "tutorial":
+        track = TRACKS.tutorial || track;
+        break;
       case "picross-clear":
         track = null;
         break;
@@ -1031,11 +1034,15 @@ export default function App() {
 
     const applyTrack = async () => {
       try {
+        const TUTORIAL_FADE_MS = 350;
+
         if (!track) {
           if (previousTrack === TRACKS.picross) {
             await bgm.fadeOutAndStop(300);
           } else if (previousTrack === TRACKS.ending) {
             await bgm.fadeOutAndStop(400);
+          } else if (previousTrack === TRACKS.tutorial) {
+            await bgm.fadeOutAndStop(TUTORIAL_FADE_MS);
           } else {
             bgm.stop();
           }
@@ -1058,6 +1065,15 @@ export default function App() {
           return;
         }
 
+        if (track === TRACKS.tutorial) {
+          await bgm.crossFadeTo(track, track, {
+            fadeOutMs: previousTrack ? TUTORIAL_FADE_MS : 0,
+            fadeInMs: TUTORIAL_FADE_MS,
+          });
+          if (!cancelled) chosenTrackRef.current = track;
+          return;
+        }
+
         if (track === TRACKS.ending) {
           await bgm.crossFadeTo(track, track, {
             fadeOutMs: previousTrack ? 400 : 0,
@@ -1071,6 +1087,15 @@ export default function App() {
           await bgm.crossFadeTo(track, track, {
             fadeOutMs: 300,
             fadeInMs: 350,
+          });
+          if (!cancelled) chosenTrackRef.current = track;
+          return;
+        }
+
+        if (previousTrack === TRACKS.tutorial) {
+          await bgm.crossFadeTo(track, track, {
+            fadeOutMs: TUTORIAL_FADE_MS,
+            fadeInMs: TUTORIAL_FADE_MS,
           });
           if (!cancelled) chosenTrackRef.current = track;
           return;

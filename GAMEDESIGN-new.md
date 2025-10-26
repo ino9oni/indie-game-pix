@@ -120,6 +120,12 @@
   - BGM
     - オープニングテーマ（assets/bgm/indie-game-pix-opening.wav）をループ再生し、`opening` → `gamestart` → `name` の遷移中もフェードアウトや停止を行わず連続で再生し続ける
 
+#### チュートリアルモード
+
+- BGM
+  - モード開始時に `assets/bgm/indie-game-pix-bgm-tutorial.wav` をループ再生し、遷移元のトラックから約350msでクロスフェードする（BGMトグルがOFFの場合は切り替えない）。
+  - モード終了時はオープニング（assets/bgm/indie-game-pix-opening.wav）へ350msでフェードインし直し、BGMトグルの状態は引き継ぐ。
+
 #### ゲーム開始モード
 
 - 会話ウィンドウを表示
