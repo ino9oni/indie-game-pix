@@ -12,9 +12,6 @@
   --bad: #ef4444;
   --cell: 32px;
   --font-scale: 1.5;
-  --battle-avatar-width: 80px;
-  --battle-panel-height: 100px;
-  --battle-side-width: 260px;
 }
 
 * {
@@ -1101,7 +1098,7 @@ body {
 .player-panel,
 .enemy-panel {
   display: grid;
-  grid-template-columns: var(--battle-avatar-width) minmax(0, 1fr) var(--battle-side-width);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas:
     "avatar spell score"
     "board board board"
@@ -1119,12 +1116,11 @@ body {
   justify-content: center;
   position: relative;
   align-self: stretch;
-  min-height: var(--battle-panel-height);
-  width: var(--battle-avatar-width);
+  min-height: 100px;
 }
 
 .panel-avatar img {
-  max-width: var(--battle-avatar-width);
+  max-width: 108px;
   height: 100%;
   object-fit: contain;
   padding: 8px;
@@ -1136,7 +1132,7 @@ body {
 
 .panel-avatar-placeholder {
   display: inline-flex;
-  width: var(--battle-avatar-width);
+  width: 108px;
   height: 100%;
   border-radius: 16px;
   align-items: center;
@@ -1170,7 +1166,7 @@ body {
 
 .spell-slot {
   width: 100%;
-  min-height: var(--battle-panel-height);
+  min-height: 100px;
   border-radius: 14px;
   border: 1px solid #2b2f55;
   background: rgba(17, 22, 58, 0.68);
@@ -1180,8 +1176,6 @@ body {
   gap: 12px;
   transition: border-color 200ms ease, box-shadow 200ms ease;
   position: relative;
-  min-width: var(--battle-side-width);
-  width: var(--battle-side-width);
 }
 
 .spell-slot.hero {
@@ -1223,8 +1217,7 @@ body {
   justify-content: center;
   align-items: flex-end;
   gap: 4px;
-  min-height: var(--battle-panel-height);
-  width: var(--battle-side-width);
+  min-height: 104px;
 }
 
 .score-meter.hero {
@@ -1375,9 +1368,8 @@ body {
   border: 1px solid #2b2f55;
   border-radius: 14px;
   padding: 12px 16px;
-  min-width: var(--battle-side-width);
-  width: var(--battle-side-width);
-  min-height: var(--battle-panel-height);
+  min-width: 120px;
+  min-height: 100px;
   gap: 2px;
 }
 
