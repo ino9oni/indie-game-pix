@@ -2320,7 +2320,9 @@ export default function App() {
     const spell = activeSpell && activeSpell.caster === side ? activeSpell : null;
     const combo = comboState[side] || createComboTrack();
     const comboVisible = combo.show && combo.label >= 2;
-    const speech = spellSpeech[side];
+    const rawSpeech = spellSpeech[side];
+    const speech = typeof rawSpeech === "string" ? rawSpeech.trim() : "";
+    const hasSpeech = speech.length > 0;
     const comboBadge = (
       <div className={`combo-badge ${side} ${comboVisible ? "visible" : ""}`}>
         {comboVisible && (
@@ -2331,12 +2333,11 @@ export default function App() {
       </div>
     );
     return (
-      <div
-        className={`spell-slot ${side}${spell ? " active" : ""}${speech ? " has-message" : ""}`}
-      >
-        {spell?.image ? <img src={spell.image} alt={spell.name} /> : null}
+      <div className={`spell-slot ${side}${spell ? " active" : ""}${hasSpeech ? " speaking" : ""}`}>
         <div className="spell-slot-body">
-          {spell ? (
+          {hasSpeech ? (
+            <span className="spell-slot-message-text">{speech}</span>
+          ) : spell ? (
             <>
               <div className="spell-slot-name">{spell.name}</div>
               <div className="spell-slot-desc">{spell.description}</div>
@@ -2345,11 +2346,6 @@ export default function App() {
             <span className="spell-slot-placeholder">
               {side === "hero" ? "スペル待機中" : "敵スペル待機中"}
             </span>
-          )}
-          {speech && (
-            <div className={`spell-slot-message ${side}`}>
-              <span className="spell-slot-message-text">{speech}</span>
-            </div>
           )}
         </div>
         {comboBadge}
