@@ -1152,96 +1152,6 @@ body {
   color: rgba(248, 113, 113, 0.65);
 }
 
-.spell-speech {
-  position: absolute;
-  top: 50%;
-  left: calc(100% + 12px);
-  transform: translateY(-50%);
-  min-width: 200px;
-  max-width: 280px;
-  padding: 8px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 255, 0.45);
-  color: #f8fafc;
-  background: rgba(30, 41, 59, 0.9);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.45);
-  pointer-events: none;
-  z-index: 4;
-  animation: speechFade 160ms ease-out both;
-}
-
-.spell-speech.hero {
-  border-color: rgba(96, 165, 250, 0.55);
-  background: rgba(30, 58, 138, 0.9);
-}
-
-.spell-speech.enemy {
-  border-color: rgba(248, 113, 113, 0.6);
-  background: rgba(127, 29, 29, 0.88);
-}
-
-.spell-speech::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: -10px;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 10px 10px 10px 0;
-}
-
-.spell-speech.hero::before {
-  border-color: transparent rgba(30, 58, 138, 0.9) transparent transparent;
-}
-
-.spell-speech.enemy::before {
-  border-color: transparent rgba(127, 29, 29, 0.88) transparent transparent;
-}
-
-.spell-speech-text {
-  display: block;
-  font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic Pro", "Rounded Mplus 1c", "Yu Gothic", sans-serif;
-  font-size: 1.8rem;
-  line-height: 1.35;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-@keyframes speechFade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@media (max-width: 768px) {
-  .spell-speech {
-    top: calc(100% + 10px);
-    left: 0;
-    transform: none;
-    max-width: min(270px, 70vw);
-  }
-
-  .spell-speech::before {
-    top: -10px;
-    left: 18px;
-    transform: none;
-    border-width: 0 10px 10px 10px;
-  }
-
-  .spell-speech.hero::before {
-    border-color: transparent transparent rgba(30, 58, 138, 0.9) transparent;
-  }
-
-  .spell-speech.enemy::before {
-    border-color: transparent transparent rgba(127, 29, 29, 0.88) transparent;
-  }
-}
-
 .panel-spell {
   grid-area: spell;
   display: flex;
@@ -1256,10 +1166,10 @@ body {
   border-radius: 14px;
   border: 1px solid #2b2f55;
   background: rgba(17, 22, 58, 0.68);
-  padding: 8px 12px;
+  padding: 12px 14px;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 14px;
   transition: border-color 200ms ease, box-shadow 200ms ease;
   position: relative;
 }
@@ -1280,6 +1190,10 @@ body {
   box-shadow: 0 0 24px rgba(248, 113, 113, 0.25);
 }
 
+.spell-slot.has-message {
+  padding-bottom: 46px;
+}
+
 .spell-slot img {
   width: 56px;
   height: 56px;
@@ -1291,7 +1205,7 @@ body {
 .spell-slot-wrapper {
   flex: 1 1 auto;
   display: flex;
-  align-items: center;
+  align-items: stretch;
 }
 
 .score-meter {
@@ -1339,10 +1253,11 @@ body {
   border-color: rgba(248, 113, 113, 0.5);
 }
 
-.spell-slot-text {
+.spell-slot-body {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
 }
 
 .spell-slot-name {
@@ -1364,6 +1279,37 @@ body {
   font-size: 1.19rem;
   color: var(--muted);
   letter-spacing: 0.05em;
+}
+
+.spell-slot-message {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 255, 0.45);
+  background: rgba(15, 23, 42, 0.82);
+  padding: 10px 12px;
+  box-shadow:
+    inset 0 0 14px rgba(15, 23, 42, 0.4),
+    0 6px 18px rgba(7, 12, 24, 0.28);
+  color: #f8fafc;
+}
+
+.spell-slot-message.hero {
+  border-color: rgba(96, 165, 250, 0.6);
+}
+
+.spell-slot-message.enemy {
+  border-color: rgba(248, 113, 113, 0.58);
+  color: #fee2e2;
+}
+
+.spell-slot-message-text {
+  display: block;
+  font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic Pro", "Rounded Mplus 1c", "Yu Gothic", sans-serif;
+  font-size: 1.8rem;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  word-break: break-word;
 }
 
 .combo-badge {

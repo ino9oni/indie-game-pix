@@ -2320,6 +2320,7 @@ export default function App() {
     const spell = activeSpell && activeSpell.caster === side ? activeSpell : null;
     const combo = comboState[side] || createComboTrack();
     const comboVisible = combo.show && combo.label >= 2;
+    const speech = spellSpeech[side];
     const comboBadge = (
       <div className={`combo-badge ${side} ${comboVisible ? "visible" : ""}`}>
         {comboVisible && (
@@ -2329,23 +2330,28 @@ export default function App() {
         )}
       </div>
     );
-    if (spell) {
-      return (
-        <div className={`spell-slot ${side} active`}>
-          {spell.image && <img src={spell.image} alt={spell.name} />}
-          <div className="spell-slot-text">
-            <div className="spell-slot-name">{spell.name}</div>
-            <div className="spell-slot-desc">{spell.description}</div>
-          </div>
-          {comboBadge}
-        </div>
-      );
-    }
     return (
-      <div className={`spell-slot ${side}`}>
-        <span className="spell-slot-placeholder">
-          {side === "hero" ? "スペル待機中" : "敵スペル待機中"}
-        </span>
+      <div
+        className={`spell-slot ${side}${spell ? " active" : ""}${speech ? " has-message" : ""}`}
+      >
+        {spell?.image ? <img src={spell.image} alt={spell.name} /> : null}
+        <div className="spell-slot-body">
+          {spell ? (
+            <>
+              <div className="spell-slot-name">{spell.name}</div>
+              <div className="spell-slot-desc">{spell.description}</div>
+            </>
+          ) : (
+            <span className="spell-slot-placeholder">
+              {side === "hero" ? "スペル待機中" : "敵スペル待機中"}
+            </span>
+          )}
+          {speech && (
+            <div className={`spell-slot-message ${side}`}>
+              <span className="spell-slot-message-text">{speech}</span>
+            </div>
+          )}
+        </div>
         {comboBadge}
       </div>
     );
@@ -2579,11 +2585,6 @@ export default function App() {
                   ) : (
                     <span className="panel-avatar-placeholder">―</span>
                   )}
-                  {spellSpeech.hero && (
-                    <div className="spell-speech hero">
-                      <span className="spell-speech-text">{spellSpeech.hero}</span>
-                    </div>
-                  )}
                 </div>
                 <div className="panel-spell hero">
                   <div className="spell-slot-wrapper">{renderSpellSlot("hero")}</div>
@@ -2639,11 +2640,6 @@ export default function App() {
                     <img src={enemyAvatar.src} alt={enemyAvatar.alt} />
                   ) : (
                     <span className="panel-avatar-placeholder">敵</span>
-                  )}
-                  {spellSpeech.enemy && (
-                    <div className="spell-speech enemy">
-                      <span className="spell-speech-text">{spellSpeech.enemy}</span>
-                    </div>
                   )}
                 </div>
                 <div className="panel-spell enemy">
