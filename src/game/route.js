@@ -45,7 +45,7 @@ export const CHARACTERS = {
   },
   "elf-easy": {
     name: "エフィナ",
-    size: 10,
+    size: 5,
     difficulty: "easy",
     images: {
       normal: assetPath("assets/img/character/enemies/easy/efina_normal.png"),
@@ -65,7 +65,7 @@ export const CHARACTERS = {
   },
   "elf-hard": {
     name: "フローリア",
-    size: 10,
+    size: 5,
     difficulty: "hard",
     images: {
       normal: assetPath("assets/img/character/enemies/hard/floria_normal.png"),
@@ -75,7 +75,7 @@ export const CHARACTERS = {
   },
   "elf-ultra": {
     name: "アルティナ",
-    size: 10,
+    size: 5,
     difficulty: "ultra",
     images: {
       normal: assetPath("assets/img/character/enemies/ultra/altina_normal.png"),

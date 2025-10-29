@@ -23,7 +23,8 @@ Current release: 1.0.0
   - Place your generated title image at `public/title.png` (e.g., from Sora). The app will load it automatically on the Opening screen.
   - The header has a Sound toggle. Default is Off. Turn it On to enable SFX and start BGM (WAV). BGM keeps playing across screens.
 
-- Choose a level: `easy` (5x5), `middle` (10x10), `high` (15x15).
+- Choose a level: `easy` (5x5), `middle` (5x5), `high` (15x15).
+- Story battles (practice/easy/middle/hard/ultra) now share 5x5 boards for both HERO and ENEMY to keep matches brisk.
 - Each level has 5 puzzles. Pick one to start.
 - You have 20 minutes. Submit anytime to check your answer.
 - If your grid matches the solution at end/submit: Clear. Otherwise: Game Over.
