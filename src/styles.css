@@ -2648,10 +2648,24 @@ button {
   margin: 0;
 }
 
+.picross-clear-board-wrapper {
+  position: relative;
+  width: min(100%, clamp(320px, 52vw, 520px));
+  aspect-ratio: 1;
+  padding: clamp(16px, 2.4vw, 24px);
+  border-radius: 28px;
+  background: radial-gradient(120% 120% at 30% 20%, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.9));
+  box-shadow: inset 0 0 30px rgba(15, 23, 42, 0.65), 0 0 32px rgba(30, 64, 175, 0.25);
+  display: flex;
+}
+
 .picross-clear-board {
   display: grid;
-  grid-template-columns: repeat(5, minmax(72px, 1fr));
-  gap: clamp(12px, 1.8vw, 18px);
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 1fr;
+  gap: clamp(10px, 1.4vw, 14px);
+  width: 100%;
+  height: 100%;
 }
 
 .picross-clear-slot {
@@ -2774,8 +2788,8 @@ button {
   .picross-clear-grid {
     grid-template-columns: 1fr;
   }
-  .picross-clear-board {
-    grid-template-columns: repeat(5, minmax(60px, 1fr));
+  .picross-clear-board-wrapper {
+    margin-inline: auto;
   }
   .picross-clear-actions {
     justify-content: center;
@@ -2786,14 +2800,16 @@ button {
   .picross-clear-overlay {
     padding: clamp(18px, 6vw, 28px);
   }
+  .picross-clear-board-wrapper {
+    width: min(100%, clamp(260px, 70vw, 320px));
+  }
   .picross-clear-board {
-    grid-template-columns: repeat(5, minmax(48px, 1fr));
-    gap: clamp(8px, 2vw, 12px);
+    gap: clamp(6px, 2.4vw, 10px);
   }
   .slot-label {
-    font-size: clamp(0.95rem, 3vw, 1.15rem);
+    font-size: clamp(0.9rem, 3vw, 1.1rem);
   }
   .slot-meta {
-    font-size: clamp(0.55rem, 2.4vw, 0.7rem);
+    font-size: clamp(0.5rem, 2.4vw, 0.7rem);
   }
 }

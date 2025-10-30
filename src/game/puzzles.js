@@ -324,6 +324,37 @@ const ULTRA_STORY_TEMPLATES = [
   ]),
 ];
 
+const ULTRA_EXTRA_TEMPLATES = [
+  pattern([
+    "##.##",
+    ".###.",
+    "#####",
+    ".###.",
+    "##.##",
+  ]),
+  pattern([
+    ".#.#.",
+    "#####",
+    "##.##",
+    "#####",
+    ".#.#.",
+  ]),
+  pattern([
+    "###.#",
+    "##.##",
+    "#.###",
+    "##.##",
+    "###.#",
+  ]),
+  pattern([
+    ".###.",
+    "##.##",
+    "#####",
+    "##.##",
+    ".###.",
+  ]),
+];
+
 const PRACTICE_OVERLAYS = [
   pattern([
     ".....",
@@ -667,34 +698,34 @@ const GLYPH_TEMPLATE_DEFS = [
     difficulty: "ultra",
   }),
   createGlyphTemplate({
-    grid: EASY_STORY_TEMPLATES[0],
-    glyphId: "ultra_flow",
-    glyphLabel: "FL",
-    meaningText: "風渡りの葉符",
+    grid: ULTRA_EXTRA_TEMPLATES[0],
+    glyphId: "ultra_loom",
+    glyphLabel: "LM",
+    meaningText: "星紋の織機",
     collectionIndex: 26,
     difficulty: "ultra",
   }),
   createGlyphTemplate({
-    grid: EASY_STORY_TEMPLATES[1],
-    glyphId: "ultra_shade",
-    glyphLabel: "SH",
-    meaningText: "霞灯の囁き",
+    grid: ULTRA_EXTRA_TEMPLATES[1],
+    glyphId: "ultra_pulse",
+    glyphLabel: "PL",
+    meaningText: "脈動の星盤",
     collectionIndex: 27,
     difficulty: "ultra",
   }),
   createGlyphTemplate({
-    grid: EASY_STORY_TEMPLATES[2],
-    glyphId: "ultra_radiant",
-    glyphLabel: "RD",
-    meaningText: "紅蓮の勲章",
+    grid: ULTRA_EXTRA_TEMPLATES[2],
+    glyphId: "ultra_spire",
+    glyphLabel: "SP",
+    meaningText: "黎星の尖塔",
     collectionIndex: 28,
     difficulty: "ultra",
   }),
   createGlyphTemplate({
-    grid: EASY_STORY_TEMPLATES[3],
-    glyphId: "ultra_bastion",
-    glyphLabel: "BT",
-    meaningText: "天塔の刻",
+    grid: ULTRA_EXTRA_TEMPLATES[3],
+    glyphId: "ultra_aegis",
+    glyphLabel: "AG",
+    meaningText: "森羅の護環",
     collectionIndex: 29,
     difficulty: "ultra",
   }),

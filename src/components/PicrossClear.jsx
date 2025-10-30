@@ -69,12 +69,14 @@ export default function PicrossClear({
 
           <section className="picross-clear-collection" aria-label="記号コレクション">
             <h2 className="picross-clear-collection-title">Symbol Codex</h2>
-            <div className="picross-clear-board" role="grid">
+            <div className="picross-clear-board-wrapper">
+              <div className="picross-clear-board" role="grid">
               {boardEntries.map((entry) => {
                 const isUnlocked = unlockedSet.has(entry.collectionIndex);
                 const isNew = newlyUnlockedSet.has(entry.collectionIndex);
                 const label = isUnlocked ? entry.glyphLabel : "??";
-                const shape = Array.isArray(entry.grid) && entry.grid.length ? entry.grid : emptyShape;
+                const shape =
+                  Array.isArray(entry.grid) && entry.grid.length ? entry.grid : emptyShape;
                 const className = [
                   "picross-clear-slot",
                   `slot-${entry.difficulty}`,
@@ -120,6 +122,7 @@ export default function PicrossClear({
                   </div>
                 );
               })}
+              </div>
             </div>
           </section>
         </div>
