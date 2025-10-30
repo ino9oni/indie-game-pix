@@ -97,22 +97,47 @@ const normalizeHeroName = (value) => {
 
 function loadGlyphCollection() {
   try {
-    const raw = JSON.parse(localStorage.getItem("picrossGlyphCollection") ?? "[]");
-    if (!Array.isArray(raw)) return new Set();
-    return new Set(
-      raw
+    const raw = JSON.parse(localStorage.getItem("picrossGlyphCollection") ?? "{}");
+    const indices = Array.isArray(raw.indices) ? raw.indices : [];
+    const solved = raw.solved && typeof raw.solved === "object" ? raw.solved : {};
+    const collectionSet = new Set(
+      indices
         .map((value) => Number(value))
         .filter((value) => Number.isFinite(value) && value >= 0),
     );
+    const solvedMap = new Map();
+    Object.entries(solved).forEach(([key, grid]) => {
+      const index = Number(key);
+      if (!Number.isFinite(index) || !Array.isArray(grid)) return;
+      const normalizedGrid = grid.map((row) =>
+        Array.isArray(row) ? row.map((cell) => Boolean(cell)) : [],
+      );
+      solvedMap.set(index, normalizedGrid);
+    });
+    return { collectionSet, solvedMap };
   } catch {
-    return new Set();
+    return { collectionSet: new Set(), solvedMap: new Map() };
   }
 }
 
-function persistGlyphCollection(collection) {
+function persistGlyphCollection(collection, solved) {
   try {
-    const payload = Array.from(collection ?? []);
-    localStorage.setItem("picrossGlyphCollection", JSON.stringify(payload));
+    const indices = Array.from(collection ?? []);
+    const solvedObject = {};
+    if (solved instanceof Map) {
+      solved.forEach((grid, index) => {
+        solvedObject[index] = Array.isArray(grid)
+          ? grid.map((row) => (Array.isArray(row) ? row.map((cell) => Boolean(cell)) : []))
+          : [];
+      });
+    }
+    localStorage.setItem(
+      "picrossGlyphCollection",
+      JSON.stringify({
+        indices,
+        solved: solvedObject,
+      }),
+    );
   } catch {
     /* ignore storage errors */
   }
@@ -335,7 +360,8 @@ export default function App() {
   const spedUpRef = useRef(false);
   const resumeOnceRef = useRef(false);
   const initialPrologueBgmRef = useRef(false);
-  const glyphUnlocksRef = useRef(new Set());
+  const glyphStorageRef = useRef(loadGlyphCollection());
+  const glyphUnlocksRef = useRef(new Map());
   const [currentNode, setCurrentNode] = useState(() => readStoredNode());
   const [lastNode, setLastNode] = useState("");
   const [pendingNode, setPendingNode] = useState(null);
@@ -352,7 +378,10 @@ export default function App() {
   const [spellSpeech, setSpellSpeech] = useState({ hero: null, enemy: null });
   const [conversationTransition, setConversationTransition] = useState("none");
   const [postClearAction, setPostClearAction] = useState(null);
-  const [glyphCollection, setGlyphCollection] = useState(() => loadGlyphCollection());
+  const [glyphCollection, setGlyphCollection] = useState(
+    () => glyphStorageRef.current.collectionSet,
+  );
+  const [glyphSolved, setGlyphSolved] = useState(() => glyphStorageRef.current.solvedMap);
   const [recentGlyphUnlocks, setRecentGlyphUnlocks] = useState([]);
   const [tutorialCompleted, setTutorialCompleted] = useState(false);
   const [hiddenRowClues, setHiddenRowClues] = useState([]);
@@ -797,11 +826,13 @@ export default function App() {
     setActiveSpell(null);
     setEnemyGrid([]);
     setPostClearAction(null);
-    glyphUnlocksRef.current = new Set();
+    glyphUnlocksRef.current = new Map();
     setRecentGlyphUnlocks([]);
     const clearedGlyphSet = new Set();
+    const clearedGlyphSolved = new Map();
     setGlyphCollection(clearedGlyphSet);
-    persistGlyphCollection(clearedGlyphSet);
+    setGlyphSolved(clearedGlyphSolved);
+    persistGlyphCollection(clearedGlyphSet, clearedGlyphSolved);
   }
 
   useEffect(() => {
@@ -1234,7 +1265,7 @@ export default function App() {
     puzzleSolvedRef.current = false;
     setProjectiles([]);
     resetAllCombos();
-    glyphUnlocksRef.current = new Set();
+    glyphUnlocksRef.current = new Map();
     setRecentGlyphUnlocks([]);
 
     const puzzleGoal = getPuzzleGoalForNode(normalizedId);
@@ -1435,7 +1466,10 @@ export default function App() {
     const currentEntry = puzzleSequence[heroPuzzleIndex];
     const collectionIndex = currentEntry?.glyphMeta?.collectionIndex;
     if (Number.isFinite(collectionIndex)) {
-      glyphUnlocksRef.current.add(collectionIndex);
+      glyphUnlocksRef.current.set(
+        collectionIndex,
+        cloneSolution(solution.length ? solution : grid),
+      );
     }
     awardScore(battleNode, remaining);
     const totalNeeded =
@@ -1530,28 +1564,48 @@ export default function App() {
     puzzleSolvedRef.current = false;
     setProjectiles([]);
     if (!playerVictory) {
-      glyphUnlocksRef.current = new Set();
+      glyphUnlocksRef.current = new Map();
       setRecentGlyphUnlocks([]);
       return;
     }
-    const unlocks = [];
+    const unlockEntries = Array.from(glyphUnlocksRef.current.entries()).filter(([index]) =>
+      Number.isFinite(index),
+    );
+    unlockEntries.sort((a, b) => a[0] - b[0]);
+    let nextCollectionRef = null;
     setGlyphCollection((prev) => {
       const next = new Set(prev);
-      glyphUnlocksRef.current.forEach((index) => {
-        if (!next.has(index) && Number.isFinite(index)) {
-          next.add(index);
-          unlocks.push(index);
-        }
+      unlockEntries.forEach(([index]) => {
+        next.add(index);
       });
-      unlocks.sort((a, b) => a - b);
-      persistGlyphCollection(next);
+      nextCollectionRef = next;
       return next;
     });
-    setRecentGlyphUnlocks(unlocks);
-    if (unlocks.length > 0) {
+    let nextSolvedRef = null;
+    setGlyphSolved((prev) => {
+      const next = new Map(prev);
+      unlockEntries.forEach(([index, grid]) => {
+        next.set(index, cloneSolution(grid));
+      });
+      nextSolvedRef = next;
+      return next;
+    });
+    persistGlyphCollection(nextCollectionRef ?? glyphCollection, nextSolvedRef ?? glyphSolved);
+    const unlockDetails = unlockEntries
+      .map(([index]) => {
+        const meta = GLYPH_COLLECTION.find((entry) => entry.collectionIndex === index);
+        if (!meta) return null;
+        return {
+          ...meta,
+          solvedGrid: (nextSolvedRef ?? glyphSolved).get(index) || null,
+        };
+      })
+      .filter(Boolean);
+    setRecentGlyphUnlocks(unlockDetails);
+    if (unlockDetails.length > 0) {
       audio.playCollectionUnlock?.();
     }
-    glyphUnlocksRef.current = new Set();
+    glyphUnlocksRef.current = new Map();
     let nextAction = null;
     if (pendingNode) {
       const clearedNode = normalizeNodeId(pendingNode);
@@ -1627,11 +1681,11 @@ export default function App() {
       setPuzzleSequence([]);
       setEnemyPuzzleSequence([]);
       setHeroPuzzleIndex(0);
-      enemySolutionRef.current = [];
-      setEnemySolutionVersion((v) => v + 1);
-      puzzleSolvedRef.current = false;
-      setPaused(false);
-      glyphUnlocksRef.current = new Set();
+     enemySolutionRef.current = [];
+     setEnemySolutionVersion((v) => v + 1);
+     puzzleSolvedRef.current = false;
+     setPaused(false);
+      glyphUnlocksRef.current = new Map();
       setRecentGlyphUnlocks([]);
       setScreen("enemy-victory");
       return;
@@ -2787,7 +2841,8 @@ export default function App() {
           heroImage={HERO_IMAGES.smile}
           boardEntries={GLYPH_COLLECTION}
           unlockedIndices={Array.from(glyphCollection)}
-          newlyUnlocked={recentGlyphUnlocks}
+          solvedGrids={glyphSolved}
+          newlyUnlockedEntries={recentGlyphUnlocks}
           onContinue={handlePicrossClearContinue}
         />
       )}

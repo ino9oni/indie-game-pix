@@ -5,20 +5,18 @@ export default function PicrossClear({
   heroImage,
   boardEntries = [],
   unlockedIndices = [],
-  newlyUnlocked = [],
+  solvedGrids,
+  newlyUnlockedEntries = [],
   onContinue,
 }) {
   const displayName = heroName && heroName.trim().length ? heroName.trim() : "主人公";
 
   const unlockedSet = useMemo(() => new Set(unlockedIndices), [unlockedIndices]);
-  const newlyUnlockedSet = useMemo(() => new Set(newlyUnlocked), [newlyUnlocked]);
-  const unlockedDetails = useMemo(
-    () =>
-      newlyUnlocked
-        .map((index) => boardEntries.find((entry) => entry.collectionIndex === index))
-        .filter(Boolean),
-    [boardEntries, newlyUnlocked],
+  const newlyUnlockedSet = useMemo(
+    () => new Set(newlyUnlockedEntries.map((entry) => entry.collectionIndex)),
+    [newlyUnlockedEntries],
   );
+  const unlockedDetails = useMemo(() => newlyUnlockedEntries, [newlyUnlockedEntries]);
   const emptyShape = useMemo(
     () => Array.from({ length: 5 }, () => Array.from({ length: 5 }, () => false)),
     [],
@@ -52,12 +50,14 @@ export default function PicrossClear({
             <header className="picross-clear-header">
               <h1 className="picross-clear-title">{displayName} Win</h1>
               {unlockedDetails.length > 0 ? (
-                <p className="picross-clear-subtitle">
-                  新たな記号を獲得：
-                  <span className="picross-clear-unlocks">
-                    {unlockedDetails.map((entry) => entry.meaningText).join(" / ")}
-                  </span>
-                </p>
+                <div className="picross-clear-banner" role="status" aria-live="polite">
+                  <span className="banner-label">Unlocked!</span>
+                  <ul>
+                    {unlockedDetails.map((entry) => (
+                      <li key={`unlock-${entry.collectionIndex}`}>{entry.meaningText}</li>
+                    ))}
+                  </ul>
+                </div>
               ) : (
                 <p className="picross-clear-subtitle">新規解放はありませんでした。</p>
               )}
@@ -75,8 +75,13 @@ export default function PicrossClear({
                 const isUnlocked = unlockedSet.has(entry.collectionIndex);
                 const isNew = newlyUnlockedSet.has(entry.collectionIndex);
                 const label = isUnlocked ? entry.glyphLabel : "??";
+                const solvedGrid = solvedGrids?.get?.(entry.collectionIndex);
                 const shape =
-                  Array.isArray(entry.grid) && entry.grid.length ? entry.grid : emptyShape;
+                  (Array.isArray(solvedGrid) && solvedGrid.length
+                    ? solvedGrid
+                    : Array.isArray(entry.grid) && entry.grid.length
+                    ? entry.grid
+                    : emptyShape);
                 const className = [
                   "picross-clear-slot",
                   `slot-${entry.difficulty}`,
@@ -94,6 +99,7 @@ export default function PicrossClear({
                     role="gridcell"
                     aria-live={isNew ? "polite" : undefined}
                   >
+                    {isNew && <span className="slot-badge">NEW</span>}
                     <div className="slot-shape">
                       {shape.map((row, rowIndex) =>
                         row.map((filled, colIndex) => {

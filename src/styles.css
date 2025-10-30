@@ -2615,6 +2615,38 @@ button {
   text-shadow: 0 6px 18px rgba(15, 23, 42, 0.65);
 }
 
+.picross-clear-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(8px, 1.2vw, 12px);
+  padding: clamp(10px, 1.8vw, 16px);
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(59, 130, 246, 0.32), rgba(56, 189, 248, 0.18));
+  border: 1px solid rgba(191, 219, 254, 0.45);
+  color: #f8fafc;
+  box-shadow: inset 0 0 12px rgba(37, 99, 235, 0.2);
+}
+
+.picross-clear-banner .banner-label {
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fde68a;
+}
+
+.picross-clear-banner ul {
+  margin: 0;
+  padding-left: clamp(12px, 2vw, 18px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+}
+
+.picross-clear-banner li {
+  list-style: disc;
+}
+
 .picross-clear-subtitle {
   font-size: clamp(1.1rem, 2vw, 1.35rem);
   color: #f1f5f9;
@@ -2682,6 +2714,21 @@ button {
   border: 1.5px solid rgba(148, 197, 253, 0.25);
   box-shadow: inset 0 0 12px rgba(15, 23, 42, 0.45);
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.slot-badge {
+  position: absolute;
+  top: clamp(6px, 1vw, 10px);
+  right: clamp(6px, 1vw, 10px);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(120deg, rgba(250, 204, 21, 0.9), rgba(245, 158, 11, 0.8));
+  color: #1f2937;
+  font-size: clamp(0.55rem, 1.2vw, 0.7rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: 0 0 8px rgba(250, 204, 21, 0.45);
 }
 
 .picross-clear-slot.is-locked .slot-label {
