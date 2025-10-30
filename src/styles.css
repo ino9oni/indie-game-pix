@@ -2687,16 +2687,17 @@ button {
 }
 
 .slot-label {
-  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-size: clamp(0.95rem, 1.8vw, 1.2rem);
   font-weight: 700;
   letter-spacing: 0.08em;
   color: #f8fafc;
+  text-transform: uppercase;
 }
 
 .slot-meta {
-  font-size: clamp(0.65rem, 1.2vw, 0.85rem);
+  font-size: clamp(0.6rem, 1vw, 0.75rem);
   letter-spacing: 0.08em;
-  color: rgba(226, 232, 240, 0.75);
+  color: rgba(226, 232, 240, 0.7);
 }
 
 .picross-clear-actions {
@@ -2709,6 +2710,36 @@ button {
   justify-content: center;
 }
 
+.slot-shape {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: clamp(1.5px, 0.5vw, 3px);
+  width: clamp(48px, 12vw, 68px);
+  margin: 0 auto clamp(10px, 1.6vw, 14px);
+}
+
+.slot-cell {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.15);
+  box-shadow: inset 0 0 4px rgba(15, 23, 42, 0.35);
+  transition: transform 180ms ease, background 220ms ease, box-shadow 220ms ease;
+}
+
+.slot-cell.is-filled.is-active {
+  background: linear-gradient(160deg, rgba(96, 165, 250, 0.85), rgba(59, 130, 246, 0.75));
+  box-shadow: inset 0 0 6px rgba(30, 42, 73, 0.4), 0 0 8px rgba(59, 130, 246, 0.25);
+}
+
+.slot-cell.is-filled:not(.is-active) {
+  background: linear-gradient(160deg, rgba(71, 85, 105, 0.55), rgba(51, 65, 85, 0.45));
+}
+
+.slot-cell.is-new {
+  animation: slotCellPop 340ms ease forwards;
+}
+
 @keyframes slotUnlockPop {
   0% {
     transform: scale(0.6);
@@ -2716,6 +2747,21 @@ button {
   }
   50% {
     transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slotCellPop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.18);
     opacity: 1;
   }
   100% {

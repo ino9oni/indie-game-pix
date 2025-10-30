@@ -727,6 +727,7 @@ ALL_GLYPH_TEMPLATES.forEach((tpl) => {
 
 export const GLYPH_COLLECTION = ALL_GLYPH_TEMPLATES.map((tpl) => ({
   ...tpl.glyphMeta,
+  grid: clonePuzzle(tpl.grid),
 }));
 
 export function getGlyphMetaByIndex(index) {
@@ -1398,6 +1399,7 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
 
   const selection = shuffleWithRng(templates, rng).slice(0, Math.min(count, templates.length));
   const results = [];
+  const seen = new Set();
 
   for (let i = 0; i < selection.length && results.length < count; i += 1) {
     const template = selection[i];
@@ -1405,8 +1407,9 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
     if (!baseVariant) continue;
     const candidate = applyOverlays(baseVariant, overlays, size, rng);
     const key = gridKey(candidate);
-    if (wasRecentlyGenerated(nodeId, key)) continue;
+    if (seen.has(key) || wasRecentlyGenerated(nodeId, key)) continue;
     if (!hasUniqueSolution(candidate)) continue;
+    seen.add(key);
     rememberLayout(nodeId, key);
     results.push({
       grid: clonePuzzle(candidate),
@@ -1421,6 +1424,8 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
       const candidate = applyOverlays(baseVariant, overlays, size, rng);
       if (!hasUniqueSolution(candidate)) return;
       const key = gridKey(candidate);
+      if (seen.has(key) || wasRecentlyGenerated(nodeId, key)) return;
+      seen.add(key);
       rememberLayout(nodeId, key);
       results.push({
         grid: clonePuzzle(candidate),

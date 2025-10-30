@@ -19,6 +19,10 @@ export default function PicrossClear({
         .filter(Boolean),
     [boardEntries, newlyUnlocked],
   );
+  const emptyShape = useMemo(
+    () => Array.from({ length: 5 }, () => Array.from({ length: 5 }, () => false)),
+    [],
+  );
 
   useEffect(() => {
     const handler = (event) => {
@@ -70,6 +74,7 @@ export default function PicrossClear({
                 const isUnlocked = unlockedSet.has(entry.collectionIndex);
                 const isNew = newlyUnlockedSet.has(entry.collectionIndex);
                 const label = isUnlocked ? entry.glyphLabel : "??";
+                const shape = Array.isArray(entry.grid) && entry.grid.length ? entry.grid : emptyShape;
                 const className = [
                   "picross-clear-slot",
                   `slot-${entry.difficulty}`,
@@ -87,6 +92,29 @@ export default function PicrossClear({
                     role="gridcell"
                     aria-live={isNew ? "polite" : undefined}
                   >
+                    <div className="slot-shape">
+                      {shape.map((row, rowIndex) =>
+                        row.map((filled, colIndex) => {
+                          const cellKey = `${entry.collectionIndex}-${rowIndex}-${colIndex}`;
+                          const cellClass = [
+                            "slot-cell",
+                            filled ? "is-filled" : "",
+                            isUnlocked && filled ? "is-active" : "",
+                            isNew && filled ? "is-new" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ");
+                          const delay = (rowIndex * 5 + colIndex) * 45;
+                          return (
+                            <span
+                              key={cellKey}
+                              className={cellClass}
+                              style={isNew && filled ? { animationDelay: `${delay}ms` } : undefined}
+                            />
+                          );
+                        }),
+                      )}
+                    </div>
                     <span className="slot-label">{label}</span>
                     <span className="slot-meta">{entry.difficulty.toUpperCase()}</span>
                   </div>
