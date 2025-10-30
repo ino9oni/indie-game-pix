@@ -10,6 +10,16 @@ function clonePuzzle(grid) {
   return grid.map((row) => row.slice());
 }
 
+function cloneTemplateEntry(entry) {
+  if (!entry) {
+    return { grid: [], glyphMeta: null };
+  }
+  return {
+    grid: clonePuzzle(entry.grid),
+    glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
+  };
+}
+
 function pattern(rows) {
   return rows.map((row) => row.split("").map((ch) => ch === "#"));
 }
@@ -427,11 +437,302 @@ const ULTRA_OVERLAYS = [
   ]),
 ];
 
-const PRACTICE_TEMPLATES = [...EASY, ...PRACTICE_STORY];
-const MIDDLE_TEMPLATES = [...MIDDLE, ...MIDDLE_STORY];
-const EASY_TEMPLATES = [...EASY, ...EASY_STORY_TEMPLATES];
-const HARD_TEMPLATES = [...MIDDLE, ...HARD_STORY_TEMPLATES];
-const ULTRA_TEMPLATES = [...MIDDLE, ...ULTRA_STORY_TEMPLATES];
+function createGlyphTemplate({
+  grid,
+  glyphId,
+  glyphLabel,
+  meaningText,
+  collectionIndex,
+  difficulty,
+}) {
+  return {
+    grid,
+    glyphMeta: {
+      glyphId,
+      glyphLabel,
+      meaningText,
+      collectionIndex,
+      difficulty,
+    },
+  };
+}
+
+const GLYPH_TEMPLATE_DEFS = [
+  createGlyphTemplate({
+    grid: PRACTICE_STORY[0],
+    glyphId: "practice_arrow",
+    glyphLabel: "AR",
+    meaningText: "導きの矢印",
+    collectionIndex: 0,
+    difficulty: "practice",
+  }),
+  createGlyphTemplate({
+    grid: PRACTICE_STORY[1],
+    glyphId: "practice_lantern",
+    glyphLabel: "LT",
+    meaningText: "森灯の火種",
+    collectionIndex: 1,
+    difficulty: "practice",
+  }),
+  createGlyphTemplate({
+    grid: EASY[0],
+    glyphId: "easy_heart",
+    glyphLabel: "HT",
+    meaningText: "森のハート",
+    collectionIndex: 2,
+    difficulty: "easy",
+  }),
+  createGlyphTemplate({
+    grid: EASY[1],
+    glyphId: "easy_smile",
+    glyphLabel: "SM",
+    meaningText: "木霊の笑顔",
+    collectionIndex: 3,
+    difficulty: "easy",
+  }),
+  createGlyphTemplate({
+    grid: EASY[2],
+    glyphId: "easy_cross",
+    glyphLabel: "PL",
+    meaningText: "祝福の十字",
+    collectionIndex: 4,
+    difficulty: "easy",
+  }),
+  createGlyphTemplate({
+    grid: EASY[3],
+    glyphId: "easy_swift_arrow",
+    glyphLabel: "SW",
+    meaningText: "疾風の矢羽",
+    collectionIndex: 5,
+    difficulty: "easy",
+  }),
+  createGlyphTemplate({
+    grid: MIDDLE[0],
+    glyphId: "middle_crest",
+    glyphLabel: "CR",
+    meaningText: "紋章の盾",
+    collectionIndex: 6,
+    difficulty: "middle",
+  }),
+  createGlyphTemplate({
+    grid: MIDDLE[1],
+    glyphId: "middle_wings",
+    glyphLabel: "WG",
+    meaningText: "翼の紋章",
+    collectionIndex: 7,
+    difficulty: "middle",
+  }),
+  createGlyphTemplate({
+    grid: MIDDLE[2],
+    glyphId: "middle_spiral",
+    glyphLabel: "SR",
+    meaningText: "古代の螺旋符",
+    collectionIndex: 8,
+    difficulty: "middle",
+  }),
+  createGlyphTemplate({
+    grid: MIDDLE[3],
+    glyphId: "middle_leaves",
+    glyphLabel: "LV",
+    meaningText: "双葉の護符",
+    collectionIndex: 9,
+    difficulty: "middle",
+  }),
+  createGlyphTemplate({
+    grid: MIDDLE[4],
+    glyphId: "middle_moon",
+    glyphLabel: "MN",
+    meaningText: "月光の符",
+    collectionIndex: 10,
+    difficulty: "middle",
+  }),
+  createGlyphTemplate({
+    grid: MIDDLE_STORY[0],
+    glyphId: "middle_orbit",
+    glyphLabel: "OR",
+    meaningText: "祈りの円環",
+    collectionIndex: 11,
+    difficulty: "middle",
+  }),
+  createGlyphTemplate({
+    grid: HARD_STORY_TEMPLATES[0],
+    glyphId: "hard_flame",
+    glyphLabel: "HL",
+    meaningText: "焔守の紋",
+    collectionIndex: 12,
+    difficulty: "hard",
+  }),
+  createGlyphTemplate({
+    grid: HARD_STORY_TEMPLATES[1],
+    glyphId: "hard_bulwark",
+    glyphLabel: "HD",
+    meaningText: "大盾の刻印",
+    collectionIndex: 13,
+    difficulty: "hard",
+  }),
+  createGlyphTemplate({
+    grid: HARD_STORY_TEMPLATES[2],
+    glyphId: "hard_chain",
+    glyphLabel: "CL",
+    meaningText: "拘束の鎖環",
+    collectionIndex: 14,
+    difficulty: "hard",
+  }),
+  createGlyphTemplate({
+    grid: HARD_STORY_TEMPLATES[3],
+    glyphId: "hard_sapling",
+    glyphLabel: "ST",
+    meaningText: "聖樹の枝葉",
+    collectionIndex: 15,
+    difficulty: "hard",
+  }),
+  createGlyphTemplate({
+    grid: HARD_STORY_TEMPLATES[4],
+    glyphId: "hard_ring",
+    glyphLabel: "RG",
+    meaningText: "輪守の環",
+    collectionIndex: 16,
+    difficulty: "hard",
+  }),
+  createGlyphTemplate({
+    grid: HARD_STORY_TEMPLATES[5],
+    glyphId: "hard_starway",
+    glyphLabel: "CS",
+    meaningText: "星路の結界",
+    collectionIndex: 17,
+    difficulty: "hard",
+  }),
+  createGlyphTemplate({
+    grid: MIDDLE_STORY[1],
+    glyphId: "hard_breeze",
+    glyphLabel: "BR",
+    meaningText: "森笛の調べ",
+    collectionIndex: 18,
+    difficulty: "hard",
+  }),
+  createGlyphTemplate({
+    grid: MIDDLE_STORY[2],
+    glyphId: "hard_key",
+    glyphLabel: "KN",
+    meaningText: "秘鍵の影",
+    collectionIndex: 19,
+    difficulty: "hard",
+  }),
+  createGlyphTemplate({
+    grid: ULTRA_STORY_TEMPLATES[0],
+    glyphId: "ultra_crown",
+    glyphLabel: "GL",
+    meaningText: "星辰の冠",
+    collectionIndex: 20,
+    difficulty: "ultra",
+  }),
+  createGlyphTemplate({
+    grid: ULTRA_STORY_TEMPLATES[1],
+    glyphId: "ultra_cycle",
+    glyphLabel: "CN",
+    meaningText: "円環の碑",
+    collectionIndex: 21,
+    difficulty: "ultra",
+  }),
+  createGlyphTemplate({
+    grid: ULTRA_STORY_TEMPLATES[2],
+    glyphId: "ultra_core",
+    glyphLabel: "NX",
+    meaningText: "霊核の結晶",
+    collectionIndex: 22,
+    difficulty: "ultra",
+  }),
+  createGlyphTemplate({
+    grid: ULTRA_STORY_TEMPLATES[3],
+    glyphId: "ultra_trident",
+    glyphLabel: "TR",
+    meaningText: "審判の三叉",
+    collectionIndex: 23,
+    difficulty: "ultra",
+  }),
+  createGlyphTemplate({
+    grid: ULTRA_STORY_TEMPLATES[4],
+    glyphId: "ultra_dawn",
+    glyphLabel: "DA",
+    meaningText: "黎明の扉",
+    collectionIndex: 24,
+    difficulty: "ultra",
+  }),
+  createGlyphTemplate({
+    grid: ULTRA_STORY_TEMPLATES[5],
+    glyphId: "ultra_protector",
+    glyphLabel: "PR",
+    meaningText: "守護者の楯",
+    collectionIndex: 25,
+    difficulty: "ultra",
+  }),
+  createGlyphTemplate({
+    grid: EASY_STORY_TEMPLATES[0],
+    glyphId: "ultra_flow",
+    glyphLabel: "FL",
+    meaningText: "風渡りの葉符",
+    collectionIndex: 26,
+    difficulty: "ultra",
+  }),
+  createGlyphTemplate({
+    grid: EASY_STORY_TEMPLATES[1],
+    glyphId: "ultra_shade",
+    glyphLabel: "SH",
+    meaningText: "霞灯の囁き",
+    collectionIndex: 27,
+    difficulty: "ultra",
+  }),
+  createGlyphTemplate({
+    grid: EASY_STORY_TEMPLATES[2],
+    glyphId: "ultra_radiant",
+    glyphLabel: "RD",
+    meaningText: "紅蓮の勲章",
+    collectionIndex: 28,
+    difficulty: "ultra",
+  }),
+  createGlyphTemplate({
+    grid: EASY_STORY_TEMPLATES[3],
+    glyphId: "ultra_bastion",
+    glyphLabel: "BT",
+    meaningText: "天塔の刻",
+    collectionIndex: 29,
+    difficulty: "ultra",
+  }),
+];
+
+const ALL_GLYPH_TEMPLATES = GLYPH_TEMPLATE_DEFS.slice().sort(
+  (a, b) => a.glyphMeta.collectionIndex - b.glyphMeta.collectionIndex,
+);
+
+const PRACTICE_TEMPLATES = ALL_GLYPH_TEMPLATES.filter(
+  (tpl) => tpl.glyphMeta.difficulty === "practice",
+);
+const EASY_TEMPLATES = ALL_GLYPH_TEMPLATES.filter(
+  (tpl) => tpl.glyphMeta.difficulty === "easy",
+);
+const MIDDLE_TEMPLATES = ALL_GLYPH_TEMPLATES.filter(
+  (tpl) => tpl.glyphMeta.difficulty === "middle",
+);
+const HARD_TEMPLATES = ALL_GLYPH_TEMPLATES.filter(
+  (tpl) => tpl.glyphMeta.difficulty === "hard",
+);
+const ULTRA_TEMPLATES = ALL_GLYPH_TEMPLATES.filter(
+  (tpl) => tpl.glyphMeta.difficulty === "ultra",
+);
+
+const GLYPH_META_BY_INDEX = new Map();
+ALL_GLYPH_TEMPLATES.forEach((tpl) => {
+  GLYPH_META_BY_INDEX.set(tpl.glyphMeta.collectionIndex, tpl.glyphMeta);
+});
+
+export const GLYPH_COLLECTION = ALL_GLYPH_TEMPLATES.map((tpl) => ({
+  ...tpl.glyphMeta,
+}));
+
+export function getGlyphMetaByIndex(index) {
+  const meta = GLYPH_META_BY_INDEX.get(index);
+  return meta ? { ...meta } : null;
+}
 
 // 15x15 puzzles (high) — 5 puzzles
 const HIGH = [
@@ -689,7 +990,8 @@ const ULTRA25 = [
 ];
 
 export const PUZZLES = {
-  easy: PRACTICE_TEMPLATES,
+  practice: PRACTICE_TEMPLATES,
+  easy: EASY_TEMPLATES,
   middle: MIDDLE_TEMPLATES,
   high: HIGH,
   hard: HARD20,
@@ -697,13 +999,7 @@ export const PUZZLES = {
 };
 
 export const PUZZLES_BY_SIZE = {
-  5: [
-    ...PRACTICE_TEMPLATES,
-    ...EASY_TEMPLATES,
-    ...MIDDLE_TEMPLATES,
-    ...HARD_TEMPLATES,
-    ...ULTRA_TEMPLATES,
-  ],
+  5: ALL_GLYPH_TEMPLATES,
   15: HIGH,
   20: HARD20,
   25: ULTRA25,
@@ -1092,44 +1388,52 @@ function applyOverlays(grid, overlays, size, rng) {
 
 export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   const difficulty = NODE_TO_DIFFICULTY[nodeId] || null;
-  const templates = difficulty ? DIFFICULTY_TEMPLATES[difficulty] : null;
+  const templates =
+    difficulty && DIFFICULTY_TEMPLATES[difficulty]?.length
+      ? DIFFICULTY_TEMPLATES[difficulty]
+      : ALL_GLYPH_TEMPLATES;
   const overlays = difficulty ? DIFFICULTY_OVERLAYS[difficulty] : null;
   const seedValue = normalizeSeed(options.seed ?? Math.random() * 0xffffffff);
   const rng = createRng(seedValue);
-  const results = [];
-  const seen = new Set();
-  const maxAttempts = options.maxAttempts ?? 5000;
-  let attempts = 0;
 
-  while (results.length < count && attempts < maxAttempts) {
-    attempts += 1;
-    const templatePool = templates && templates.length ? templates : getPuzzlesForSize(size);
-    if (!templatePool || !templatePool.length) break;
-    const template = templatePool[Math.floor(rng() * templatePool.length)];
-    const baseVariant = applyTemplateTransform(template, size, rng);
+  const selection = shuffleWithRng(templates, rng).slice(0, Math.min(count, templates.length));
+  const results = [];
+
+  for (let i = 0; i < selection.length && results.length < count; i += 1) {
+    const template = selection[i];
+    const baseVariant = applyTemplateTransform(template.grid, size, rng);
     if (!baseVariant) continue;
-    let candidate = applyOverlays(baseVariant, overlays, size, rng);
+    const candidate = applyOverlays(baseVariant, overlays, size, rng);
     const key = gridKey(candidate);
-    if (seen.has(key) || wasRecentlyGenerated(nodeId, key)) continue;
-    if (isMirrorSymmetric(candidate) && attempts < maxAttempts / 2) continue;
+    if (wasRecentlyGenerated(nodeId, key)) continue;
     if (!hasUniqueSolution(candidate)) continue;
-    seen.add(key);
     rememberLayout(nodeId, key);
-    results.push(clonePuzzle(candidate));
+    results.push({
+      grid: clonePuzzle(candidate),
+      glyphMeta: template.glyphMeta ? { ...template.glyphMeta } : null,
+    });
   }
 
   if (results.length < count) {
-    const fallbackNeeded = count - results.length;
-    const fallback = getRandomPuzzlesForNode(nodeId, size, fallbackNeeded);
-    fallback.forEach((grid) => {
-      results.push(clonePuzzle(grid));
+    const fallbackTemplates = drawRandomTemplates(templates, count - results.length, rng);
+    fallbackTemplates.forEach((entry) => {
+      const baseVariant = applyTemplateTransform(entry.grid, size, rng) || clonePuzzle(entry.grid);
+      const candidate = applyOverlays(baseVariant, overlays, size, rng);
+      if (!hasUniqueSolution(candidate)) return;
+      const key = gridKey(candidate);
+      rememberLayout(nodeId, key);
+      results.push({
+        grid: clonePuzzle(candidate),
+        glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
+      });
     });
   }
 
   const heroRng = createRng(deriveSeed(seedValue, 0x9e3779b9));
   const enemyRng = createRng(deriveSeed(seedValue, 0x41c64e6d));
-  const heroPuzzles = shuffleWithRng(results, heroRng).map((grid) => clonePuzzle(grid));
-  const enemyPuzzles = shuffleWithRng(results, enemyRng).map((grid) => clonePuzzle(grid));
+
+  const heroPuzzles = shuffleWithRng(results, heroRng).map((entry) => cloneTemplateEntry(entry));
+  const enemyPuzzles = shuffleWithRng(results, enemyRng).map((entry) => clonePuzzle(entry.grid));
 
   return {
     seed: seedValue,
@@ -1138,22 +1442,12 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   };
 }
 
-function drawRandomFromPool(pool, count) {
+function drawRandomTemplates(pool, count, rng = Math.random) {
   if (!Array.isArray(pool) || !pool.length || count <= 0) return [];
-  const picks = [];
-  const used = new Set();
-  while (picks.length < count) {
-    if (used.size === pool.length) {
-      const idx = Math.floor(Math.random() * pool.length);
-      picks.push(clonePuzzle(pool[idx]));
-      continue;
-    }
-    const idx = Math.floor(Math.random() * pool.length);
-    if (used.has(idx)) continue;
-    used.add(idx);
-    picks.push(clonePuzzle(pool[idx]));
-  }
-  return picks;
+  const random = typeof rng === "function" ? rng : Math.random;
+  const shuffled = shuffleWithRng(pool, () => random());
+  const slice = shuffled.slice(0, Math.min(count, shuffled.length));
+  return slice.map((entry) => cloneTemplateEntry(entry));
 }
 
 export function getPuzzlesForSize(n) {
@@ -1163,26 +1457,26 @@ export function getRandomPuzzleForSize(n) {
   const arr = getPuzzlesForSize(n);
   if (!arr.length) return null;
   const idx = Math.floor(Math.random() * arr.length);
-  return clonePuzzle(arr[idx]);
+  return cloneTemplateEntry(arr[idx]);
 }
 
 export function getRandomPuzzlesForSize(n, count) {
   const pool = getPuzzlesForSize(n);
-  return drawRandomFromPool(pool, count);
+  return drawRandomTemplates(pool, count);
 }
 
 export function getRandomPuzzlesForNode(nodeId, size, count) {
   const pool = NODE_PUZZLES[nodeId];
   if (Array.isArray(pool) && pool.length) {
     const sizedPool = pool.filter(
-      (grid) =>
-        Array.isArray(grid) &&
-        grid.length === size &&
-        grid.every((row) => Array.isArray(row) && row.length === size),
+      (entry) =>
+        entry?.grid?.length === size &&
+        entry.grid.every((row) => Array.isArray(row) && row.length === size),
     );
     if (sizedPool.length) {
-      return drawRandomFromPool(sizedPool, count);
+      return drawRandomTemplates(sizedPool, count);
     }
   }
-  return getRandomPuzzlesForSize(size, count);
+  const fallbackPool = PUZZLES_BY_SIZE[size] || ALL_GLYPH_TEMPLATES;
+  return drawRandomTemplates(fallbackPool, count);
 }

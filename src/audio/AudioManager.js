@@ -1,5 +1,6 @@
 // Simple Web Audio manager for SFX/BGM without external assets
 const VICTORY_FANFARE_URL = "./assets/bgm/indie-game-fanfare.wav"; // Picross victory SE (single-shot)
+const COLLECTION_UNLOCK_URL = "./assets/se/collection_unlock.wav";
 
 class AudioManager {
   constructor() {
@@ -180,6 +181,22 @@ class AudioManager {
     this._beep(base * 1.3, 0.12, 0.006);
     this._beep(base * 1.6, 0.1, 0.006);
     this._noiseBurst(0.16, alignment === "enemy" ? 1100 : 1600, 280);
+  }
+
+  async playCollectionUnlock() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const buffer = await this._loadSample("collection_unlock", COLLECTION_UNLOCK_URL);
+      await this._playBuffer(buffer, 0.85);
+      return;
+    } catch (_) {
+      /* fall through to synthetic sparkle */
+    }
+    this._beep(880, 0.08, 0.004);
+    this._beep(1180, 0.09, 0.004);
+    this._noiseBurst(0.06, 5200, 320);
   }
 
   playMove() {
