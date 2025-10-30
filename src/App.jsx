@@ -1256,7 +1256,7 @@ export default function App() {
       glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
     }));
     const enemySourceEntries = generation?.enemyPuzzles?.length
-      ? generation.enemyPuzzles
+      ? generation.enemyPuzzles.map((grid) => ({ grid: cloneSolution(grid) }))
       : shuffle(heroSourceEntries).map((entry) => ({ grid: cloneSolution(entry.grid) }));
     const enemyPrepared = enemySourceEntries.map((entry) => cloneSolution(entry.grid));
 

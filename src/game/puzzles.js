@@ -1427,6 +1427,7 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   const overlays = difficulty ? DIFFICULTY_OVERLAYS[difficulty] : null;
   const seedValue = normalizeSeed(options.seed ?? Math.random() * 0xffffffff);
   const rng = createRng(seedValue);
+  const allowTransforms = difficulty !== "practice" && difficulty !== "easy";
 
   const selection = shuffleWithRng(templates, rng).slice(0, Math.min(count, templates.length));
   const results = [];
@@ -1434,9 +1435,11 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
 
   for (let i = 0; i < selection.length && results.length < count; i += 1) {
     const template = selection[i];
-    const baseVariant = applyTemplateTransform(template.grid, size, rng);
+    const baseVariant = allowTransforms
+      ? applyTemplateTransform(template.grid, size, rng)
+      : clonePuzzle(template.grid);
     if (!baseVariant) continue;
-    const candidate = applyOverlays(baseVariant, overlays, size, rng);
+    const candidate = allowTransforms ? applyOverlays(baseVariant, overlays, size, rng) : baseVariant;
     const key = gridKey(candidate);
     if (seen.has(key) || wasRecentlyGenerated(nodeId, key)) continue;
     if (!hasUniqueSolution(candidate)) continue;
@@ -1451,8 +1454,10 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   if (results.length < count) {
     const fallbackTemplates = drawRandomTemplates(templates, count - results.length, rng);
     fallbackTemplates.forEach((entry) => {
-      const baseVariant = applyTemplateTransform(entry.grid, size, rng) || clonePuzzle(entry.grid);
-      const candidate = applyOverlays(baseVariant, overlays, size, rng);
+      const baseVariant = allowTransforms
+        ? applyTemplateTransform(entry.grid, size, rng) || clonePuzzle(entry.grid)
+        : clonePuzzle(entry.grid);
+      const candidate = allowTransforms ? applyOverlays(baseVariant, overlays, size, rng) : baseVariant;
       if (!hasUniqueSolution(candidate)) return;
       const key = gridKey(candidate);
       if (seen.has(key) || wasRecentlyGenerated(nodeId, key)) return;
