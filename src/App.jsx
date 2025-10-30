@@ -1255,10 +1255,10 @@ export default function App() {
       grid: cloneSolution(entry.grid),
       glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
     }));
-    const enemySourceBase = generation?.enemyPuzzles?.length
+    const enemySourceEntries = generation?.enemyPuzzles?.length
       ? generation.enemyPuzzles
-      : shuffle(heroSourceEntries).map((entry) => cloneSolution(entry.grid));
-    const enemyPrepared = enemySourceBase.map((grid) => cloneSolution(grid));
+      : shuffle(heroSourceEntries).map((entry) => ({ grid: cloneSolution(entry.grid) }));
+    const enemyPrepared = enemySourceEntries.map((entry) => cloneSolution(entry.grid));
 
     const firstEntry =
       prepared[0] || { grid: cloneSolution(createFallbackSolution(n)), glyphMeta: null };
