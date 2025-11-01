@@ -2545,33 +2545,45 @@ button {
 }
 
 .picross-clear-overlay {
-  width: min(96%, 1080px);
+  width: clamp(960px, 80vw, 1500px);
+  max-height: 90vh;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: clamp(20px, 4vw, 32px);
-  padding: clamp(24px, 4vw, 40px);
+  gap: clamp(20px, 3vw, 28px);
+  padding: clamp(24px, 3vw, 36px);
   background: linear-gradient(160deg, rgba(30, 64, 175, 0.92) 0%, rgba(15, 23, 42, 0.88) 100%);
   border: 2px solid rgba(221, 214, 254, 0.35);
   border-radius: 28px;
   box-shadow: 0 20px 44px rgba(15, 23, 42, 0.6), inset 0 0 24px rgba(148, 197, 253, 0.28);
+  overflow: visible;
 }
 
 .picross-clear-grid {
   display: grid;
-  grid-template-columns: 1fr 1.35fr;
-  gap: clamp(24px, 4vw, 40px);
-  align-items: start;
+  grid-template-columns: minmax(220px, 0.6fr) minmax(640px, 1.9fr);
+  gap: clamp(18px, 3.6vw, 42px);
+  align-items: stretch;
+}
+
+.picross-clear-left {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 2.4vw, 24px);
+  max-height: 100%;
 }
 
 .picross-clear-hero {
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 3vw, 24px);
+  gap: clamp(14px, 2.6vw, 22px);
+  align-items: flex-start;
+  text-align: left;
 }
 
 .picross-clear-portrait {
   position: relative;
-  width: clamp(240px, 28vw, 360px);
+  width: clamp(220px, 24vw, 320px);
   aspect-ratio: 380 / 487;
   border-radius: 24px;
   overflow: hidden;
@@ -2604,7 +2616,7 @@ button {
 .picross-clear-header {
   display: flex;
   flex-direction: column;
-  gap: clamp(8px, 1.5vw, 16px);
+  gap: clamp(8px, 1.2vw, 14px);
 }
 
 .picross-clear-title {
@@ -2649,15 +2661,8 @@ button {
 
 .picross-clear-subtitle {
   font-size: clamp(1.1rem, 2vw, 1.35rem);
-  color: #f1f5f9;
+  color: rgba(226, 232, 240, 0.9);
   margin: 0;
-}
-
-.picross-clear-unlocks {
-  display: inline-block;
-  margin-left: 0.4em;
-  color: #fcd34d;
-  font-weight: 600;
 }
 
 .picross-clear-progress {
@@ -2666,49 +2671,97 @@ button {
   margin: 0;
 }
 
+.picross-clear-unlock-list {
+  padding: clamp(16px, 1.6vw, 20px);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 197, 253, 0.28);
+  box-shadow: inset 0 0 14px rgba(30, 64, 175, 0.18);
+}
+
+.picross-clear-unlock-title {
+  margin: 0 0 clamp(10px, 1.2vw, 14px);
+  font-size: clamp(1rem, 1.8vw, 1.2rem);
+  color: #f8fafc;
+  letter-spacing: 0.08em;
+}
+
+.picross-clear-unlock-items {
+  margin: 0;
+  padding-left: clamp(16px, 1.6vw, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1vw, 10px);
+  font-size: clamp(0.92rem, 1.6vw, 1.1rem);
+  color: rgba(224, 242, 254, 0.92);
+  max-height: clamp(120px, 22vh, 200px);
+  overflow-y: auto;
+}
+
+.picross-clear-unlock-items li {
+  list-style: disc;
+}
+
+.picross-clear-unlock-empty {
+  margin: 0;
+  font-size: clamp(0.92rem, 1.6vw, 1.1rem);
+  color: rgba(224, 242, 254, 0.65);
+}
+
 .picross-clear-collection {
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 2vw, 20px);
+  gap: clamp(12px, 1.8vw, 18px);
+  height: 100%;
 }
 
 .picross-clear-collection-title {
-  font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: #f8fafc;
   margin: 0;
 }
 
 .picross-clear-board-wrapper {
   position: relative;
-  width: min(100%, clamp(320px, 52vw, 520px));
-  aspect-ratio: 1;
-  padding: clamp(16px, 2.4vw, 24px);
-  border-radius: 28px;
-  background: radial-gradient(120% 120% at 30% 20%, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.9));
-  box-shadow: inset 0 0 30px rgba(15, 23, 42, 0.65), 0 0 32px rgba(30, 64, 175, 0.25);
+  width: min(80vw, 1040px);
+  max-width: 100%;
+  min-height: clamp(260px, 32vw, 520px);
+  margin: 0 auto;
+  padding: clamp(18px, 2.4vw, 26px);
+  border-radius: 32px;
+  background: linear-gradient(140deg, #5b422c 0%, #3d2b1b 52%, #2a1d13 100%);
+  box-shadow:
+    inset 0 0 40px rgba(19, 10, 4, 0.65),
+    0 26px 40px rgba(15, 23, 42, 0.45);
   display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+  overflow-y: auto;
 }
 
 .picross-clear-board {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   grid-auto-rows: 1fr;
-  gap: clamp(10px, 1.4vw, 14px);
+  gap: clamp(6px, 0.9vw, 12px);
   width: 100%;
-  height: 100%;
+  align-content: start;
 }
 
 .picross-clear-slot {
   position: relative;
-  border-radius: 18px;
-  padding: clamp(14px, 2vw, 18px) clamp(10px, 1.5vw, 14px);
+  border-radius: 16px;
+  padding: clamp(8px, 1.2vw, 12px) clamp(8px, 1.1vw, 12px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: clamp(4px, 0.8vw, 8px);
   text-align: center;
   background: rgba(15, 23, 42, 0.45);
   border: 1.5px solid rgba(148, 197, 253, 0.25);
@@ -2731,34 +2784,39 @@ button {
   box-shadow: 0 0 8px rgba(250, 204, 21, 0.45);
 }
 
-.picross-clear-slot.is-locked .slot-label {
-  color: rgba(148, 163, 184, 0.6);
+.picross-clear-slot.is-locked .slot-meaning {
+  color: rgba(148, 163, 184, 0.55);
 }
 
-.picross-clear-slot.is-unlocked {
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.18), rgba(59, 130, 246, 0.12));
-  border-color: rgba(191, 219, 254, 0.55);
-  box-shadow: inset 0 0 14px rgba(96, 165, 250, 0.2), 0 0 12px rgba(59, 130, 246, 0.15);
+.picross-clear-slot.slot-practice.is-unlocked {
+  background: rgba(163, 230, 53, 0.22);
+  border-color: rgba(190, 242, 100, 0.6);
+}
+
+.picross-clear-slot.slot-easy.is-unlocked {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: rgba(147, 197, 253, 0.55);
+}
+
+.picross-clear-slot.slot-middle.is-unlocked {
+  background: rgba(196, 181, 253, 0.2);
+  border-color: rgba(221, 214, 254, 0.55);
+}
+
+.picross-clear-slot.slot-hard.is-unlocked {
+  background: rgba(248, 113, 113, 0.24);
+  border-color: rgba(252, 165, 165, 0.55);
+}
+
+.picross-clear-slot.slot-ultra.is-unlocked {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(148, 163, 184, 0.55);
 }
 
 .picross-clear-slot.is-new {
   animation: slotUnlockPop 420ms ease;
   border-color: rgba(250, 204, 21, 0.85);
   box-shadow: inset 0 0 18px rgba(250, 204, 21, 0.3), 0 0 24px rgba(250, 204, 21, 0.28);
-}
-
-.slot-label {
-  font-size: clamp(0.95rem, 1.8vw, 1.2rem);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #f8fafc;
-  text-transform: uppercase;
-}
-
-.slot-meta {
-  font-size: clamp(0.6rem, 1vw, 0.75rem);
-  letter-spacing: 0.08em;
-  color: rgba(226, 232, 240, 0.7);
 }
 
 .picross-clear-actions {
@@ -2774,9 +2832,9 @@ button {
 .slot-shape {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: clamp(1.5px, 0.5vw, 3px);
-  width: clamp(48px, 12vw, 68px);
-  margin: 0 auto clamp(10px, 1.6vw, 14px);
+  gap: clamp(1px, 0.35vw, 2px);
+  width: clamp(44px, 9vw, 68px);
+  margin: 0 auto clamp(8px, 1.2vw, 12px);
 }
 
 .slot-cell {
@@ -2799,6 +2857,19 @@ button {
 
 .slot-cell.is-new {
   animation: slotCellPop 340ms ease forwards;
+}
+
+.slot-meaning {
+  font-size: clamp(0.6rem, 1vw, 0.85rem);
+  color: rgba(248, 250, 252, 0.9);
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 2;
 }
 
 @keyframes slotUnlockPop {
@@ -2834,9 +2905,17 @@ button {
 @media (max-width: 960px) {
   .picross-clear-grid {
     grid-template-columns: 1fr;
+    gap: clamp(20px, 6vw, 32px);
   }
   .picross-clear-board-wrapper {
     margin-inline: auto;
+    width: 100%;
+  }
+  .picross-clear-left {
+    flex-direction: column;
+  }
+  .picross-clear-overlay {
+    width: min(94vw, 1080px);
   }
   .picross-clear-actions {
     justify-content: center;
