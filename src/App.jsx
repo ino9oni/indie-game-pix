@@ -39,6 +39,13 @@ const FONT_SIZE_CHOICES = [
   { label: "150%", value: 1.5 },
   { label: "200%", value: 2 },
 ];
+const ROUTE_NODE_IDS = Object.keys(ROUTE.nodes);
+const ENEMY_NODE_IDS = ROUTE_NODE_IDS.filter((id) => ROUTE.nodes[id]?.type === "elf");
+const ENDING_OPTIONS = [
+  { id: "elf-true-ending", label: ROUTE.nodes["elf-true-ending"]?.label || "True Ending" },
+  { id: "elf-bad-ending", label: ROUTE.nodes["elf-bad-ending"]?.label || "Bad Ending" },
+];
+const DEBUG_MENU_BOUNDS = { width: 320, height: 360 };
 const DEFAULT_PUZZLES_PER_BATTLE = 2;
 const PUZZLES_PER_BATTLE_BY_NODE = {
   "elf-practice": 2,
@@ -343,6 +350,143 @@ export default function App() {
       return false;
     }
   });
+  const [debugMenuOpen, setDebugMenuOpen] = useState(false);
+  const [debugMenuPosition, setDebugMenuPosition] = useState({ x: 0, y: 0 });
+  const debugMenuRef = useRef(null);
+  const debugMenuOpenRef = useRef(false);
+  const pointerPositionRef = useRef({ x: 0, y: 0 });
+  const routeJumpOptions = useMemo(
+    () =>
+      ROUTE_NODE_IDS.map((id) => ({
+        id,
+        label: ROUTE.nodes[id]?.label || id,
+      })),
+    [],
+  );
+  const enemyJumpOptions = useMemo(
+    () =>
+      ENEMY_NODE_IDS.map((id) => ({
+        id,
+        label: ROUTE.nodes[id]?.label || id,
+        name: CHARACTERS[id]?.name || null,
+      })),
+    [],
+  );
+  const openDebugMenu = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const { innerWidth, innerHeight } = window;
+    const pointer = pointerPositionRef.current || {};
+    const width = DEBUG_MENU_BOUNDS.width;
+    const height = DEBUG_MENU_BOUNDS.height;
+    const maxX = Math.max(16, innerWidth - width - 16);
+    const maxY = Math.max(16, innerHeight - height - 16);
+    const fallbackX = innerWidth / 2;
+    const fallbackY = innerHeight / 2;
+    const safeX = Math.min(Math.max(pointer.x ?? fallbackX, 16), maxX);
+    const safeY = Math.min(Math.max(pointer.y ?? fallbackY, 16), maxY);
+    setDebugMenuPosition({ x: safeX, y: safeY });
+    setDebugMenuOpen(true);
+    debugMenuOpenRef.current = true;
+  }, []);
+  const closeDebugMenu = useCallback(() => {
+    setDebugMenuOpen(false);
+    debugMenuOpenRef.current = false;
+  }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handlePointerMove = (event) => {
+      pointerPositionRef.current = { x: event.clientX, y: event.clientY };
+    };
+    window.addEventListener("pointermove", handlePointerMove);
+    return () => window.removeEventListener("pointermove", handlePointerMove);
+  }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleKeyDown = (event) => {
+      if (event.defaultPrevented) return;
+      if (
+        event.key === "Control" &&
+        !event.repeat &&
+        !event.altKey &&
+        !event.metaKey &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+        if (debugMenuOpenRef.current) {
+          closeDebugMenu();
+        } else {
+          openDebugMenu();
+        }
+      } else if (event.key === "Escape" && debugMenuOpenRef.current) {
+        event.preventDefault();
+        closeDebugMenu();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [closeDebugMenu, openDebugMenu]);
+  useEffect(() => {
+    if (!debugMenuOpen) return;
+    const menuEl = debugMenuRef.current;
+    if (!menuEl) return;
+    const firstFocusable = menuEl.querySelector("button, [tabindex]");
+    if (firstFocusable && typeof firstFocusable.focus === "function") {
+      firstFocusable.focus({ preventScroll: true });
+    }
+  }, [debugMenuOpen]);
+  const handleDebugMenuKeyDown = useCallback((event) => {
+    if (
+      ![
+        "ArrowDown",
+        "ArrowUp",
+        "ArrowLeft",
+        "ArrowRight",
+        "Home",
+        "End",
+      ].includes(event.key)
+    ) {
+      return;
+    }
+    const menuEl = debugMenuRef.current;
+    if (!menuEl) return;
+    const focusable = Array.from(menuEl.querySelectorAll("button"));
+    if (!focusable.length) return;
+    const currentIndex = focusable.indexOf(document.activeElement);
+    if (currentIndex === -1) {
+      focusable[0]?.focus();
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+      nextIndex = (currentIndex + 1) % focusable.length;
+    } else if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + focusable.length) % focusable.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = focusable.length - 1;
+    }
+    focusable[nextIndex]?.focus();
+  }, []);
+  const handleDebugMenuOverlayMouseDown = useCallback(
+    (event) => {
+      if (event.target === event.currentTarget) {
+        closeDebugMenu();
+      }
+    },
+    [closeDebugMenu],
+  );
+  const toggleDebugInstantClear = useCallback(() => {
+    setDebugMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("debugMode", next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  }, []);
   const [heroName, setHeroName] = useState(() => {
     try {
       const stored = localStorage.getItem("heroName");
@@ -1442,6 +1586,118 @@ export default function App() {
     }
     setScreen("ending");
   }
+
+  const handleDebugJumpToRoute = (nodeId) => {
+    closeDebugMenu();
+    const normalized = normalizeNodeId(nodeId);
+    const updatedCleared = new Set(cleared);
+    if (normalized === "start") {
+      updatedCleared.add("start");
+    } else {
+      let cursor = normalized;
+      while (cursor && cursor !== "start") {
+        updatedCleared.add(cursor);
+        cursor = ROUTE.parents?.[cursor];
+      }
+      if (cursor === "start") {
+        updatedCleared.add("start");
+      }
+    }
+    setCleared(updatedCleared);
+    try {
+      localStorage.setItem("clearedNodes", JSON.stringify(Array.from(updatedCleared)));
+    } catch {}
+    const parent = ROUTE.parents?.[normalized] ?? "start";
+    setLastNode(parent);
+    setCurrentNode(normalized);
+    try {
+      localStorage.setItem("routeNode", normalized);
+    } catch {}
+    stopEnemySolver();
+    clearSpellEffects();
+    resetAllCombos();
+    resetScore();
+    setActiveSpell(null);
+    setProjectiles([]);
+    glyphUnlocksRef.current = new Map();
+    setRecentGlyphUnlocks([]);
+    setPendingNode(null);
+    setBattleNode(null);
+    setPostClearAction(null);
+    setConversationTransition("none");
+    setEndingNode(null);
+    setPaused(false);
+    setScreen("route");
+  };
+
+  const handleDebugJumpToConversation = (nodeId) => {
+    closeDebugMenu();
+    const normalized = normalizeNodeId(nodeId);
+    if (!CHARACTERS[normalized]) return;
+    stopEnemySolver();
+    clearSpellEffects();
+    resetAllCombos();
+    setActiveSpell(null);
+    setProjectiles([]);
+    setBattleNode(null);
+    setPostClearAction(null);
+    setConversationTransition("encounter");
+    setPendingNode(normalized);
+    setPaused(false);
+    setScreen("conversation");
+  };
+
+  const handleDebugJumpToPicross = (nodeId) => {
+    closeDebugMenu();
+    beginPicrossForNode(nodeId);
+  };
+
+  const handleDebugShowVictory = (nodeId) => {
+    closeDebugMenu();
+    const normalized = normalizeNodeId(nodeId);
+    stopEnemySolver();
+    clearSpellEffects();
+    resetAllCombos();
+    resetScore();
+    setActiveSpell(null);
+    setProjectiles([]);
+    glyphUnlocksRef.current = new Map();
+    setRecentGlyphUnlocks([]);
+    setBattleNode(null);
+    setPendingNode(null);
+    const victoryCleared = new Set(cleared);
+    if (normalized === "start") {
+      victoryCleared.add("start");
+    } else {
+      let cursor = normalized;
+      while (cursor && cursor !== "start") {
+        victoryCleared.add(cursor);
+        cursor = ROUTE.parents?.[cursor];
+      }
+      if (cursor === "start") {
+        victoryCleared.add("start");
+      }
+    }
+    setCleared(victoryCleared);
+    try {
+      localStorage.setItem("clearedNodes", JSON.stringify(Array.from(victoryCleared)));
+    } catch {}
+    setPostClearAction({ type: "route", node: normalized });
+    setLastNode(ROUTE.parents?.[normalized] ?? "start");
+    setCurrentNode(normalized);
+    try {
+      localStorage.setItem("routeNode", normalized);
+    } catch {}
+    setEnemyWins(0);
+    setPlayerWins(0);
+    setPaused(false);
+    setScreen("picross-clear");
+  };
+
+  const handleDebugJumpToEnding = (nodeId) => {
+    closeDebugMenu();
+    enterEnding(nodeId);
+  };
 
   function handleEndingComplete() {
     cancelCelebration();
@@ -2552,21 +2808,6 @@ export default function App() {
             ))}
           </div>
           <button
-            className={`ghost debug ${debugMode ? "on" : "off"}`}
-            title="デバッグモード切り替え"
-            onClick={() =>
-              setDebugMode((v) => {
-                const nv = !v;
-                try {
-                  localStorage.setItem("debugMode", nv ? "1" : "0");
-                } catch {}
-                return nv;
-              })
-            }
-          >
-            Debug: {debugMode ? "On" : "Off"}
-          </button>
-          <button
             className={`ghost pause ${paused ? "on" : "off"}`}
             onClick={togglePaused}
             disabled={screen !== "picross"}
@@ -2872,6 +3113,128 @@ export default function App() {
           endingNode={endingNode}
           onDone={handleEndingComplete}
         />
+      )}
+      {debugMenuOpen && (
+        <div
+          className="debug-menu-overlay"
+          onMouseDown={handleDebugMenuOverlayMouseDown}
+          role="presentation"
+        >
+          <div
+            className="debug-menu"
+            style={{ top: `${debugMenuPosition.y}px`, left: `${debugMenuPosition.x}px` }}
+            ref={debugMenuRef}
+            role="menu"
+            aria-label="デバッグメニュー"
+            tabIndex={-1}
+            onKeyDown={handleDebugMenuKeyDown}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="debug-menu-header">
+              <span className="debug-menu-heading">Debug Menu</span>
+              <button
+                type="button"
+                className="debug-menu-close"
+                onClick={closeDebugMenu}
+                aria-label="デバッグメニューを閉じる"
+              >
+                ×
+              </button>
+            </div>
+            <div className="debug-menu-section">
+              <p className="debug-menu-title">ユーティリティ</p>
+              <button
+                type="button"
+                role="menuitemcheckbox"
+                aria-checked={debugMode}
+                onClick={toggleDebugInstantClear}
+                className="debug-menu-button"
+              >
+                即時クリア: {debugMode ? "On" : "Off"}
+              </button>
+            </div>
+            <div className="debug-menu-section">
+              <p className="debug-menu-title">マップへ移動</p>
+              <div className="debug-menu-grid">
+                {routeJumpOptions.map((option) => (
+                  <button
+                    key={`debug-route-${option.id}`}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleDebugJumpToRoute(option.id)}
+                    className="debug-menu-button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="debug-menu-section">
+              <p className="debug-menu-title">会話へ移動</p>
+              <div className="debug-menu-grid">
+                {enemyJumpOptions.map((option) => (
+                  <button
+                    key={`debug-conversation-${option.id}`}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleDebugJumpToConversation(option.id)}
+                    className="debug-menu-button"
+                  >
+                    {option.name ? `${option.name} (${option.label})` : option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="debug-menu-section">
+              <p className="debug-menu-title">ピクロスへ移動</p>
+              <div className="debug-menu-grid">
+                {enemyJumpOptions.map((option) => (
+                  <button
+                    key={`debug-picross-${option.id}`}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleDebugJumpToPicross(option.id)}
+                    className="debug-menu-button"
+                  >
+                    {option.name ? `${option.name} (${option.label})` : option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="debug-menu-section">
+              <p className="debug-menu-title">勝利画面を確認</p>
+              <div className="debug-menu-grid">
+                {enemyJumpOptions.map((option) => (
+                  <button
+                    key={`debug-victory-${option.id}`}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleDebugShowVictory(option.id)}
+                    className="debug-menu-button"
+                  >
+                    {option.name ? `${option.name} (${option.label})` : option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="debug-menu-section">
+              <p className="debug-menu-title">エンディングへ移動</p>
+              <div className="debug-menu-grid">
+                {ENDING_OPTIONS.map((option) => (
+                  <button
+                    key={`debug-ending-${option.id}`}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleDebugJumpToEnding(option.id)}
+                    className="debug-menu-button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

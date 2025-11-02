@@ -1698,15 +1698,102 @@ button {
   border-color: #1d4ed866;
 }
 /* Debug button states */
-.debug.on {
-  background: #be185d;
-  color: #fff;
-  border-color: #be185d;
+.debug-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3200;
+  background: transparent;
 }
-.debug.off {
-  background: #6b7280;
+.debug-menu {
+  position: absolute;
+  width: clamp(260px, 28vw, 320px);
+  max-height: min(520px, 72vh);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(148, 197, 253, 0.4);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.55);
+  color: #e0f2fe;
+  overflow-y: auto;
+}
+.debug-menu:focus {
+  outline: none;
+}
+.debug-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.debug-menu-heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(191, 219, 254, 0.92);
+}
+.debug-menu-close {
+  background: transparent;
+  border: 1px solid rgba(148, 197, 253, 0.45);
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 4px 10px;
+  line-height: 1;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.debug-menu-close:hover,
+.debug-menu-close:focus-visible {
+  background: rgba(148, 197, 253, 0.25);
+  border-color: rgba(191, 219, 254, 0.8);
   color: #fff;
-  border-color: #6b7280;
+}
+.debug-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.debug-menu-title {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(191, 219, 254, 0.78);
+}
+.debug-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+.debug-menu-button {
+  background: rgba(30, 64, 175, 0.28);
+  border: 1px solid rgba(148, 197, 253, 0.45);
+  color: #f8fafc;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  text-align: center;
+}
+.debug-menu-button:hover,
+.debug-menu-button:focus-visible {
+  background: rgba(59, 130, 246, 0.5);
+  border-color: rgba(191, 219, 254, 0.9);
+  transform: translateY(-1px);
+}
+.debug-menu-button:active {
+  transform: translateY(0);
+}
+.debug-menu-button[aria-checked="true"],
+.debug-menu-button[aria-checked="true"]:hover {
+  background: rgba(22, 163, 74, 0.55);
+  border-color: rgba(134, 239, 172, 0.85);
+  color: #f0fdf4;
 }
 
 /* Prologue window styles */
