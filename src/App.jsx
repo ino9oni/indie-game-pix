@@ -355,6 +355,13 @@ export default function App() {
   const debugMenuRef = useRef(null);
   const debugMenuOpenRef = useRef(false);
   const pointerPositionRef = useRef({ x: 0, y: 0 });
+  const [debugRevealMap, setDebugRevealMap] = useState(() => {
+    try {
+      return localStorage.getItem("debugRevealMap") === "1";
+    } catch {
+      return false;
+    }
+  });
   const routeJumpOptions = useMemo(
     () =>
       ROUTE_NODE_IDS.map((id) => ({
@@ -483,6 +490,15 @@ export default function App() {
       const next = !prev;
       try {
         localStorage.setItem("debugMode", next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  }, []);
+  const toggleDebugRevealMap = useCallback(() => {
+    setDebugRevealMap((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("debugRevealMap", next ? "1" : "0");
       } catch {}
       return next;
     });
@@ -2894,6 +2910,7 @@ export default function App() {
           last={lastNode}
           cleared={cleared}
           debugMode={debugMode}
+          showAllNodes={debugRevealMap}
           onMoveStart={async () => {
             if (!soundOn) return;
             try {
@@ -3151,6 +3168,15 @@ export default function App() {
                 className="debug-menu-button"
               >
                 即時クリア: {debugMode ? "On" : "Off"}
+              </button>
+              <button
+                type="button"
+                role="menuitemcheckbox"
+                aria-checked={debugRevealMap}
+                onClick={toggleDebugRevealMap}
+                className="debug-menu-button"
+              >
+                マップ全体表示: {debugRevealMap ? "On" : "Off"}
               </button>
             </div>
             <div className="debug-menu-section">

@@ -60,6 +60,7 @@ export default function RouteMap({
   last,
   cleared,
   debugMode,
+  showAllNodes = false,
   onArrive,
   onMoveStart,
 }) {
@@ -280,7 +281,7 @@ export default function RouteMap({
   }, [cleared]);
 
   const visibleNodes = useMemo(() => {
-    if (debugMode) {
+    if (showAllNodes) {
       return new Set(Object.keys(nodes));
     }
     const visible = new Set();
@@ -294,7 +295,7 @@ export default function RouteMap({
       visible.add(id);
     });
     return visible;
-  }, [adj, current, debugMode, last, nodes]);
+  }, [adj, current, debugMode, last, nodes, showAllNodes]);
 
   const [animating, setAnimating] = useState(false);
   const [heroPos, setHeroPos] = useState(() => nodes[current] || { x: 0, y: 0 });
