@@ -2003,17 +2003,18 @@ button {
   padding: clamp(24px, 6vw, 64px);
 }
 .route-canvas {
-  background: #0c122680;
-  border: 1px solid #2b2f55;
+  background: rgba(12, 18, 38, 0.72);
+  border: 1px solid rgba(43, 47, 85, 0.8);
   border-radius: 12px;
   position: relative;
   overflow: hidden;
-  padding: clamp(12px, 2vw, 32px);
-  width: min(92vw, 1200px);
-  height: min(78vh, 860px);
+  padding: clamp(16px, 3vw, 32px);
+  width: min(clamp(960px, 70vw, 1200px), calc(100vw - 48px));
+  height: min(clamp(640px, 70vh, 900px), calc(100vh - 48px));
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(6px);
 }
 .route-svg {
   width: 100%;
@@ -2276,17 +2277,25 @@ button {
   stroke-width: 2px;
 }
 
+@media (max-width: 1280px) {
+  .route-canvas {
+    background: rgba(12, 18, 38, 0.55);
+  }
+}
+
 @media (max-width: 720px) {
   .screen.route {
     min-height: auto;
     padding: 32px 16px;
   }
   .route-canvas {
-    width: 100%;
-    height: auto;
+    width: calc(100% - 24px);
+    height: clamp(420px, 88vh, 640px);
+    padding: clamp(12px, 4vw, 20px);
   }
   .route-svg {
-    height: clamp(360px, 75vw, 520px);
+    width: 100%;
+    height: 100%;
   }
 }
 
