@@ -569,7 +569,6 @@ body {
 
 .screen {
   margin: 0 auto;
-  max-width: 980px;
   padding: 12px 20px 40px;
   width: 100%;
   flex: 1;
