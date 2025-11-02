@@ -7,7 +7,7 @@ const CANVAS_MIN_HEIGHT = 640;
 const CANVAS_MARGIN = 24;
 const INNER_PADDING_X = 48;
 const INNER_PADDING_Y = 48;
-const EDGE_ANGLE_DEG = 40;
+const EDGE_ANGLE_DEG = 30;
 const EDGE_SLOPE = Math.tan((EDGE_ANGLE_DEG * Math.PI) / 180);
 const HERO_TRAVEL_MIN_MS = 600;
 const HERO_TRAVEL_MAX_MS = 2000;
@@ -202,10 +202,10 @@ export default function RouteMap({
         if (!Number.isFinite(targetX)) {
           targetX = INNER_PADDING_X + depth * horizontalStep;
         }
-        if (Math.abs(targetX - parentNode.x) < 1) {
-          targetX = parentNode.x + horizontalStep;
-        }
         const dx = targetX - parentNode.x;
+        if (Math.abs(dx) < horizontalStep * 0.25) {
+          targetX = parentNode.x + Math.sign(dx || 1) * horizontalStep;
+        }
 
         const directionSign = (() => {
           const rawParent = rawNodes[parentId];

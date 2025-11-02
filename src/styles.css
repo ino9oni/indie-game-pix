@@ -2009,8 +2009,8 @@ button {
   position: relative;
   overflow: hidden;
   padding: clamp(16px, 3vw, 32px);
-  width: min(clamp(960px, 70vw, 1200px), calc(100vw - 48px));
-  height: min(clamp(640px, 70vh, 900px), calc(100vh - 48px));
+  width: min(100%, calc(100vw - 48px));
+  height: clamp(640px, 70vh, 900px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2290,7 +2290,7 @@ button {
   }
   .route-canvas {
     width: calc(100% - 24px);
-    height: clamp(420px, 88vh, 640px);
+    height: clamp(480px, 92vh, 720px);
     padding: clamp(12px, 4vw, 20px);
   }
   .route-svg {
