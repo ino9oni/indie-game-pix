@@ -2744,10 +2744,10 @@ button {
 
 .picross-clear-board-wrapper {
   position: relative;
-  width: min(100%, clamp(700px, 70vw, 1200px));
+  width: min(100%, clamp(520px, 70vw, 1080px));
   max-width: 100%;
-  min-width: min(100%, 70vw);
-  min-height: clamp(320px, 38vw, 620px);
+  min-width: min(100%, clamp(520px, 70vw, 1080px));
+  min-height: clamp(360px, 46vw, 720px);
   margin: 0 auto;
   padding: clamp(18px, 2.4vw, 26px);
   border-radius: 32px;
@@ -2770,9 +2770,9 @@ button {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(8, minmax(144px, 1fr));
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
   grid-auto-rows: 1fr;
-  gap: clamp(8px, 0.9vw, 12px);
+  gap: clamp(8px, 1vw, 14px);
   width: 100%;
   align-content: start;
 }
@@ -2945,13 +2945,13 @@ button {
     flex-direction: column;
   }
   .picross-clear-overlay {
-    width: min(94vw, 1280px);
+    width: min(94vw, 1080px);
   }
   .picross-clear-actions {
     justify-content: center;
   }
   .picross-clear-board {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 

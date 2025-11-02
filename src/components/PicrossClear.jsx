@@ -55,7 +55,19 @@ export default function PicrossClear({
   const unlockSummary = unlockedNames.length
     ? `新たな記号：${unlockedNames.join("、")}`
     : "新規解放はありませんでした。";
-
+  const codexNeedsScroll = boardEntries.length > 30;
+  const codexWrapperClass = [
+    "picross-clear-board-wrapper",
+    codexNeedsScroll ? "picross-clear-board-wrapper--scroll" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const codexGridClass = [
+    "picross-clear-board",
+    codexNeedsScroll ? "picross-clear-board--scroll" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <main className="screen picross-clear-screen">
       <div className="picross-clear-overlay">
@@ -99,16 +111,16 @@ export default function PicrossClear({
             </section>
           </div>
 
-          <section className="picross-clear-collection" aria-label="記号コレクション">
-            <h2 className="picross-clear-collection-title">Symbol Codex</h2>
-            <div className="picross-clear-board-wrapper">
+          <section className="picross-clear-collection" aria-label="Elfpix Symbol">
+            <h2 className="picross-clear-collection-title">Elfpix Symbol</h2>
+            <div className={codexWrapperClass}>
               {isComplete && (
                 <div className="picross-clear-complete" role="status" aria-live="polite">
                   <span className="complete-ribbon">COMPLETE!</span>
                   <span className="complete-stars" aria-hidden="true" />
                 </div>
               )}
-              <div className="picross-clear-board" role="grid">
+              <div className={codexGridClass} role="grid">
                 {boardEntries.map((entry) => {
                   const isUnlocked = unlockedSet.has(entry.collectionIndex);
                   const isNew = newlyUnlockedSet.has(entry.collectionIndex);
