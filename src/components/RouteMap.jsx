@@ -11,6 +11,8 @@ const EDGE_ANGLE_DEG = 30;
 const EDGE_SLOPE = Math.tan((EDGE_ANGLE_DEG * Math.PI) / 180);
 const HERO_TRAVEL_MIN_MS = 600;
 const HERO_TRAVEL_MAX_MS = 2000;
+const START_VERTICAL_RATIO = 0.78;
+const HORIZONTAL_STEP_SCALE = 0.75;
 
 const ENCOUNTER_SHARDS = [
   { key: "shard-1", rotate: -14, tx: "-12%", ty: "-6%", delay: "40ms" },
@@ -173,12 +175,19 @@ export default function RouteMap({
     }
 
     const maxDepth = Math.max(...Object.values(depthMap));
-    const horizontalStep =
+    const baseStep =
       maxDepth > 0 ? innerWidth / maxDepth : innerWidth / 2;
+    const horizontalStep = Math.max(
+      baseStep * HORIZONTAL_STEP_SCALE,
+      innerWidth * 0.12,
+    );
     const slopeStep = horizontalStep * EDGE_SLOPE;
 
     const positioned = {};
-    const startY = INNER_PADDING_Y + innerHeight / 2;
+    const startY = Math.min(
+      INNER_PADDING_Y + innerHeight,
+      INNER_PADDING_Y + innerHeight * START_VERTICAL_RATIO,
+    );
     positioned[rootId] = {
       ...rawNodes[rootId],
       x: INNER_PADDING_X,
@@ -275,23 +284,17 @@ export default function RouteMap({
       return new Set(Object.keys(nodes));
     }
     const visible = new Set();
-    const isVisible = (id) => {
-      if (!id) return false;
-      if (visible.has(id)) return true;
-      if (id === "start") return true;
-      if (clearedSet.has(id)) return true;
-      if (id === current) return true;
-      const parent = parents[id];
-      if (!parent) return true;
-      if (clearedSet.has(parent)) return true;
-      if (parent === current) return true;
-      return false;
-    };
-    Object.keys(nodes).forEach((id) => {
-      if (isVisible(id)) visible.add(id);
+    if (nodes[current]) {
+      visible.add(current);
+    }
+    const neighbors = Array.from(adj[current] || []);
+    neighbors.forEach((id) => {
+      if (!nodes[id]) return;
+      if (last && id === last) return;
+      visible.add(id);
     });
     return visible;
-  }, [nodes, parents, clearedSet, current, debugMode]);
+  }, [adj, current, debugMode, last, nodes]);
 
   const [animating, setAnimating] = useState(false);
   const [heroPos, setHeroPos] = useState(() => nodes[current] || { x: 0, y: 0 });
