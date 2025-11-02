@@ -2527,6 +2527,12 @@ button {
   color: #e0f2fe;
 }
 
+.screen.picross-clear-screen {
+  max-width: none;
+  width: auto;
+  padding: 0;
+}
+
 .picross-clear-screen::before,
 .picross-clear-screen::after {
   content: "";
@@ -2545,13 +2551,12 @@ button {
 }
 
 .picross-clear-overlay {
-  width: clamp(960px, 80vw, 1500px);
-  max-height: 90vh;
+  width: clamp(1080px, 85vw, 1650px);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: clamp(20px, 3vw, 28px);
-  padding: clamp(24px, 3vw, 36px);
+  gap: clamp(24px, 3vw, 36px);
+  padding: clamp(28px, 3.4vw, 40px);
   background: linear-gradient(160deg, rgba(30, 64, 175, 0.92) 0%, rgba(15, 23, 42, 0.88) 100%);
   border: 2px solid rgba(221, 214, 254, 0.35);
   border-radius: 28px;
@@ -2561,16 +2566,20 @@ button {
 
 .picross-clear-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 0.6fr) minmax(640px, 1.9fr);
-  gap: clamp(18px, 3.6vw, 42px);
+  grid-template-columns: minmax(280px, 0.45fr) minmax(520px, 0.55fr);
+  gap: clamp(24px, 4vw, 48px);
   align-items: stretch;
+  height: 100%;
 }
 
 .picross-clear-left {
   display: flex;
   flex-direction: column;
-  gap: clamp(18px, 2.4vw, 24px);
+  gap: clamp(18px, 2.8vw, 26px);
   max-height: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .picross-clear-hero {
@@ -2677,6 +2686,11 @@ button {
   background: rgba(15, 23, 42, 0.55);
   border: 1px solid rgba(148, 197, 253, 0.28);
   box-shadow: inset 0 0 14px rgba(30, 64, 175, 0.18);
+  flex: 1 1 auto;
+  min-height: clamp(140px, 22vh, 260px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .picross-clear-unlock-title {
@@ -2694,7 +2708,7 @@ button {
   gap: clamp(6px, 1vw, 10px);
   font-size: clamp(0.92rem, 1.6vw, 1.1rem);
   color: rgba(224, 242, 254, 0.92);
-  max-height: clamp(120px, 22vh, 200px);
+  max-height: clamp(200px, 28vh, 320px);
   overflow-y: auto;
 }
 
@@ -2706,17 +2720,22 @@ button {
   margin: 0;
   font-size: clamp(0.92rem, 1.6vw, 1.1rem);
   color: rgba(224, 242, 254, 0.65);
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
 }
 
 .picross-clear-collection {
   display: flex;
   flex-direction: column;
-  gap: clamp(12px, 1.8vw, 18px);
+  gap: clamp(14px, 2vw, 20px);
   height: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .picross-clear-collection-title {
-  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  font-size: clamp(1.1rem, 1.9vw, 1.4rem);
   font-weight: 600;
   letter-spacing: 0.08em;
   color: #f8fafc;
@@ -2725,9 +2744,10 @@ button {
 
 .picross-clear-board-wrapper {
   position: relative;
-  width: min(80vw, 1040px);
+  width: min(100%, clamp(700px, 70vw, 1200px));
   max-width: 100%;
-  min-height: clamp(260px, 32vw, 520px);
+  min-width: min(100%, 70vw);
+  min-height: clamp(320px, 38vw, 620px);
   margin: 0 auto;
   padding: clamp(18px, 2.4vw, 26px);
   border-radius: 32px;
@@ -2742,21 +2762,29 @@ button {
   overflow-y: auto;
 }
 
+.picross-clear-board-wrapper--scroll {
+  padding-right: clamp(22px, 2.8vw, 30px);
+}
+
 .picross-clear-board {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(144px, 1fr));
   grid-auto-rows: 1fr;
-  gap: clamp(6px, 0.9vw, 12px);
+  gap: clamp(8px, 0.9vw, 12px);
   width: 100%;
   align-content: start;
+}
+
+.picross-clear-board--scroll {
+  padding-right: clamp(4px, 0.8vw, 10px);
 }
 
 .picross-clear-slot {
   position: relative;
   border-radius: 16px;
-  padding: clamp(8px, 1.2vw, 12px) clamp(8px, 1.1vw, 12px);
+  padding: clamp(8px, 1vw, 12px) clamp(8px, 1.1vw, 12px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2767,6 +2795,7 @@ button {
   border: 1.5px solid rgba(148, 197, 253, 0.25);
   box-shadow: inset 0 0 12px rgba(15, 23, 42, 0.45);
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  min-width: 144px;
 }
 
 .slot-badge {
@@ -2832,9 +2861,9 @@ button {
 .slot-shape {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: clamp(1px, 0.35vw, 2px);
-  width: clamp(44px, 9vw, 68px);
-  margin: 0 auto clamp(8px, 1.2vw, 12px);
+  gap: clamp(1px, 0.4vw, 2px);
+  width: min(112px, 78%);
+  margin: 0 auto clamp(6px, 1vw, 10px);
 }
 
 .slot-cell {
@@ -2860,7 +2889,7 @@ button {
 }
 
 .slot-meaning {
-  font-size: clamp(0.6rem, 1vw, 0.85rem);
+  font-size: clamp(0.66rem, 0.95vw, 0.85rem);
   color: rgba(248, 250, 252, 0.9);
   line-height: 1.3;
   letter-spacing: 0.04em;
@@ -2910,15 +2939,19 @@ button {
   .picross-clear-board-wrapper {
     margin-inline: auto;
     width: 100%;
+    min-width: 100%;
   }
   .picross-clear-left {
     flex-direction: column;
   }
   .picross-clear-overlay {
-    width: min(94vw, 1080px);
+    width: min(94vw, 1280px);
   }
   .picross-clear-actions {
     justify-content: center;
+  }
+  .picross-clear-board {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 
@@ -2927,15 +2960,12 @@ button {
     padding: clamp(18px, 6vw, 28px);
   }
   .picross-clear-board-wrapper {
-    width: min(100%, clamp(260px, 70vw, 320px));
+    width: min(100%, clamp(280px, 92vw, 400px));
+    min-width: min(100%, clamp(280px, 92vw, 400px));
+    min-height: clamp(280px, 70vw, 520px);
   }
   .picross-clear-board {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: clamp(6px, 2.4vw, 10px);
-  }
-  .slot-label {
-    font-size: clamp(0.9rem, 3vw, 1.1rem);
-  }
-  .slot-meta {
-    font-size: clamp(0.5rem, 2.4vw, 0.7rem);
   }
 }

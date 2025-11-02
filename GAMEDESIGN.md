@@ -50,6 +50,13 @@
 
 - elfpix
 
+### タスク仕様（勝利画面のデザインの改善：screenクラス調整）
+
+- 勝利画面の `.screen.picross-clear-screen` に設定されている `max-height` を除外し、内部コンテンツが縦方向に圧迫されないようにする。
+- `.picross-clear-overlay` の高さ制限を緩和し、スクロールはボード側（Codex など）で処理する。
+- 既存の左右2カラム構成・Codexボード設定は維持し、screenクラス変更が他モードへ影響しないことを確認する。
+
+
 ### Game system
 
 #### プロローグ

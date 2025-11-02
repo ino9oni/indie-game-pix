@@ -1428,10 +1428,19 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   const seedValue = normalizeSeed(options.seed ?? Math.random() * 0xffffffff);
   const rng = createRng(seedValue);
   const allowTransforms = difficulty !== "practice" && difficulty !== "easy";
+  const requireUniqueSolution = difficulty !== "practice" && difficulty !== "easy";
 
-  const selection = shuffleWithRng(templates, rng).slice(0, Math.min(count, templates.length));
+  const sortedTemplates = templates
+    .slice()
+    .sort((a, b) => {
+      const aIndex = a?.glyphMeta?.collectionIndex ?? Number.MAX_SAFE_INTEGER;
+      const bIndex = b?.glyphMeta?.collectionIndex ?? Number.MAX_SAFE_INTEGER;
+      return aIndex - bIndex;
+    });
+  const selection = sortedTemplates.slice(0, Math.min(count, sortedTemplates.length));
   const results = [];
   const seen = new Set();
+  const enforceRecentGuard = templates.length > count;
 
   for (let i = 0; i < selection.length && results.length < count; i += 1) {
     const template = selection[i];
@@ -1441,8 +1450,9 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
     if (!baseVariant) continue;
     const candidate = allowTransforms ? applyOverlays(baseVariant, overlays, size, rng) : baseVariant;
     const key = gridKey(candidate);
-    if (seen.has(key) || wasRecentlyGenerated(nodeId, key)) continue;
-    if (!hasUniqueSolution(candidate)) continue;
+    if (seen.has(key)) continue;
+    if (enforceRecentGuard && wasRecentlyGenerated(nodeId, key)) continue;
+    if (requireUniqueSolution && !hasUniqueSolution(candidate)) continue;
     seen.add(key);
     rememberLayout(nodeId, key);
     results.push({
@@ -1452,15 +1462,37 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   }
 
   if (results.length < count) {
+    for (let i = selection.length; i < sortedTemplates.length && results.length < count; i += 1) {
+      const entry = sortedTemplates[i];
+      if (!entry) continue;
+      const baseVariant = allowTransforms
+        ? applyTemplateTransform(entry.grid, size, rng) || clonePuzzle(entry.grid)
+        : clonePuzzle(entry.grid);
+      const candidate = allowTransforms ? applyOverlays(baseVariant, overlays, size, rng) : baseVariant;
+      if (requireUniqueSolution && !hasUniqueSolution(candidate)) continue;
+      const key = gridKey(candidate);
+      if (seen.has(key)) continue;
+      if (enforceRecentGuard && wasRecentlyGenerated(nodeId, key)) continue;
+      seen.add(key);
+      rememberLayout(nodeId, key);
+      results.push({
+        grid: clonePuzzle(candidate),
+        glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
+      });
+    }
+  }
+
+  if (results.length < count) {
     const fallbackTemplates = drawRandomTemplates(templates, count - results.length, rng);
     fallbackTemplates.forEach((entry) => {
       const baseVariant = allowTransforms
         ? applyTemplateTransform(entry.grid, size, rng) || clonePuzzle(entry.grid)
         : clonePuzzle(entry.grid);
       const candidate = allowTransforms ? applyOverlays(baseVariant, overlays, size, rng) : baseVariant;
-      if (!hasUniqueSolution(candidate)) return;
+      if (requireUniqueSolution && !hasUniqueSolution(candidate)) return;
       const key = gridKey(candidate);
-      if (seen.has(key) || wasRecentlyGenerated(nodeId, key)) return;
+      if (seen.has(key)) return;
+      if (enforceRecentGuard && wasRecentlyGenerated(nodeId, key)) return;
       seen.add(key);
       rememberLayout(nodeId, key);
       results.push({
@@ -1482,7 +1514,6 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
     enemyPuzzles,
   };
 }
-
 function drawRandomTemplates(pool, count, rng = Math.random) {
   if (!Array.isArray(pool) || !pool.length || count <= 0) return [];
   const random = typeof rng === "function" ? rng : Math.random;
