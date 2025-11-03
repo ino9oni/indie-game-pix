@@ -12,7 +12,7 @@ const EDGE_SLOPE = Math.tan((EDGE_ANGLE_DEG * Math.PI) / 180);
 const HERO_TRAVEL_MIN_MS = 600;
 const HERO_TRAVEL_MAX_MS = 2000;
 const START_VERTICAL_RATIO = 0.78;
-const HORIZONTAL_STEP_SCALE = 0.5;
+const HORIZONTAL_STEP_SCALE = 0.25;
 
 const ENCOUNTER_SHARDS = [
   { key: "shard-1", rotate: -14, tx: "-12%", ty: "-6%", delay: "40ms" },
