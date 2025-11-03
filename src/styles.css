@@ -2016,7 +2016,7 @@ button {
 }
 .route-svg {
   width: 100%;
-  height: clamp(1200px, 70vh, 1200px);
+  height: clamp(900px, 70vh, 900px);
 }
 
 .route-canvas.encounter-zoom {
