@@ -151,61 +151,252 @@ function persistGlyphCollection(collection, solved) {
 }
 
 const ENEMY_AI_CONFIG = {
-  "elf-practice": { interval: 1400, errorRate: 0.15, spellId: "practice" },
-  "elf-easy": { interval: 1100, errorRate: 0.1, spellId: "easy" },
-  "elf-middle": { interval: 900, errorRate: 0.08, spellId: "middle" },
-  "elf-hard": { interval: 750, errorRate: 0.05, spellId: "high" },
-  "elf-ultra": { interval: 600, errorRate: 0.03, spellId: "ultra" },
-};
-
-const HERO_SPELL = {
-  name: "迷宮への閃光",
-  ratio: 0.3,
-  revertRatio: 0.1,
+  "elf-practice": { interval: 1400, errorRate: 0.15 },
+  "elf-easy": { interval: 1100, errorRate: 0.1 },
+  "elf-middle": { interval: 900, errorRate: 0.08 },
+  "elf-hard": { interval: 750, errorRate: 0.05 },
+  "elf-ultra": { interval: 600, errorRate: 0.03 },
 };
 
 const SPELL_SPEECH_DURATION = 4000;
 
-const SPELL_DIALOGUE = {
-  hero: "「迷宮への閃光、道を切り拓け！」",
-  enemy: {
-    practice: "「翠門よ、旅人の視界を閉ざせ！」",
-    easy: "「木霊たち、印を跳ね散らせ！」",
-    middle: "「紋章の秘鍵よ、謎を秘せ！」",
-    high: "「花冠の霧よ、盤面を霞ませなさい！」",
-    ultra: "「森羅の審判、侵入者を裁け！」",
-    default: "「森の精霊よ、力を貸して！」",
+const COMBO_STAGE_DEFS = [
+  { id: "stage1", threshold: 10 },
+  { id: "stage2", threshold: 15 },
+  { id: "stage3", threshold: 20 },
+  { id: "stage4", threshold: 25 },
+  { id: "overdrive", threshold: 30 },
+];
+
+const HERO_STAGE_SET = [
+  {
+    id: "stage1",
+    name: "霧散の矢",
+    description: "敵の横1列を浄化して初期状態に戻す",
+    speech: "「霧散の矢、邪気を払え！」",
   },
+  {
+    id: "stage2",
+    name: "光脈の連鎖",
+    description: "敵の縦1列と横1列を同時に初期化する",
+    speech: "「光脈の連鎖、絡め取れ！」",
+  },
+  {
+    id: "stage3",
+    name: "星槍の奔流",
+    description: "敵の縦2列と横2列を一気に崩す",
+    speech: "「星槍の奔流、すべてを穿て！」",
+  },
+  {
+    id: "stage4",
+    name: "黎明の審判",
+    description: "敵盤の縦横破壊に加え斜め（／）を初期化する",
+    speech: "「黎明の審判、道を照らせ！」",
+  },
+  {
+    id: "overdrive",
+    name: "森羅オーバードライブ",
+    description: "全方位の列と斜めを浄化する究極奥義",
+    speech: "「森羅よ、今こそ裁きを！」",
+  },
+];
+
+const ENEMY_STAGE_SETS = {
+  "elf-practice": [
+    {
+      id: "stage1",
+      name: "翠封の霊弓",
+      description: "横1列を封じて未回答に戻す",
+      speech: "「翠封の霊弓、旅人を惑わせよ！」",
+    },
+    {
+      id: "stage2",
+      name: "森門の交差陣",
+      description: "縦横1列ずつを封緘する",
+      speech: "「森門の交差陣、路を閉ざせ！」",
+    },
+    {
+      id: "stage3",
+      name: "巫女の星環",
+      description: "縦横2列を同時に巻き戻す",
+      speech: "「巫女の星環、侵入者を退けよ！」",
+    },
+    {
+      id: "stage4",
+      name: "翠霧の鎖紋",
+      description: "縦横に加え斜め（／）を封緘する",
+      speech: "「翠霧の鎖紋、視界を断て！」",
+    },
+    {
+      id: "overdrive",
+      name: "翠巫の神託",
+      description: "全方位の森羅封印で盤面を初期化する",
+      speech: "「翠巫の神託、全てを巡らせ！」",
+    },
+  ],
+  "elf-easy": [
+    {
+      id: "stage1",
+      name: "木霊の軌跡",
+      description: "横1列の記憶を跳ね飛ばす",
+      speech: "「木霊たちよ、足跡を消し去って！」",
+    },
+    {
+      id: "stage2",
+      name: "花弧の跳躍",
+      description: "縦横1列を揺らし初期化する",
+      speech: "「花弧の跳躍、盤面を乱して！」",
+    },
+    {
+      id: "stage3",
+      name: "蔦冠の連舞",
+      description: "縦横2列を蔦で絡め取る",
+      speech: "「蔦冠の連舞、絡め取れ！」",
+    },
+    {
+      id: "stage4",
+      name: "花嵐の弧光",
+      description: "縦横と斜め（／）を花嵐でかき消す",
+      speech: "「花嵐の弧光、道標を散らせ！」",
+    },
+    {
+      id: "overdrive",
+      name: "妖精の祝祭",
+      description: "縦横斜めすべてを消し去る大乱舞",
+      speech: "「妖精の祝祭、全てを舞い散らせ！」",
+    },
+  ],
+  "elf-middle": [
+    {
+      id: "stage1",
+      name: "紋章の灯",
+      description: "横1列の刻印を初期化する",
+      speech: "「紋章の灯よ、記憶を消しなさい！」",
+    },
+    {
+      id: "stage2",
+      name: "秘鍵の交差陣",
+      description: "縦横1列を秘鍵で封じる",
+      speech: "「秘鍵の交差陣、謎を秘せよ！」",
+    },
+    {
+      id: "stage3",
+      name: "星律の共鳴",
+      description: "縦横2列を封緘する",
+      speech: "「星律の共鳴、紋章を揺るがせ！」",
+    },
+    {
+      id: "stage4",
+      name: "古碑の星路",
+      description: "縦横に加え斜め（／）を封印する",
+      speech: "「古碑の星路、光を遮れ！」",
+    },
+    {
+      id: "overdrive",
+      name: "黎紋の終律",
+      description: "全方位の紋章を一斉に初期化する",
+      speech: "「黎紋の終律、刻印を無に還せ！」",
+    },
+  ],
+  "elf-hard": [
+    {
+      id: "stage1",
+      name: "花冠の矢雨",
+      description: "横1列を花粉で覆い初期化する",
+      speech: "「花冠の矢雨、視界を霞ませ！」",
+    },
+    {
+      id: "stage2",
+      name: "守護樹の蔓撃",
+      description: "縦横1列を蔓で打ち払う",
+      speech: "「守護樹の蔓撃、彼の者を絡めよ！」",
+    },
+    {
+      id: "stage3",
+      name: "精霊の輪舞",
+      description: "縦横2列を精霊の力で戻す",
+      speech: "「精霊の輪舞、盤を揺るがせ！」",
+    },
+    {
+      id: "stage4",
+      name: "森花の螺旋",
+      description: "縦横に加え斜め（／）を花弁で覆う",
+      speech: "「森花の螺旋、すべてを舞わせ！」",
+    },
+    {
+      id: "overdrive",
+      name: "森羅の護輪",
+      description: "縦横斜めすべてを護輪で初期化する",
+      speech: "「森羅の護輪、侵入者を退けよ！」",
+    },
+  ],
+  "elf-ultra": [
+    {
+      id: "stage1",
+      name: "森羅の号砲",
+      description: "横1列を裁きの雷で初期化する",
+      speech: "「森羅の号砲、踏破を阻め！」",
+    },
+    {
+      id: "stage2",
+      name: "星羅の審槍",
+      description: "縦横1列を雷槍で打ち払う",
+      speech: "「星羅の審槍、罪を断て！」",
+    },
+    {
+      id: "stage3",
+      name: "審判の双閃",
+      description: "縦横2列を同時に巻き戻す",
+      speech: "「審判の双閃、全てを焼き払え！」",
+    },
+    {
+      id: "stage4",
+      name: "星河の断罪",
+      description: "縦横に加え斜め（／）を裁く",
+      speech: "「星河の断罪、道筋を絶て！」",
+    },
+    {
+      id: "overdrive",
+      name: "森羅終焉陣",
+      description: "全方位を光の裁きで初期化する",
+      speech: "「森羅終焉陣、侵入者を赦さない！」",
+    },
+  ],
+  default: [
+    {
+      id: "stage1",
+      name: "古森の囁き",
+      description: "横1列を初期化する",
+      speech: "「古森の囁き、路を隠せ！」",
+    },
+    {
+      id: "stage2",
+      name: "樹霊の交差",
+      description: "縦横1列を戻す",
+      speech: "「樹霊の交差、絡み付け！」",
+    },
+    {
+      id: "stage3",
+      name: "精霊の集束",
+      description: "縦横2列を初期化する",
+      speech: "「精霊の集束、形を崩せ！」",
+    },
+    {
+      id: "stage4",
+      name: "森影の斜光",
+      description: "縦横に加え斜め（／）を封じる",
+      speech: "「森影の斜光、道を迷わせ！」",
+    },
+    {
+      id: "overdrive",
+      name: "森羅の咆哮",
+      description: "全方位を初期化する",
+      speech: "「森羅の咆哮、全てを飲み込め！」",
+    },
+  ],
 };
 
-const ENEMY_SPELLS = {
-  practice: {
-    name: "翠門の封緘",
-    description: "ヒントが封緘され視界が曇る",
-    durationMs: 8000,
-  },
-  easy: {
-    name: "木霊の跳躍",
-    description: "マーキングした×が跳ねて位置がずれる",
-  },
-  middle: {
-    name: "紋章の秘鍵",
-    description: "該当行/列のヒント表示が暗号化される",
-    durationMs: 8000,
-  },
-  high: {
-    name: "花冠の迷彩",
-    description: "魔花の霧で盤面の一部が霞む",
-    durationMs: 8000,
-    regions: 2,
-  },
-  ultra: {
-    name: "森羅の審判",
-    description: "以後のミスが追加の罰則を伴う",
-  },
-};
-
-const DEFAULT_ENEMY_CONFIG = { interval: 1200, errorRate: 0.08, spellId: null };
+const DEFAULT_ENEMY_CONFIG = { interval: 1200, errorRate: 0.08 };
 
 function deriveDifficultyFromSize(n) {
   if (n <= 5) return "easy";
@@ -287,6 +478,79 @@ function shuffle(array) {
   return arr;
 }
 
+function computeReadyStages(count, prevReady = []) {
+  const readySet = new Set(prevReady);
+  COMBO_STAGE_DEFS.forEach(({ id, threshold }) => {
+    if (count >= threshold) readySet.add(id);
+  });
+  return COMBO_STAGE_DEFS.filter(({ id }) => readySet.has(id)).map(({ id }) => id);
+}
+
+function getStageSet(side, nodeId) {
+  if (side === "hero") {
+    return HERO_STAGE_SET;
+  }
+  return ENEMY_STAGE_SETS[nodeId] || ENEMY_STAGE_SETS.default;
+}
+
+function getStageMeta(side, nodeId, stageId) {
+  const stages = getStageSet(side, nodeId);
+  return stages.find((stage) => stage.id === stageId) || null;
+}
+
+function getStageThreshold(stageId) {
+  const entry = COMBO_STAGE_DEFS.find((stage) => stage.id === stageId);
+  return entry ? entry.threshold : Infinity;
+}
+
+function selectUniqueIndices(size, count) {
+  const max = Math.max(0, size);
+  if (!max) return [];
+  const target = Math.min(count, max);
+  const indices = new Set();
+  while (indices.size < target) {
+    indices.add(Math.floor(Math.random() * max));
+  }
+  return Array.from(indices);
+}
+
+function resolveStageEffect(stageId, size) {
+  const base = {
+    rows: [],
+    cols: [],
+    slash: false,
+    backslash: false,
+  };
+  switch (stageId) {
+    case "stage1":
+      base.rows = selectUniqueIndices(size, 1);
+      break;
+    case "stage2":
+      base.rows = selectUniqueIndices(size, 1);
+      base.cols = selectUniqueIndices(size, 1);
+      break;
+    case "stage3":
+      base.rows = selectUniqueIndices(size, Math.min(2, size));
+      base.cols = selectUniqueIndices(size, Math.min(2, size));
+      break;
+    case "stage4":
+      base.rows = selectUniqueIndices(size, Math.min(2, size));
+      base.cols = selectUniqueIndices(size, Math.min(2, size));
+      base.slash = true;
+      break;
+    case "overdrive":
+      base.rows = selectUniqueIndices(size, Math.min(2, size));
+      base.cols = selectUniqueIndices(size, Math.min(2, size));
+      base.slash = true;
+      base.backslash = true;
+      break;
+    default:
+      base.rows = selectUniqueIndices(size, 1);
+      break;
+  }
+  return base;
+}
+
 function countCorrectFilled(grid, solution) {
   let count = 0;
   for (let r = 0; r < solution.length; r += 1) {
@@ -304,6 +568,7 @@ function createComboTrack() {
     show: false,
     label: 0,
     pulse: 0,
+    readyStages: [],
   };
 }
 
@@ -343,25 +608,13 @@ export default function App() {
   const [enemyScore, setEnemyScore] = useState(0);
   const [displayEnemyScore, setDisplayEnemyScore] = useState(0);
   const [enemyScoreAnimating, setEnemyScoreAnimating] = useState(false);
-  const [debugMode, setDebugMode] = useState(() => {
-    try {
-      return localStorage.getItem("debugMode") === "1";
-    } catch {
-      return false;
-    }
-  });
+  const [debugMode, setDebugMode] = useState(false);
   const [debugMenuOpen, setDebugMenuOpen] = useState(false);
   const [debugMenuPosition, setDebugMenuPosition] = useState({ x: 0, y: 0 });
   const debugMenuRef = useRef(null);
   const debugMenuOpenRef = useRef(false);
   const pointerPositionRef = useRef({ x: 0, y: 0 });
-  const [debugRevealMap, setDebugRevealMap] = useState(() => {
-    try {
-      return localStorage.getItem("debugRevealMap") === "1";
-    } catch {
-      return false;
-    }
-  });
+  const [debugRevealMap, setDebugRevealMap] = useState(false);
   const routeJumpOptions = useMemo(
     () =>
       ROUTE_NODE_IDS.map((id) => ({
@@ -432,6 +685,30 @@ export default function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [closeDebugMenu, openDebugMenu]);
+
+  useEffect(() => {
+    try {
+      if (debugMode) {
+        localStorage.setItem("debugMode", "1");
+      } else {
+        localStorage.removeItem("debugMode");
+      }
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [debugMode]);
+
+  useEffect(() => {
+    try {
+      if (debugRevealMap) {
+        localStorage.setItem("debugRevealMap", "1");
+      } else {
+        localStorage.removeItem("debugRevealMap");
+      }
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [debugRevealMap]);
   useEffect(() => {
     if (!debugMenuOpen) return;
     const menuEl = debugMenuRef.current;
@@ -549,19 +826,29 @@ export default function App() {
   const [lockedRowClues, setLockedRowClues] = useState([]);
   const [lockedColClues, setLockedColClues] = useState([]);
   const [fadedCells, setFadedCells] = useState([]);
+  const [enemyFadedCells, setEnemyFadedCells] = useState([]);
   const [paused, setPaused] = useState(false);
   const [projectiles, setProjectiles] = useState([]);
   const [comboState, setComboState] = useState(() => ({
     hero: createComboTrack(),
     enemy: createComboTrack(),
   }));
+  const [boardLocks, setBoardLocks] = useState({ hero: false, enemy: false });
+  const boardLocksRef = useRef(boardLocks);
+  const comboStateRef = useRef(comboState);
   const size = solution.length;
   const clues = useMemo(() => computeClues(solution), [solution]);
 
   const resetCombo = useCallback((side) => {
     setComboState((prev) => {
       const nextTrack = createComboTrack();
-      if (prev[side].count === 0 && !prev[side].show) return prev;
+      if (
+        prev[side].count === 0 &&
+        !prev[side].show &&
+        !(prev[side].readyStages && prev[side].readyStages.length)
+      ) {
+        return prev;
+      }
       return { ...prev, [side]: nextTrack };
     });
   }, []);
@@ -578,15 +865,239 @@ export default function App() {
       const current = prev[side];
       const nextCount = current.count + 1;
       const shouldShow = nextCount >= 2;
+      const readyStages = computeReadyStages(nextCount, current.readyStages);
+      const unlocked = readyStages.length > current.readyStages.length;
       const nextTrack = {
         count: nextCount,
         show: shouldShow,
         label: nextCount,
         pulse: shouldShow ? current.pulse + 1 : current.pulse,
+        readyStages,
       };
+      if (unlocked && !shouldShow) {
+        nextTrack.show = true;
+      }
       return { ...prev, [side]: nextTrack };
     });
   }, []);
+
+  const lockBoard = useCallback((side, duration = 1200) => {
+    boardLocksRef.current = { ...boardLocksRef.current, [side]: true };
+    setBoardLocks((prev) => {
+      if (prev[side]) return prev;
+      const next = { ...prev, [side]: true };
+      return next;
+    });
+    if (boardLockTimeoutRef.current[side]) {
+      clearTimeout(boardLockTimeoutRef.current[side]);
+    }
+    boardLockTimeoutRef.current[side] = setTimeout(() => {
+      setBoardLocks((prev) => {
+        if (!prev[side]) return prev;
+        const next = { ...prev, [side]: false };
+        boardLocksRef.current = next;
+        return next;
+      });
+      boardLockTimeoutRef.current[side] = null;
+    }, duration);
+  }, []);
+
+  const launchProjectile = useCallback((variant) => {
+    setProjectiles((prev) => {
+      const id = `${variant}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const next = [...prev, { id, variant }];
+      setTimeout(() => {
+        setProjectiles((state) => state.filter((p) => p.id !== id));
+      }, 1000);
+      return next;
+    });
+  }, []);
+
+  const showSpellOverlay = useCallback((payload) => {
+    if (spellOverlayTimeoutRef.current) {
+      clearTimeout(spellOverlayTimeoutRef.current);
+      spellOverlayTimeoutRef.current = null;
+    }
+    setActiveSpell(payload);
+
+    const caster = payload?.caster;
+    const speechText = typeof payload?.speech === "string" ? payload.speech.trim() : "";
+
+    if (caster && speechText) {
+      if (speechTimeoutRef.current[caster]) {
+        clearTimeout(speechTimeoutRef.current[caster]);
+      }
+      setSpellSpeech((prev) => ({ ...prev, [caster]: speechText }));
+      speechTimeoutRef.current[caster] = setTimeout(() => {
+        setSpellSpeech((prev) => ({ ...prev, [caster]: null }));
+        speechTimeoutRef.current[caster] = null;
+      }, SPELL_SPEECH_DURATION);
+    }
+
+    spellOverlayTimeoutRef.current = setTimeout(() => {
+      setActiveSpell(null);
+      spellOverlayTimeoutRef.current = null;
+    }, SPELL_SPEECH_DURATION);
+  }, []);
+
+  const applyStageEffect = useCallback(
+    (caster, stageId) => {
+      if (!battleNode || !stageId) return;
+      const target = caster === "hero" ? "enemy" : "hero";
+      const stageMeta = getStageMeta(caster, battleNode, stageId);
+      const stageEffectTarget =
+        target === "enemy" ? enemySolutionRef.current : solution;
+      const size = stageEffectTarget?.length || 0;
+      if (!size) return;
+
+      const effect = resolveStageEffect(stageId, size);
+      const affected = new Set();
+      const coords = [];
+      const register = (r, c) => {
+        if (r < 0 || r >= size || c < 0 || c >= size) return;
+        const key = `${r}-${c}`;
+        if (affected.has(key)) return;
+        affected.add(key);
+        coords.push({ r, c, key });
+      };
+
+      (effect.rows || []).forEach((rowIdx) => {
+        for (let c = 0; c < size; c += 1) {
+          register(rowIdx, c);
+        }
+      });
+      (effect.cols || []).forEach((colIdx) => {
+        for (let r = 0; r < size; r += 1) {
+          register(r, colIdx);
+        }
+      });
+      if (effect.slash) {
+        for (let i = 0; i < size; i += 1) {
+          register(i, size - 1 - i);
+        }
+      }
+      if (effect.backslash) {
+        for (let i = 0; i < size; i += 1) {
+          register(i, i);
+        }
+      }
+
+      if (!coords.length) return;
+
+      if (target === "enemy") {
+        const solutionMask = enemySolutionRef.current || [];
+        const removalQueue = [];
+        setEnemyGrid((prev) => {
+          if (!prev.length) return prev;
+          const next = prev.map((row) => row.slice());
+          coords.forEach(({ r, c, key }) => {
+            if (!solutionMask?.[r]?.[c]) return;
+            if (next[r]?.[c] !== 0) {
+              if (next[r][c] === 1) {
+                removalQueue.push({ r, c });
+              }
+              next[r][c] = 0;
+            }
+          });
+          return next;
+        });
+        if (removalQueue.length) {
+          enemyProgressRef.current.filled = Math.max(
+            0,
+            enemyProgressRef.current.filled - removalQueue.length,
+          );
+        }
+        const state = enemyOrderRef.current;
+        const remaining = state.list.slice(state.index);
+        const appended = [...removalQueue, ...remaining];
+        const dedupe = new Map();
+        appended.forEach(({ r, c }) => {
+          const key = `${r}-${c}`;
+          dedupe.set(key, { r, c });
+        });
+        enemyOrderRef.current = {
+          list: Array.from(dedupe.values()),
+          index: 0,
+        };
+        if (coords.length) {
+          const keys = coords.map(({ key }) => key);
+          setEnemyFadedCells(keys);
+          if (hiddenTimersRef.current.enemyFaded) {
+            clearTimeout(hiddenTimersRef.current.enemyFaded);
+          }
+          hiddenTimersRef.current.enemyFaded = setTimeout(() => {
+            setEnemyFadedCells([]);
+            hiddenTimersRef.current.enemyFaded = null;
+          }, 1200);
+        }
+        lockBoard("enemy");
+      } else {
+        const highlight = new Set();
+        setGrid((prev) => {
+          if (!prev.length) return prev;
+          const next = prev.map((row) => row.slice());
+          coords.forEach(({ r, c, key }) => {
+            if (next[r]?.[c] !== 0) {
+              next[r][c] = 0;
+            }
+            highlight.add(key);
+          });
+          return next;
+        });
+        coords.forEach(({ r, c }) => {
+          realtimeBonusRef.current.delete(`${r}:${c}`);
+        });
+        if (highlight.size) {
+          setFadedCells(Array.from(highlight));
+          if (hiddenTimersRef.current.faded) {
+            clearTimeout(hiddenTimersRef.current.faded);
+          }
+          hiddenTimersRef.current.faded = setTimeout(() => {
+            setFadedCells([]);
+            hiddenTimersRef.current.faded = null;
+          }, 1200);
+        }
+        lockBoard("hero");
+      }
+
+      const casterMeta =
+        caster === "hero"
+          ? { image: HERO_IMAGES.angry }
+          : { image: CHARACTERS[battleNode]?.images?.angry };
+
+      showSpellOverlay({
+        caster,
+        spellId: stageId,
+        name: stageMeta?.name || "Spell",
+        description: stageMeta?.description || "",
+        image: casterMeta.image,
+        speech: stageMeta?.speech,
+      });
+      audio.playSpellAttack(caster === "hero" ? "hero" : "enemy");
+      launchProjectile(caster === "hero" ? "hero" : "enemy");
+    },
+    [audio, battleNode, launchProjectile, lockBoard, showSpellOverlay, solution],
+  );
+
+  const triggerComboStage = useCallback(
+    (side, stageId) => {
+      if (!stageId) return;
+      applyStageEffect(side, stageId);
+      resetCombo(side);
+    },
+    [applyStageEffect, resetCombo],
+  );
+
+  const handleHeroStageSelect = useCallback(
+    (stageId) => {
+      if (!stageId) return;
+      const track = comboState.hero || createComboTrack();
+      if (!track.readyStages?.includes(stageId)) return;
+      if (boardLocks.enemy) return;
+      triggerComboStage("hero", stageId);
+    },
+    [boardLocks.enemy, comboState.hero, triggerComboStage],
+  );
 
   const playerAvatar = useMemo(
     () => ({
@@ -620,7 +1131,7 @@ export default function App() {
   const enemyScoreAnimTimerRef = useRef(null);
   const realtimeBonusRef = useRef(new Set());
   const enemySolverRef = useRef(null);
-  const hiddenTimersRef = useRef({ hidden: null, locked: null, faded: null });
+  const hiddenTimersRef = useRef({ hidden: null, locked: null, faded: null, enemyFaded: null });
   const spellOverlayTimeoutRef = useRef(null);
   const speechTimeoutRef = useRef({ hero: null, enemy: null });
   const conversationControlsRef = useRef(null);
@@ -629,11 +1140,11 @@ export default function App() {
   const gamepadCursorRef = useRef({ row: 0, col: 0 });
   const lastGamepadUsedRef = useRef(0);
   const heroStateRef = useRef({});
-  const heroSpellRef = useRef({ threshold: 0, used: false });
-  const enemySpellStateRef = useRef({ used: new Set() });
   const enemyProgressRef = useRef({ filled: 0, total: 0 });
   const totalCellsRef = useRef(0);
-  const ultraPenaltyActiveRef = useRef(false);
+  const boardLockTimeoutRef = useRef({ hero: null, enemy: null });
+  const enemyStageCooldownRef = useRef(null);
+  const enemyCastingRef = useRef(false);
   const enemyOrderRef = useRef({ list: [], index: 0 });
   const puzzleSolvedRef = useRef(false);
   const enemySolutionRef = useRef([]);
@@ -669,17 +1180,6 @@ export default function App() {
     };
   }, [inputMode]);
 
-  const launchProjectile = useCallback((variant) => {
-    setProjectiles((prev) => {
-      const id = `${variant}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      const next = [...prev, { id, variant }];
-      setTimeout(() => {
-        setProjectiles((state) => state.filter((p) => p.id !== id));
-      }, 1000);
-      return next;
-    });
-  }, []);
-
   const stopEnemySolver = useCallback(() => {
     if (enemySolverRef.current) {
       clearInterval(enemySolverRef.current);
@@ -701,12 +1201,30 @@ export default function App() {
       clearTimeout(timers.faded);
       timers.faded = null;
     }
+    if (timers.enemyFaded) {
+      clearTimeout(timers.enemyFaded);
+      timers.enemyFaded = null;
+    }
+    Object.keys(boardLockTimeoutRef.current).forEach((side) => {
+      const timer = boardLockTimeoutRef.current[side];
+      if (timer) {
+        clearTimeout(timer);
+        boardLockTimeoutRef.current[side] = null;
+      }
+    });
+    setBoardLocks({ hero: false, enemy: false });
+    boardLocksRef.current = { hero: false, enemy: false };
+    enemyCastingRef.current = false;
+    if (enemyStageCooldownRef.current) {
+      clearTimeout(enemyStageCooldownRef.current);
+      enemyStageCooldownRef.current = null;
+    }
     setHiddenRowClues([]);
     setHiddenColClues([]);
     setLockedRowClues([]);
     setLockedColClues([]);
     setFadedCells([]);
-    ultraPenaltyActiveRef.current = false;
+    setEnemyFadedCells([]);
     setSpellSpeech({ hero: null, enemy: null });
     const speechTimers = speechTimeoutRef.current;
     Object.keys(speechTimers).forEach((side) => {
@@ -720,255 +1238,6 @@ export default function App() {
       spellOverlayTimeoutRef.current = null;
     }
   }, []);
-  const showSpellOverlay = useCallback((payload) => {
-    if (spellOverlayTimeoutRef.current) {
-      clearTimeout(spellOverlayTimeoutRef.current);
-      spellOverlayTimeoutRef.current = null;
-    }
-    setActiveSpell(payload);
-
-    const caster = payload?.caster;
-    const spellId = payload?.spellId;
-    let speechText = payload?.speech;
-    if (!speechText && caster === "hero") {
-      speechText = SPELL_DIALOGUE.hero;
-    } else if (!speechText && caster === "enemy") {
-      speechText = SPELL_DIALOGUE.enemy[spellId] || SPELL_DIALOGUE.enemy.default;
-    }
-
-    if (caster && speechText) {
-      if (speechTimeoutRef.current[caster]) {
-        clearTimeout(speechTimeoutRef.current[caster]);
-      }
-      setSpellSpeech((prev) => ({ ...prev, [caster]: speechText }));
-      speechTimeoutRef.current[caster] = setTimeout(() => {
-        setSpellSpeech((prev) => ({ ...prev, [caster]: null }));
-        speechTimeoutRef.current[caster] = null;
-      }, SPELL_SPEECH_DURATION);
-    }
-
-    spellOverlayTimeoutRef.current = setTimeout(() => {
-      setActiveSpell(null);
-      spellOverlayTimeoutRef.current = null;
-    }, SPELL_SPEECH_DURATION);
-  }, []);
-
-  const triggerHeroSpell = useCallback(() => {
-    if (heroSpellRef.current.used) return;
-    heroSpellRef.current.used = true;
-    const removed = [];
-    setEnemyGrid((prev) => {
-      const coords = [];
-      prev.forEach((row, r) =>
-        row.forEach((cell, c) => {
-          if (cell === 1) coords.push({ r, c });
-        }),
-      );
-      if (!coords.length) return prev;
-      const removeCount = Math.max(1, Math.floor(coords.length * HERO_SPELL.revertRatio));
-      const chosen = shuffle(coords).slice(0, removeCount);
-      const next = prev.map((row) => row.slice());
-      chosen.forEach(({ r, c }) => {
-        if (next[r][c] === 1) {
-          next[r][c] = 0;
-          removed.push({ r, c });
-        }
-      });
-      return next;
-    });
-    if (removed.length) {
-      enemyProgressRef.current.filled = Math.max(
-        0,
-        enemyProgressRef.current.filled - removed.length,
-      );
-      const pending = enemyOrderRef.current.list.slice(enemyOrderRef.current.index);
-      enemyOrderRef.current = {
-        list: pending.concat(shuffle(removed)),
-        index: 0,
-      };
-      resetCombo("enemy");
-    }
-    showSpellOverlay({
-      caster: "hero",
-      spellId: "hero",
-      name: HERO_SPELL.name,
-      description: "敵の進捗を巻き戻した",
-      image: HERO_IMAGES.angry,
-    });
-    audio.playSpellAttack("hero");
-    launchProjectile("hero");
-  }, [resetCombo, showSpellOverlay]);
-
-  const triggerEnemySpell = useCallback(
-    (spellId, context = {}) => {
-      if (!spellId || !battleNode) return;
-      const spell = ENEMY_SPELLS[spellId];
-      if (!spell) return;
-      if (enemySpellStateRef.current.used.has(spellId)) return;
-      enemySpellStateRef.current.used.add(spellId);
-      const character = CHARACTERS[battleNode];
-      const enemyName = character?.name || "敵";
-      showSpellOverlay({
-        caster: "enemy",
-        spellId,
-        name: spell.name,
-        description: spell.description,
-        image: character?.images?.angry,
-      });
-      audio.playSpellAttack("enemy");
-      launchProjectile("enemy");
-      const duration = spell.durationMs || 8000;
-      const n = solution.length;
-      const { row: ctxRow, col: ctxCol, type: ctxType, index: ctxIndex } = context || {};
-      switch (spellId) {
-        case "practice": {
-          let targetKind = null;
-          let targetIndex = null;
-          if (typeof ctxRow === "number" && ctxRow >= 0 && ctxRow < n) {
-            targetKind = "row";
-            targetIndex = ctxRow;
-          } else if (typeof ctxCol === "number" && ctxCol >= 0 && ctxCol < n) {
-            targetKind = "col";
-            targetIndex = ctxCol;
-          } else {
-            const fallbackKind = Math.random() < 0.5 ? "row" : "col";
-            targetKind = fallbackKind;
-            targetIndex = Math.floor(Math.random() * n);
-          }
-          if (targetKind === "row") {
-            setHiddenRowClues([targetIndex]);
-            setHiddenColClues([]);
-          } else if (targetKind === "col") {
-            setHiddenColClues([targetIndex]);
-            setHiddenRowClues([]);
-          }
-          if (hiddenTimersRef.current.hidden) {
-            clearTimeout(hiddenTimersRef.current.hidden);
-          }
-          hiddenTimersRef.current.hidden = setTimeout(() => {
-            setHiddenRowClues([]);
-            setHiddenColClues([]);
-            hiddenTimersRef.current.hidden = null;
-          }, duration);
-          break;
-        }
-        case "easy": {
-          setGrid((prev) => {
-            const crossCells = [];
-            prev.forEach((row, r) =>
-              row.forEach((cell, c) => {
-                if (cell === -1) crossCells.push({ r, c });
-              }),
-            );
-            if (!crossCells.length) return prev;
-            const next = prev.map((row) => row.slice());
-            const available = crossCells.length;
-            const targetCount =
-              available < 2
-                ? available
-                : Math.min(4, Math.max(2, Math.floor(available / 2) || 2));
-            const count = targetCount || available;
-            shuffle(crossCells)
-              .slice(0, count)
-              .forEach(({ r, c }) => {
-                next[r][c] = 0;
-                const neighbors = shuffle([
-                  [r - 1, c],
-                  [r + 1, c],
-                  [r, c - 1],
-                  [r, c + 1],
-                ]);
-                const target = neighbors.find(([nr, nc]) =>
-                  nr >= 0 && nr < n && nc >= 0 && nc < n && next[nr][nc] === 0,
-                );
-                if (target) {
-                  const [nr, nc] = target;
-                  next[nr][nc] = -1;
-                }
-              });
-            return next;
-          });
-          break;
-        }
-        case "middle": {
-          let targetKind = null;
-          let targetIndex = null;
-          if (
-            (ctxType === "row" || ctxType === "col") &&
-            typeof ctxIndex === "number"
-          ) {
-            targetKind = ctxType;
-            targetIndex = ctxIndex;
-          } else if (typeof ctxRow === "number" && ctxRow >= 0 && ctxRow < clues.rows.length) {
-            targetKind = "row";
-            targetIndex = ctxRow;
-          } else if (typeof ctxCol === "number" && ctxCol >= 0 && ctxCol < clues.cols.length) {
-            targetKind = "col";
-            targetIndex = ctxCol;
-          } else {
-            const pickRow = Math.random() < 0.5;
-            if (pickRow) {
-              targetKind = "row";
-              targetIndex = Math.floor(Math.random() * clues.rows.length);
-            } else {
-              targetKind = "col";
-              targetIndex = Math.floor(Math.random() * clues.cols.length);
-            }
-          }
-          if (targetKind === "row") {
-            setLockedRowClues([targetIndex]);
-            setLockedColClues([]);
-          } else if (targetKind === "col") {
-            setLockedColClues([targetIndex]);
-            setLockedRowClues([]);
-          }
-          if (hiddenTimersRef.current.locked) {
-            clearTimeout(hiddenTimersRef.current.locked);
-          }
-          hiddenTimersRef.current.locked = setTimeout(() => {
-            setLockedRowClues([]);
-            setLockedColClues([]);
-            hiddenTimersRef.current.locked = null;
-          }, duration);
-          break;
-        }
-        case "high": {
-          const regions = spell.regions || 2;
-          const faded = new Set();
-          for (let i = 0; i < regions; i += 1) {
-            const centerR = Math.floor(Math.random() * n);
-            const centerC = Math.floor(Math.random() * n);
-            for (let dr = -1; dr <= 1; dr += 1) {
-              for (let dc = -1; dc <= 1; dc += 1) {
-                const rr = centerR + dr;
-                const cc = centerC + dc;
-                if (rr >= 0 && rr < n && cc >= 0 && cc < n) {
-                  faded.add(`${rr}-${cc}`);
-                }
-              }
-            }
-          }
-          setFadedCells(Array.from(faded));
-          if (hiddenTimersRef.current.faded) {
-            clearTimeout(hiddenTimersRef.current.faded);
-          }
-          hiddenTimersRef.current.faded = setTimeout(() => {
-            setFadedCells([]);
-            hiddenTimersRef.current.faded = null;
-          }, duration);
-          break;
-        }
-        case "ultra": {
-          ultraPenaltyActiveRef.current = true;
-          break;
-        }
-        default:
-          break;
-      }
-    },
-    [battleNode, clues, setGrid, showSpellOverlay, solution],
-  );
-
   function resetProgress() {
     cancelCelebration();
     stopEnemySolver();
@@ -988,6 +1257,8 @@ export default function App() {
     setPostClearAction(null);
     glyphUnlocksRef.current = new Map();
     setRecentGlyphUnlocks([]);
+    setDebugMode(false);
+    setDebugRevealMap(false);
     const clearedGlyphSet = new Set();
     const clearedGlyphSolved = new Map();
     setGlyphCollection(clearedGlyphSet);
@@ -1474,23 +1745,13 @@ export default function App() {
 
     const total = heroSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
     totalCellsRef.current = total;
-    heroSpellRef.current = {
-      threshold: Math.max(1, Math.ceil(total * HERO_SPELL.ratio)),
-      used: false,
-    };
     heroStateRef.current = {
-      correctStreak: 0,
-      chainStreak: 0,
       lastCorrect: null,
       crossStreak: 0,
-      sameLineRow: null,
-      sameLineCol: null,
-      sameLineStreak: 0,
       blockChain: { type: null, index: null, length: 1 },
       noMistakeStart: Date.now(),
       noMistakeTriggered: false,
     };
-    enemySpellStateRef.current = { used: new Set() };
     const enemySolution = enemyFirstSolution.map((row) => row.slice());
     enemySolutionRef.current = enemySolution;
     enemyProgressRef.current = {
@@ -1500,7 +1761,6 @@ export default function App() {
     enemyOrderRef.current = { list: [], index: 0 };
     setEnemyGrid(emptyGrid(enemySolution.length));
     setEnemySolutionVersion((v) => v + 1);
-    ultraPenaltyActiveRef.current = false;
     setPlayerWins(0);
     setEnemyWins(0);
 
@@ -1535,18 +1795,9 @@ export default function App() {
       realtimeBonusRef.current = new Set();
       const total = nextSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
       totalCellsRef.current = total;
-      heroSpellRef.current = {
-        threshold: Math.max(1, Math.ceil(total * HERO_SPELL.ratio)),
-        used: false,
-      };
       heroStateRef.current = {
-        correctStreak: 0,
-        chainStreak: 0,
         lastCorrect: null,
         crossStreak: 0,
-        sameLineRow: null,
-        sameLineCol: null,
-        sameLineStreak: 0,
         blockChain: { type: null, index: null, length: 1 },
         noMistakeStart: Date.now(),
         noMistakeTriggered: false,
@@ -1568,7 +1819,6 @@ export default function App() {
       const nextSolution = cloneSolution(next);
       const n = nextSolution.length;
       stopEnemySolver();
-      enemySpellStateRef.current = { used: new Set() };
       enemySolutionRef.current = nextSolution;
       enemyProgressRef.current = {
         filled: 0,
@@ -1987,139 +2237,40 @@ export default function App() {
   ]);
 
   const handleHeroCorrectFill = useCallback(
-    (row, col, nextGrid) => {
-      const config = battleNode ? ENEMY_AI_CONFIG[battleNode] : DEFAULT_ENEMY_CONFIG;
+    (row, col) => {
       const heroState = heroStateRef.current;
       heroState.crossStreak = 0;
-      heroState.sameLineStreak = 0;
-      heroState.correctStreak += 1;
-      incrementCombo("hero");
-
-      const prev = heroState.lastCorrect;
-      const isAdjacent =
-        prev && Math.abs(prev.r - row) + Math.abs(prev.c - col) === 1;
-      let chainInfo = heroState.blockChain || { type: null, index: null, length: 1 };
-
-      if (isAdjacent) {
-        if (prev.r === row) {
-          if (chainInfo.type === "row" && chainInfo.index === row) {
-            chainInfo = {
-              type: "row",
-              index: row,
-              length: Math.max(2, chainInfo.length + 1),
-            };
-          } else {
-            chainInfo = { type: "row", index: row, length: 2 };
-          }
-        } else if (prev.c === col) {
-          if (chainInfo.type === "col" && chainInfo.index === col) {
-            chainInfo = {
-              type: "col",
-              index: col,
-              length: Math.max(2, chainInfo.length + 1),
-            };
-          } else {
-            chainInfo = { type: "col", index: col, length: 2 };
-          }
-        } else {
-          chainInfo = { type: null, index: null, length: 1 };
-        }
-      } else {
-        chainInfo = { type: null, index: null, length: 1 };
-      }
-
-      heroState.blockChain = chainInfo;
       heroState.lastCorrect = { r: row, c: col };
-
-      const total = totalCellsRef.current || 1;
-      const filled = countCorrectFilled(nextGrid, solution);
-
-      if (!heroSpellRef.current.used && heroState.correctStreak >= heroSpellRef.current.threshold) {
-        triggerHeroSpell();
-        heroState.correctStreak = 0;
-      }
-
-      const enemySpellId = config.spellId;
-      if (enemySpellId === "middle" && chainInfo.type && chainInfo.length >= 3) {
-        triggerEnemySpell("middle", { type: chainInfo.type, index: chainInfo.index });
-        heroState.blockChain = { type: null, index: null, length: 1 };
-      }
-      if (enemySpellId === "ultra" && !enemySpellStateRef.current.used.has("ultra") && filled / total >= 0.75) {
-        triggerEnemySpell("ultra");
-      }
-    },
-    [battleNode, incrementCombo, triggerHeroSpell, triggerEnemySpell, solution],
-  );
-
-  const handleHeroMistake = useCallback(
-    (row, col, meta = {}, nextGrid) => {
-      const heroState = heroStateRef.current;
-      heroState.correctStreak = 0;
-      heroState.chainStreak = 0;
-      heroState.lastCorrect = null;
-      heroState.crossStreak = 0;
       heroState.blockChain = { type: null, index: null, length: 1 };
-      resetCombo("hero");
-      const prevRow = heroState.sameLineRow;
-      const prevCol = heroState.sameLineCol;
-      const sameRow = typeof prevRow === "number" && row === prevRow;
-      const sameCol = typeof prevCol === "number" && col === prevCol;
-      if (sameRow || sameCol) {
-        heroState.sameLineStreak += 1;
-      } else {
-        heroState.sameLineStreak = 1;
-      }
-      heroState.sameLineRow = row;
-      heroState.sameLineCol = col;
-      heroState.noMistakeStart = Date.now();
-      heroState.noMistakeTriggered = false;
-
-      const config = battleNode ? ENEMY_AI_CONFIG[battleNode] : DEFAULT_ENEMY_CONFIG;
-      if (config.spellId === "practice" && heroState.sameLineStreak >= 2) {
-        const payload = {};
-        if (sameRow) payload.row = row;
-        if (sameCol) payload.col = col;
-        triggerEnemySpell("practice", payload);
-        heroState.sameLineStreak = 0;
-      }
-
-      if (ultraPenaltyActiveRef.current) {
-        setGrid((prev) => {
-          const coords = [];
-          prev.forEach((rowArr, rIdx) =>
-            rowArr.forEach((cell, cIdx) => {
-              if (cell === 1 && solution?.[rIdx]?.[cIdx]) {
-                coords.push({ r: rIdx, c: cIdx });
-              }
-            }),
-          );
-          if (!coords.length) return prev;
-          const remove = shuffle(coords).slice(0, Math.min(2, coords.length));
-          const next = prev.map((rowArr) => rowArr.slice());
-          remove.forEach(({ r: rr, c: cc }) => {
-            next[rr][cc] = 0;
-          });
-          return next;
-        });
-      }
+      incrementCombo("hero");
     },
-    [battleNode, resetCombo, setGrid, solution, triggerEnemySpell],
+    [incrementCombo],
   );
+
+  const handleHeroMistake = useCallback(() => {
+    const heroState = heroStateRef.current;
+    heroState.lastCorrect = null;
+    heroState.crossStreak = 0;
+    heroState.blockChain = { type: null, index: null, length: 1 };
+    heroState.noMistakeStart = Date.now();
+    heroState.noMistakeTriggered = false;
+    resetCombo("hero");
+  }, [resetCombo]);
 
   const handleHeroCross = useCallback(
-    (row, col) => {
-      const config = battleNode ? ENEMY_AI_CONFIG[battleNode] : DEFAULT_ENEMY_CONFIG;
+    (row, col, nextGrid) => {
       const heroState = heroStateRef.current;
-      heroState.crossStreak += 1;
-      heroState.correctStreak = 0;
       heroState.lastCorrect = null;
       heroState.blockChain = { type: null, index: null, length: 1 };
-      if (config.spellId === "easy" && heroState.crossStreak >= 5) {
-        triggerEnemySpell("easy");
-        heroState.crossStreak = 0;
+      const cellValue = nextGrid?.[row]?.[col];
+      const shouldFill = solution?.[row]?.[col] ?? false;
+      if (cellValue === -1 && !shouldFill) {
+        incrementCombo("hero");
+      } else if (cellValue === -1 && shouldFill) {
+        resetCombo("hero");
       }
     },
-    [battleNode, triggerEnemySpell],
+    [incrementCombo, resetCombo, solution],
   );
 
   const handlePlayerCorrect = useCallback(
@@ -2138,8 +2289,8 @@ export default function App() {
   );
 
   const handlePlayerCrossEvent = useCallback(
-    (row, col) => {
-      handleHeroCross(row, col);
+    (row, col, nextGrid) => {
+      handleHeroCross(row, col, nextGrid);
     },
     [handleHeroCross],
   );
@@ -2286,10 +2437,53 @@ export default function App() {
   }, [screen]);
 
   useEffect(() => {
+    comboStateRef.current = comboState;
+  }, [comboState]);
+
+  useEffect(() => {
+    boardLocksRef.current = boardLocks;
+  }, [boardLocks]);
+
+  const enemyReadyStages = comboState.enemy?.readyStages || [];
+
+  useEffect(() => {
     if (screen !== "picross") {
       resetAllCombos();
     }
   }, [screen, resetAllCombos]);
+
+  useEffect(() => {
+    if (screen !== "picross") return undefined;
+    if (!enemyReadyStages.length) return undefined;
+    const ordered = enemyReadyStages
+      .slice()
+      .sort((a, b) => getStageThreshold(b) - getStageThreshold(a));
+    const stageId = ordered[0];
+    if (!stageId) return undefined;
+    if (enemyCastingRef.current) return undefined;
+    enemyCastingRef.current = true;
+    if (enemyStageCooldownRef.current) {
+      clearTimeout(enemyStageCooldownRef.current);
+    }
+    enemyStageCooldownRef.current = setTimeout(() => {
+      const latestStages = comboStateRef.current.enemy?.readyStages || [];
+      if (!latestStages.includes(stageId)) {
+        enemyCastingRef.current = false;
+        enemyStageCooldownRef.current = null;
+        return;
+      }
+      triggerComboStage("enemy", stageId);
+      enemyCastingRef.current = false;
+      enemyStageCooldownRef.current = null;
+    }, 600);
+    return () => {
+      if (enemyStageCooldownRef.current) {
+        clearTimeout(enemyStageCooldownRef.current);
+        enemyStageCooldownRef.current = null;
+      }
+      enemyCastingRef.current = false;
+    };
+  }, [enemyReadyStages, screen, triggerComboStage]);
 
   const prevScreenRef = useRef(screen);
   useEffect(() => {
@@ -2338,6 +2532,9 @@ export default function App() {
     }
     stopEnemySolver();
     const timer = setInterval(() => {
+      if (boardLocksRef.current.enemy) {
+        return;
+      }
       const totalNeeded = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
       if (playerWins >= totalNeeded || enemyWins >= totalNeeded) {
         stopEnemySolver();
@@ -2392,32 +2589,6 @@ export default function App() {
     incrementCombo,
   ]);
 
-  useEffect(() => {
-    if (screen !== "picross") return;
-    if (!battleNode) return;
-    const config = ENEMY_AI_CONFIG[battleNode] || DEFAULT_ENEMY_CONFIG;
-    if (config.spellId !== "high") return;
-    if (enemySpellStateRef.current.used.has("high")) return;
-    if (paused) return;
-    const timer = setInterval(() => {
-      if (enemySpellStateRef.current.used.has("high")) {
-        clearInterval(timer);
-        return;
-      }
-      const heroState = heroStateRef.current;
-      if (heroState.noMistakeTriggered) return;
-      const start = heroState.noMistakeStart;
-      if (!start) return;
-      const elapsed = Date.now() - start;
-      if (elapsed >= 60000) {
-        triggerEnemySpell("high");
-        heroState.noMistakeTriggered = true;
-        heroState.noMistakeStart = Date.now();
-        clearInterval(timer);
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [screen, battleNode, triggerEnemySpell, paused]);
 
   useEffect(() => {
     if (!paused && screen === "picross") {
@@ -2740,19 +2911,51 @@ export default function App() {
   const renderSpellSlot = (side) => {
     const spell = activeSpell && activeSpell.caster === side ? activeSpell : null;
     const combo = comboState[side] || createComboTrack();
-    const comboVisible = combo.show && combo.label >= 2;
+    const stageSet = getStageSet(side, battleNode);
+    const readyStages = new Set(combo.readyStages || []);
+    const comboSummary = combo.count > 0 ? `Combo x${combo.count}` : "Combo x0";
     const rawSpeech = spellSpeech[side];
     const speech = typeof rawSpeech === "string" ? rawSpeech.trim() : "";
     const hasSpeech = speech.length > 0;
-    const comboBadge = (
-      <div className={`combo-badge ${side} ${comboVisible ? "visible" : ""}`}>
-        {comboVisible && (
-          <span key={`${side}-${combo.pulse}`} className="combo-badge-text">
-            Combo x{combo.label}
-          </span>
-        )}
-      </div>
-    );
+    const stageBadges = stageSet.map((stage) => {
+      const threshold = getStageThreshold(stage.id);
+      const isReady = readyStages.has(stage.id);
+      const reached = combo.count >= threshold;
+      const classes = ["combo-stage", stage.id];
+      if (reached) classes.push("reached");
+      if (isReady) classes.push("ready");
+      if (side === "enemy" && isReady) classes.push("pending");
+      const label = (
+        <>
+          <span className="combo-stage-label">{stage.name}</span>
+          <span className="combo-stage-threshold">{threshold}</span>
+        </>
+      );
+      if (side === "hero") {
+        const disabled = !isReady || boardLocks.enemy;
+        return (
+          <button
+            key={stage.id}
+            type="button"
+            className={classes.join(" ")}
+            disabled={disabled}
+            onClick={() => handleHeroStageSelect(stage.id)}
+            title={`${stage.name}（${threshold}コンボ）`}
+          >
+            {label}
+          </button>
+        );
+      }
+      return (
+        <span
+          key={stage.id}
+          className={classes.join(" ")}
+          title={`${stage.name}（${threshold}コンボ）`}
+        >
+          {label}
+        </span>
+      );
+    });
     return (
       <div className={`spell-slot ${side}${spell ? " active" : ""}${hasSpeech ? " speaking" : ""}`}>
         <div className="spell-slot-body">
@@ -2769,7 +2972,10 @@ export default function App() {
             </span>
           )}
         </div>
-        {comboBadge}
+        <div className="combo-panel">
+          <div className="combo-summary">{comboSummary}</div>
+          <div className="combo-stages">{stageBadges}</div>
+        </div>
       </div>
     );
   };
@@ -3018,7 +3224,7 @@ export default function App() {
                       lockedRowClues={lockedRowClues}
                       lockedColClues={lockedColClues}
                       fadedCells={fadedCells}
-                      disabled={paused}
+                      disabled={paused || boardLocks.hero}
                       onGridChange={maybeCompletePuzzle}
                       highlightCell={
                         inputMode === "gamepad" && screen === "picross"
@@ -3059,7 +3265,13 @@ export default function App() {
                 </div>
                 <div className="panel-board enemy">
                   <div className="board-frame enemy">
-                    <EnemyBoard size={size} grid={enemyGrid} hintData={clues} clues={clues} />
+                    <EnemyBoard
+                      size={size}
+                      grid={enemyGrid}
+                      hintData={clues}
+                      clues={clues}
+                      fadedCells={enemyFadedCells}
+                    />
                   </div>
                 </div>
                 <div className="panel-progress enemy">

@@ -1298,53 +1298,125 @@ body {
   color: #fee2e2;
 }
 
-.combo-badge {
-  position: absolute;
-  right: 12px;
-  bottom: 10px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 0.8rem;
+.combo-panel {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.spell-slot.hero .combo-summary {
+  color: #cfe1ff;
+}
+
+.spell-slot.enemy .combo-summary {
+  color: #fecaca;
+}
+
+.combo-summary {
+  font-size: 0.82rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  opacity: 0;
-  transform: translateY(6px) scale(0.92);
-  pointer-events: none;
-  transition: opacity 200ms ease, transform 180ms ease;
-  box-shadow: 0 0 12px rgba(14, 165, 233, 0.25);
 }
 
-.combo-badge.hero {
-  background: linear-gradient(135deg, rgba(76, 181, 255, 0.92), rgba(14, 116, 227, 0.82));
-  color: #e0f2fe;
+.combo-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.combo-badge.enemy {
-  background: linear-gradient(135deg, rgba(255, 98, 98, 0.92), rgba(220, 38, 38, 0.82));
-  color: #fee2e2;
-  box-shadow: 0 0 12px rgba(220, 38, 38, 0.25);
+.combo-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  border-radius: 8px;
+  padding: 4px 10px;
+  border: 1px solid rgba(148, 163, 255, 0.25);
+  background: rgba(51, 65, 108, 0.3);
+  color: #dbeafe;
+  opacity: 0.45;
+  transition: opacity 160ms ease, transform 180ms ease, border-color 180ms ease;
+  text-align: left;
 }
 
-.combo-badge.visible {
+.spell-slot.hero .combo-stage.reached {
+  opacity: 0.82;
+  border-color: rgba(96, 165, 250, 0.6);
+}
+
+.spell-slot.hero .combo-stage.ready {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  border-color: rgba(96, 165, 250, 0.95);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.34), rgba(59, 130, 246, 0.18));
+  color: #f0f9ff;
 }
 
-.combo-badge-text {
-  display: inline-block;
-  animation: comboPulse 180ms ease-out forwards;
+.spell-slot.enemy .combo-stage {
+  border-color: rgba(248, 113, 113, 0.25);
+  background: rgba(86, 34, 44, 0.28);
+  color: #fee2e2;
 }
 
-@keyframes comboPulse {
-  0% {
-    transform: scale(0.88);
-  }
-  60% {
-    transform: scale(1.12);
-  }
+.spell-slot.enemy .combo-stage.reached {
+  opacity: 0.78;
+  border-color: rgba(248, 113, 113, 0.55);
+}
+
+.spell-slot.enemy .combo-stage.ready {
+  opacity: 1;
+  border-color: rgba(248, 113, 113, 0.9);
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.32), rgba(239, 68, 68, 0.18));
+}
+
+.combo-stage.pending {
+  animation: comboPending 1s ease-in-out infinite;
+}
+
+.spell-slot.hero .combo-stage:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+  border-color: rgba(148, 163, 255, 0.18);
+}
+
+.combo-stage .combo-stage-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.combo-stage .combo-stage-threshold {
+  font-size: 0.64rem;
+  opacity: 0.75;
+}
+
+button.combo-stage {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+button.combo-stage:focus-visible {
+  outline: 2px solid rgba(191, 219, 254, 0.8);
+  outline-offset: 2px;
+}
+
+@keyframes comboPending {
+  0%,
   100% {
     transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.65;
+  }
+}
+
+@media (max-width: 768px) {
+  .combo-stages {
+    flex-direction: column;
   }
 }
 
