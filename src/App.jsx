@@ -51,8 +51,8 @@ const PUZZLES_PER_BATTLE_BY_NODE = {
   "elf-practice": 2,
   "elf-easy": 4,
   "elf-middle": 6,
-  "elf-hard": 8,
-  "elf-ultra": 10,
+  "elf-hard": 2,
+  "elf-ultra": 4,
 };
 const FINAL_NODE_IDS = new Set(["elf-bad-ending", "elf-true-ending"]);
 const LEGACY_FINAL_NODE_ID = "elf-ending";

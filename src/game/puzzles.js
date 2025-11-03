@@ -20,6 +20,28 @@ function cloneTemplateEntry(entry) {
   };
 }
 
+function scaleGrid(grid, scale) {
+  if (!Array.isArray(grid) || !grid.length || scale <= 1) {
+    return clonePuzzle(grid);
+  }
+  const size = grid.length;
+  const scaledSize = size * scale;
+  const scaled = Array.from({ length: scaledSize }, () =>
+    Array.from({ length: scaledSize }, () => false),
+  );
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      if (!grid[y][x]) continue;
+      for (let dy = 0; dy < scale; dy += 1) {
+        for (let dx = 0; dx < scale; dx += 1) {
+          scaled[y * scale + dy][x * scale + dx] = true;
+        }
+      }
+    }
+  }
+  return scaled;
+}
+
 function createFallbackGrid(size, variant = 0) {
   const grid = Array.from({ length: size }, () => Array.from({ length: size }, () => false));
   for (let row = 0; row < size; row += 1) {
@@ -33,6 +55,40 @@ function createFallbackGrid(size, variant = 0) {
 
 function pattern(rows) {
   return rows.map((row) => row.split("").map((ch) => ch === "#"));
+}
+
+function pickTemplateVariant(template, size, rng, { allowTransforms, overlays, requireUniqueSolution }) {
+  if (!template) return null;
+  const modes = allowTransforms
+    ? [
+        { transform: true, overlay: true },
+        { transform: true, overlay: false },
+        { transform: false, overlay: true },
+        { transform: false, overlay: false },
+      ]
+    : [
+        { transform: false, overlay: true },
+        { transform: false, overlay: false },
+      ];
+
+  for (const mode of modes) {
+    const attempts = mode.transform ? 8 : 2;
+    for (let i = 0; i < attempts; i += 1) {
+      const baseVariant = mode.transform
+        ? applyTemplateTransform(template.grid, size, rng)
+        : clonePuzzle(template.grid);
+      if (!baseVariant) continue;
+      const candidate =
+        mode.overlay && overlays?.length
+          ? applyOverlays(baseVariant, overlays, size, rng)
+          : baseVariant;
+      if (requireUniqueSolution && !hasUniqueSolution(candidate)) {
+        continue;
+      }
+      return clonePuzzle(candidate);
+    }
+  }
+  return null;
 }
 
 // 5x5 puzzles (easy) — 5 puzzles
@@ -95,7 +151,7 @@ const MIDDLE = [
     [E, E, E, E, E],
     [_, E, E, E, _],
     [E, _, E, _, E],
-    [_, _, E, _, _],
+    [_, E, E, _, _],
   ],
   // Spiral rune
   [
@@ -245,7 +301,7 @@ const EASY_STORY_TEMPLATES = [
   ]),
 ];
 
-const HARD_STORY_TEMPLATES = [
+const HARD_STORY_TEMPLATES_BASE = [
   pattern([
     "####.",
     "###.#",
@@ -290,7 +346,24 @@ const HARD_STORY_TEMPLATES = [
   ]),
 ];
 
-const ULTRA_STORY_TEMPLATES = [
+const HARD_EXTRA_TEMPLATES_BASE = [
+  pattern([
+    ".###.",
+    "#...#",
+    "#####",
+    ".#.#.",
+    ".###.",
+  ]),
+  pattern([
+    "..#..",
+    ".###.",
+    "#####",
+    ".#.#.",
+    "##.##",
+  ]),
+];
+
+const ULTRA_STORY_TEMPLATES_BASE = [
   pattern([
     "#####",
     "#.###",
@@ -335,7 +408,7 @@ const ULTRA_STORY_TEMPLATES = [
   ]),
 ];
 
-const ULTRA_EXTRA_TEMPLATES = [
+const ULTRA_EXTRA_TEMPLATES_BASE = [
   pattern([
     "##.##",
     ".###.",
@@ -365,6 +438,11 @@ const ULTRA_EXTRA_TEMPLATES = [
     ".###.",
   ]),
 ];
+
+const HARD_STORY_TEMPLATES = HARD_STORY_TEMPLATES_BASE.map((grid) => scaleGrid(grid, 2));
+const HARD_EXTRA_TEMPLATES = HARD_EXTRA_TEMPLATES_BASE.map((grid) => scaleGrid(grid, 2));
+const ULTRA_STORY_TEMPLATES = ULTRA_STORY_TEMPLATES_BASE.map((grid) => scaleGrid(grid, 2));
+const ULTRA_EXTRA_TEMPLATES = ULTRA_EXTRA_TEMPLATES_BASE.map((grid) => scaleGrid(grid, 2));
 
 const PRACTICE_OVERLAYS = [
   pattern([
@@ -431,7 +509,7 @@ const EASY_OVERLAYS = [
   ]),
 ];
 
-const HARD_OVERLAYS = [
+const HARD_OVERLAY_BASES = [
   pattern([
     ".#.#.",
     "#####",
@@ -455,7 +533,7 @@ const HARD_OVERLAYS = [
   ]),
 ];
 
-const ULTRA_OVERLAYS = [
+const ULTRA_OVERLAY_BASES = [
   pattern([
     "#####",
     "#.#.#",
@@ -478,6 +556,9 @@ const ULTRA_OVERLAYS = [
     "###.#",
   ]),
 ];
+
+const HARD_OVERLAYS = HARD_OVERLAY_BASES.map((grid) => scaleGrid(grid, 2));
+const ULTRA_OVERLAYS = ULTRA_OVERLAY_BASES.map((grid) => scaleGrid(grid, 2));
 
 function createGlyphTemplate({
   grid,
@@ -645,7 +726,7 @@ const GLYPH_TEMPLATE_DEFS = [
     difficulty: "hard",
   }),
   createGlyphTemplate({
-    grid: MIDDLE_STORY[1],
+    grid: HARD_EXTRA_TEMPLATES[0],
     glyphId: "hard_breeze",
     glyphLabel: "BR",
     meaningText: "森笛の調べ",
@@ -653,7 +734,7 @@ const GLYPH_TEMPLATE_DEFS = [
     difficulty: "hard",
   }),
   createGlyphTemplate({
-    grid: MIDDLE_STORY[2],
+    grid: HARD_EXTRA_TEMPLATES[1],
     glyphId: "hard_key",
     glyphLabel: "KN",
     meaningText: "秘鍵の影",
@@ -1435,11 +1516,31 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
     difficulty && DIFFICULTY_TEMPLATES[difficulty]?.length
       ? DIFFICULTY_TEMPLATES[difficulty]
       : ALL_GLYPH_TEMPLATES;
-  const overlays = difficulty ? DIFFICULTY_OVERLAYS[difficulty] : null;
+  const useAdvancedTransforms = difficulty === "hard" || difficulty === "ultra";
+  const overlays = useAdvancedTransforms ? DIFFICULTY_OVERLAYS[difficulty] : null;
   const seedValue = normalizeSeed(options.seed ?? Math.random() * 0xffffffff);
   const rng = createRng(seedValue);
-  const allowTransforms = difficulty !== "practice" && difficulty !== "easy";
-  const requireUniqueSolution = difficulty !== "practice" && difficulty !== "easy";
+  const allowTransforms = useAdvancedTransforms;
+  const requireUniqueSolution =
+    difficulty !== "practice" && difficulty !== "easy" && size <= 5;
+
+  if (!useAdvancedTransforms) {
+    const baseSelection = templates.slice(0, Math.min(count, templates.length)).map((entry) => ({
+      grid: clonePuzzle(entry.grid),
+      glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
+    }));
+    while (baseSelection.length < count) {
+      const fallbackGrid = createFallbackGrid(size, baseSelection.length);
+      baseSelection.push({ grid: fallbackGrid, glyphMeta: null });
+    }
+    const heroPuzzles = baseSelection.map((entry) => cloneTemplateEntry(entry));
+    const enemyPuzzles = baseSelection.map((entry) => clonePuzzle(entry.grid));
+    return {
+      seed: seedValue,
+      heroPuzzles,
+      enemyPuzzles,
+    };
+  }
 
   const sortedTemplates = templates
     .slice()
@@ -1453,17 +1554,15 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   const seen = new Set();
   const enforceRecentGuard = templates.length > count;
 
+  const variantOptions = { allowTransforms, overlays, requireUniqueSolution };
+
   for (let i = 0; i < selection.length && results.length < count; i += 1) {
     const template = selection[i];
-    const baseVariant = allowTransforms
-      ? applyTemplateTransform(template.grid, size, rng)
-      : clonePuzzle(template.grid);
-    if (!baseVariant) continue;
-    const candidate = allowTransforms ? applyOverlays(baseVariant, overlays, size, rng) : baseVariant;
+    const candidate = pickTemplateVariant(template, size, rng, variantOptions);
+    if (!candidate) continue;
     const key = gridKey(candidate);
     if (seen.has(key)) continue;
     if (enforceRecentGuard && wasRecentlyGenerated(nodeId, key)) continue;
-    if (requireUniqueSolution && !hasUniqueSolution(candidate)) continue;
     seen.add(key);
     rememberLayout(nodeId, key);
     results.push({
@@ -1476,11 +1575,8 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
     for (let i = selection.length; i < sortedTemplates.length && results.length < count; i += 1) {
       const entry = sortedTemplates[i];
       if (!entry) continue;
-      const baseVariant = allowTransforms
-        ? applyTemplateTransform(entry.grid, size, rng) || clonePuzzle(entry.grid)
-        : clonePuzzle(entry.grid);
-      const candidate = allowTransforms ? applyOverlays(baseVariant, overlays, size, rng) : baseVariant;
-      if (requireUniqueSolution && !hasUniqueSolution(candidate)) continue;
+      const candidate = pickTemplateVariant(entry, size, rng, variantOptions);
+      if (!candidate) continue;
       const key = gridKey(candidate);
       if (seen.has(key)) continue;
       if (enforceRecentGuard && wasRecentlyGenerated(nodeId, key)) continue;
@@ -1496,11 +1592,8 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   if (results.length < count) {
     const fallbackTemplates = drawRandomTemplates(templates, count - results.length, rng);
     fallbackTemplates.forEach((entry) => {
-      const baseVariant = allowTransforms
-        ? applyTemplateTransform(entry.grid, size, rng) || clonePuzzle(entry.grid)
-        : clonePuzzle(entry.grid);
-      const candidate = allowTransforms ? applyOverlays(baseVariant, overlays, size, rng) : baseVariant;
-      if (requireUniqueSolution && !hasUniqueSolution(candidate)) return;
+      const candidate = pickTemplateVariant(entry, size, rng, variantOptions);
+      if (!candidate) return;
       const key = gridKey(candidate);
       if (seen.has(key)) return;
       if (enforceRecentGuard && wasRecentlyGenerated(nodeId, key)) return;
