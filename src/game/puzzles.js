@@ -20,6 +20,17 @@ function cloneTemplateEntry(entry) {
   };
 }
 
+function createFallbackGrid(size, variant = 0) {
+  const grid = Array.from({ length: size }, () => Array.from({ length: size }, () => false));
+  for (let row = 0; row < size; row += 1) {
+    const col = (row + variant) % size;
+    grid[row][col] = true;
+    const mirror = size - 1 - col;
+    grid[row][mirror] = true;
+  }
+  return grid;
+}
+
 function pattern(rows) {
   return rows.map((row) => row.split("").map((ch) => ch === "#"));
 }
@@ -1500,6 +1511,28 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
         glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
       });
     });
+  }
+
+  if (results.length < count) {
+    let variant = 0;
+    const maxAttempts = size * size;
+    while (results.length < count && variant < maxAttempts) {
+      const fallbackGrid = createFallbackGrid(size, variant);
+      variant += 1;
+      if (requireUniqueSolution && !hasUniqueSolution(fallbackGrid)) {
+        continue;
+      }
+      const key = gridKey(fallbackGrid);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      rememberLayout(nodeId, key);
+      results.push({
+        grid: clonePuzzle(fallbackGrid),
+        glyphMeta: null,
+      });
+    }
   }
 
   const heroRng = createRng(deriveSeed(seedValue, 0x9e3779b9));
