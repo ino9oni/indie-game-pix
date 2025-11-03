@@ -7,12 +7,12 @@ const CANVAS_MIN_HEIGHT = 640;
 const CANVAS_MARGIN = 24;
 const INNER_PADDING_X = 48;
 const INNER_PADDING_Y = 48;
-const EDGE_ANGLE_DEG = 30;
+const EDGE_ANGLE_DEG = 35;
 const EDGE_SLOPE = Math.tan((EDGE_ANGLE_DEG * Math.PI) / 180);
 const HERO_TRAVEL_MIN_MS = 600;
 const HERO_TRAVEL_MAX_MS = 2000;
 const START_VERTICAL_RATIO = 0.78;
-const HORIZONTAL_STEP_SCALE = 0.4;
+const HORIZONTAL_STEP_SCALE = 0.5;
 
 const ENCOUNTER_SHARDS = [
   { key: "shard-1", rotate: -14, tx: "-12%", ty: "-6%", delay: "40ms" },
