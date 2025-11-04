@@ -2907,6 +2907,39 @@ button {
   margin: 0;
 }
 
+.picross-clear-collection-groups {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2.2vw, 24px);
+}
+
+.picross-clear-board-section {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vw, 18px);
+}
+
+.picross-clear-board-header {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.6vw, 16px);
+}
+
+.picross-clear-board-title {
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.picross-clear-board-divider {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.45), rgba(148, 163, 184, 0.08));
+  border-radius: 999px;
+}
+
 .picross-clear-board-wrapper {
   position: relative;
   width: min(100%, clamp(520px, 70vw, 1080px));
@@ -2927,6 +2960,16 @@ button {
   overflow-y: auto;
 }
 
+.picross-clear-board-wrapper--small {
+  min-height: clamp(340px, 40vw, 620px);
+}
+
+.picross-clear-board-wrapper--large {
+  min-height: clamp(240px, 32vw, 460px);
+  padding-top: clamp(14px, 1.8vw, 20px);
+  padding-bottom: clamp(16px, 1.9vw, 22px);
+}
+
 .picross-clear-board-wrapper--scroll {
   padding-right: clamp(22px, 2.8vw, 30px);
 }
@@ -2940,6 +2983,11 @@ button {
   gap: clamp(8px, 1vw, 14px);
   width: 100%;
   align-content: start;
+}
+
+.picross-clear-board--large {
+  grid-template-columns: repeat(5, minmax(112px, 1fr));
+  gap: clamp(6px, 0.9vw, 12px);
 }
 
 .picross-clear-board--scroll {
@@ -2961,6 +3009,11 @@ button {
   box-shadow: inset 0 0 12px rgba(15, 23, 42, 0.45);
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
   min-width: 144px;
+}
+
+.picross-clear-slot.slot-size-10 {
+  min-width: 124px;
+  padding: clamp(6px, 0.9vw, 10px) clamp(6px, 0.9vw, 10px);
 }
 
 .slot-badge {
@@ -3024,11 +3077,19 @@ button {
 }
 
 .slot-shape {
+  --shape-cols: 5;
+  --shape-gap: clamp(1px, 0.4vw, 2px);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: clamp(1px, 0.4vw, 2px);
+  grid-template-columns: repeat(var(--shape-cols), 1fr);
+  gap: var(--shape-gap);
   width: min(112px, 78%);
   margin: 0 auto clamp(6px, 1vw, 10px);
+}
+
+.slot-shape-10 {
+  --shape-cols: 10;
+  --shape-gap: clamp(0.4px, 0.24vw, 1px);
+  width: min(168px, 92%);
 }
 
 .slot-cell {
@@ -3066,6 +3127,10 @@ button {
   -webkit-line-clamp: 2;
 }
 
+.slot-meaning-size-10 {
+  font-size: clamp(0.58rem, 0.85vw, 0.74rem);
+}
+
 @keyframes slotUnlockPop {
   0% {
     transform: scale(0.6);
@@ -3101,7 +3166,9 @@ button {
     grid-template-columns: 1fr;
     gap: clamp(20px, 6vw, 32px);
   }
-  .picross-clear-board-wrapper {
+  .picross-clear-board-wrapper,
+  .picross-clear-board-wrapper--small,
+  .picross-clear-board-wrapper--large {
     margin-inline: auto;
     width: 100%;
     min-width: 100%;
@@ -3115,7 +3182,8 @@ button {
   .picross-clear-actions {
     justify-content: center;
   }
-  .picross-clear-board {
+  .picross-clear-board--small,
+  .picross-clear-board--large {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
@@ -3124,13 +3192,19 @@ button {
   .picross-clear-overlay {
     padding: clamp(18px, 6vw, 28px);
   }
-  .picross-clear-board-wrapper {
+  .picross-clear-board-wrapper,
+  .picross-clear-board-wrapper--small,
+  .picross-clear-board-wrapper--large {
     width: min(100%, clamp(280px, 92vw, 400px));
     min-width: min(100%, clamp(280px, 92vw, 400px));
     min-height: clamp(280px, 70vw, 520px);
   }
-  .picross-clear-board {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .picross-clear-board--small {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(6px, 2.4vw, 10px);
+  }
+  .picross-clear-board--large {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(6px, 2.4vw, 10px);
   }
 }

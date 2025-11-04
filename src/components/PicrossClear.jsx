@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 
 export default function PicrossClear({
   heroName,
@@ -55,19 +55,128 @@ export default function PicrossClear({
   const unlockSummary = unlockedNames.length
     ? `新たな記号：${unlockedNames.join("、")}`
     : "新規解放はありませんでした。";
-  const codexNeedsScroll = boardEntries.length > 30;
-  const codexWrapperClass = [
-    "picross-clear-board-wrapper",
-    codexNeedsScroll ? "picross-clear-board-wrapper--scroll" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-  const codexGridClass = [
-    "picross-clear-board",
-    codexNeedsScroll ? "picross-clear-board--scroll" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const smallBoardEntries = useMemo(
+    () => boardEntries.filter((entry) => Array.isArray(entry.grid) && entry.grid.length <= 5),
+    [boardEntries],
+  );
+  const largeBoardEntries = useMemo(
+    () => boardEntries.filter((entry) => Array.isArray(entry.grid) && entry.grid.length > 5),
+    [boardEntries],
+  );
+
+  const renderBoard = useCallback(
+    (entries, variant, title) => {
+      if (!entries.length) return null;
+      const needsScroll = variant === "small" ? entries.length > 30 : entries.length > 10;
+      const wrapperClass = [
+        "picross-clear-board-wrapper",
+        `picross-clear-board-wrapper--${variant}`,
+        needsScroll ? "picross-clear-board-wrapper--scroll" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const gridClass = [
+        "picross-clear-board",
+        `picross-clear-board--${variant}`,
+        needsScroll ? "picross-clear-board--scroll" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      return (
+        <section
+          key={`board-${variant}`}
+          className={`picross-clear-board-section picross-clear-board-section--${variant}`}
+          aria-label={title}
+        >
+          <header className="picross-clear-board-header">
+            <h3 className="picross-clear-board-title">{title}</h3>
+            <span className="picross-clear-board-divider" aria-hidden="true" />
+          </header>
+          <div className={wrapperClass}>
+            {variant === "small" && isComplete && (
+              <div className="picross-clear-complete" role="status" aria-live="polite">
+                <span className="complete-ribbon">COMPLETE!</span>
+                <span className="complete-stars" aria-hidden="true" />
+              </div>
+            )}
+            <div className={gridClass} role="grid">
+              {entries.map((entry) => {
+                const isUnlocked = unlockedSet.has(entry.collectionIndex);
+                const isNew = newlyUnlockedSet.has(entry.collectionIndex);
+                const displayText = isUnlocked
+                  ? entry.meaningText || entry.glyphLabel || "記号"
+                  : "??";
+                const storedRecord =
+                  solvedGrids instanceof Map ? solvedGrids.get(entry.collectionIndex) : null;
+                const storedGrid = storedRecord?.grid;
+                const baseShape =
+                  Array.isArray(entry.grid) && entry.grid.length ? entry.grid : emptyShape;
+                const shape =
+                  isUnlocked && Array.isArray(storedGrid) && storedGrid.length
+                    ? storedGrid
+                    : baseShape;
+                const shapeSize = Array.isArray(shape) ? shape.length : 5;
+                const className = [
+                  "picross-clear-slot",
+                  `slot-${entry.difficulty}`,
+                  `slot-size-${shapeSize}`,
+                  isUnlocked ? "is-unlocked" : "is-locked",
+                  isNew ? "is-new" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+                const meaningClass = ["slot-meaning", `slot-meaning-size-${shapeSize}`]
+                  .filter(Boolean)
+                  .join(" ");
+                const shapeClass = ["slot-shape", `slot-shape-${shapeSize}`]
+                  .filter(Boolean)
+                  .join(" ");
+                return (
+                  <div
+                    key={entry.collectionIndex}
+                    className={className}
+                    data-difficulty={entry.difficulty}
+                    title={entry.meaningText || undefined}
+                    role="gridcell"
+                    aria-live={isNew ? "polite" : undefined}
+                  >
+                    {isNew && <span className="slot-badge">NEW</span>}
+                    <div className={shapeClass}>
+                      {shape.map((row, rowIndex) =>
+                        row.map((filled, colIndex) => {
+                          const cellKey = `${entry.collectionIndex}-${rowIndex}-${colIndex}`;
+                          const cellClass = [
+                            "slot-cell",
+                            filled ? "is-filled" : "",
+                            isUnlocked && filled ? "is-active" : "",
+                            !isUnlocked && filled ? "is-locked" : "",
+                            isNew && filled ? "is-new" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ");
+                          const delay = (rowIndex * shapeSize + colIndex) * 45;
+                          return (
+                            <span
+                              key={cellKey}
+                              className={cellClass}
+                              style={isNew && filled ? { animationDelay: `${delay}ms` } : undefined}
+                            />
+                          );
+                        }),
+                      )}
+                    </div>
+                    <span className={meaningClass}>{displayText}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      );
+    },
+    [emptyShape, isComplete, newlyUnlockedSet, solvedGrids, unlockedSet],
+  );
+
   return (
     <main className="screen picross-clear-screen">
       <div className="picross-clear-overlay">
@@ -113,78 +222,9 @@ export default function PicrossClear({
 
           <section className="picross-clear-collection" aria-label="Elfpix Symbol">
             <h2 className="picross-clear-collection-title">Elfpix Symbol</h2>
-            <div className={codexWrapperClass}>
-              {isComplete && (
-                <div className="picross-clear-complete" role="status" aria-live="polite">
-                  <span className="complete-ribbon">COMPLETE!</span>
-                  <span className="complete-stars" aria-hidden="true" />
-                </div>
-              )}
-              <div className={codexGridClass} role="grid">
-                {boardEntries.map((entry) => {
-                  const isUnlocked = unlockedSet.has(entry.collectionIndex);
-                  const isNew = newlyUnlockedSet.has(entry.collectionIndex);
-                  const displayText = isUnlocked
-                    ? entry.meaningText || entry.glyphLabel || "記号"
-                    : "??";
-                  const storedRecord =
-                    solvedGrids instanceof Map ? solvedGrids.get(entry.collectionIndex) : null;
-                  const storedGrid = storedRecord?.grid;
-                  const baseShape =
-                    Array.isArray(entry.grid) && entry.grid.length ? entry.grid : emptyShape;
-                  const shape =
-                    isUnlocked && Array.isArray(storedGrid) && storedGrid.length
-                      ? storedGrid
-                      : baseShape;
-                  const className = [
-                    "picross-clear-slot",
-                    `slot-${entry.difficulty}`,
-                    isUnlocked ? "is-unlocked" : "is-locked",
-                    isNew ? "is-new" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
-                  return (
-                    <div
-                      key={entry.collectionIndex}
-                      className={className}
-                      data-difficulty={entry.difficulty}
-                      title={entry.meaningText || undefined}
-                      role="gridcell"
-                      aria-live={isNew ? "polite" : undefined}
-                    >
-                      {isNew && <span className="slot-badge">NEW</span>}
-                      <div className="slot-shape">
-                        {shape.map((row, rowIndex) =>
-                          row.map((filled, colIndex) => {
-                            const cellKey = `${entry.collectionIndex}-${rowIndex}-${colIndex}`;
-                            const cellClass = [
-                              "slot-cell",
-                              filled ? "is-filled" : "",
-                              isUnlocked && filled ? "is-active" : "",
-                              !isUnlocked && filled ? "is-locked" : "",
-                              isNew && filled ? "is-new" : "",
-                            ]
-                              .filter(Boolean)
-                              .join(" ");
-                            const delay = (rowIndex * 5 + colIndex) * 45;
-                            return (
-                              <span
-                                key={cellKey}
-                                className={cellClass}
-                                style={
-                                  isNew && filled ? { animationDelay: `${delay}ms` } : undefined
-                                }
-                              />
-                            );
-                          }),
-                        )}
-                      </div>
-                      <span className="slot-meaning">{displayText}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="picross-clear-collection-groups">
+              {renderBoard(smallBoardEntries, "small", "Elfpix Symbol 5×5")}
+              {renderBoard(largeBoardEntries, "large", "Elfpix Symbol 10×10")}
             </div>
           </section>
         </div>
