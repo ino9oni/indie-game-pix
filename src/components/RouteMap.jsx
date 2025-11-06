@@ -15,11 +15,11 @@ const START_VERTICAL_RATIO = 0.78;
 const HORIZONTAL_STEP_SCALE = 0.25;
 
 const ENCOUNTER_SHARDS = [
-  { key: "shard-1", rotate: -14, tx: "-12%", ty: "-6%", delay: "40ms" },
-  { key: "shard-2", rotate: 9, tx: "8%", ty: "-10%", delay: "80ms" },
-  { key: "shard-3", rotate: -4, tx: "-6%", ty: "10%", delay: "120ms" },
-  { key: "shard-4", rotate: 16, tx: "10%", ty: "12%", delay: "160ms" },
-  { key: "shard-5", rotate: 3, tx: "4%", ty: "-4%", delay: "0ms" },
+  { key: "shard-1", rotate: -18, tx: "-22%", ty: "-10%", delay: "60ms" },
+  { key: "shard-2", rotate: 14, tx: "18%", ty: "-16%", delay: "120ms" },
+  { key: "shard-3", rotate: -6, tx: "-14%", ty: "18%", delay: "180ms" },
+  { key: "shard-4", rotate: 22, tx: "22%", ty: "16%", delay: "90ms" },
+  { key: "shard-5", rotate: 4, tx: "-6%", ty: "-2%", delay: "0ms" },
 ];
 
 const NODE_HALF_WIDTH = 18;

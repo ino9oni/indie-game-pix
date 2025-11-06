@@ -387,6 +387,22 @@ export default function Conversation({
       }
     : undefined;
 
+  const heroEntryStyle = shouldFadeIn
+    ? {
+        transform: entered ? "translateX(0)" : "translateX(-40px)",
+        opacity: entered ? 1 : 0,
+        transition: "transform 260ms ease-out, opacity 260ms ease-out",
+      }
+    : undefined;
+
+  const enemyEntryStyle = shouldFadeIn
+    ? {
+        transform: entered ? "translateX(0)" : "translateX(40px)",
+        opacity: entered ? 1 : 0,
+        transition: "transform 260ms ease-out, opacity 260ms ease-out",
+      }
+    : undefined;
+
   return (
     <main
       className="screen dialog"
@@ -404,7 +420,7 @@ export default function Conversation({
       >
         {/* Stage: portraits side by side, natural sizes, no overlap with dialog */}
         <div className="conversation-stage">
-          <div className="conversation-slot hero">
+          <div className="conversation-slot hero" style={heroEntryStyle}>
             <div
               className={`portrait-frame hero ${heroActive ? "active" : ""}`}
               style={{
@@ -443,7 +459,7 @@ export default function Conversation({
             </div>
           </div>
 
-          <div className="conversation-slot enemy">
+          <div className="conversation-slot enemy" style={enemyEntryStyle}>
             <div
               className={`portrait-frame enemy ${enemyActive ? "active" : ""}`}
               style={{

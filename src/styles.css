@@ -2096,11 +2096,11 @@ button {
 }
 
 .route-encounter-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
-  border-radius: inherit;
-  z-index: 4;
+  border-radius: 0;
+  z-index: 24;
   overflow: hidden;
 }
 
@@ -2113,30 +2113,30 @@ button {
 }
 
 .route-encounter-overlay .encounter-dimmer {
-  background: radial-gradient(circle at center, rgba(254, 226, 226, 0.45) 10%, rgba(7, 11, 24, 0.82) 62%);
+  background: radial-gradient(circle at center, rgba(88, 198, 255, 0.26) 0%, rgba(15, 23, 42, 0.92) 60%);
 }
 
 .route-encounter-overlay .encounter-fracture {
-  inset: -12%;
+  inset: -18%;
   background:
-    radial-gradient(circle at center, rgba(255, 255, 255, 0.25) 0%, transparent 55%),
+    radial-gradient(circle at center, rgba(202, 255, 191, 0.32) 0%, transparent 55%),
     repeating-conic-gradient(
       from 0deg,
-      rgba(255, 255, 255, 0.08) 0deg 4deg,
-      transparent 4deg 12deg
+      rgba(134, 239, 172, 0.2) 0deg 9deg,
+      transparent 9deg 18deg
     );
   mix-blend-mode: screen;
-  filter: blur(0.6px);
+  filter: blur(2px);
 }
 
 .route-encounter-overlay .encounter-shard {
-  inset: -10%;
+  inset: -16%;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.05)),
-    radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.55), transparent 60%);
+    linear-gradient(140deg, rgba(167, 243, 208, 0.42), rgba(165, 180, 252, 0.16)),
+    radial-gradient(circle at 45% 45%, rgba(224, 231, 255, 0.62), transparent 65%);
   border-radius: 24px;
   transform: translate(0, 0) scale(1) rotate(var(--shard-rotate, 0deg));
-  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.35));
+  filter: drop-shadow(0 0 18px rgba(164, 231, 255, 0.45));
   mix-blend-mode: screen;
   --shard-tx: 0%;
   --shard-ty: 0%;
@@ -2177,55 +2177,61 @@ button {
 @keyframes encounter-dimmer-fade {
   0% {
     opacity: 0;
+    transform: scale(0.85);
   }
-  12% {
-    opacity: 0.7;
+  18% {
+    opacity: 0.82;
+    transform: scale(1);
   }
-  55% {
-    opacity: 0.4;
+  46% {
+    opacity: 0.55;
+    transform: scale(1.08);
   }
   100% {
     opacity: 0;
+    transform: scale(1.18);
   }
 }
 
 @keyframes encounter-fracture {
   0% {
     opacity: 0;
-    transform: scale(0.96) rotate(0deg);
+    transform: scale(0.8) rotate(0deg);
   }
   18% {
-    opacity: 0.85;
-    transform: scale(1.02) rotate(3deg);
+    opacity: 0.92;
+    transform: scale(1) rotate(0deg);
   }
-  58% {
-    opacity: 0.55;
-    transform: scale(1.08) rotate(-2deg);
+  46% {
+    opacity: 0.58;
+    transform: scale(1.24) rotate(6deg);
   }
   100% {
     opacity: 0;
-    transform: scale(1.1) rotate(0deg);
+    transform: scale(1.45) rotate(14deg);
+    filter: blur(26px);
   }
 }
 
 @keyframes encounter-shard {
   0% {
     opacity: 0;
-    transform: translate(0, 0) scale(1) rotate(var(--shard-rotate, 0deg));
+    transform: translate(0, 0) scale(0.45) rotate(var(--shard-rotate, 0deg));
   }
   18% {
-    opacity: 0.95;
-    transform: translate(0, 0) scale(1.05) rotate(var(--shard-rotate, 0deg));
+    opacity: 0.9;
+    transform: translate(0, 0) scale(1) rotate(var(--shard-rotate, 0deg));
   }
-  58% {
-    opacity: 0.45;
-    transform: translate(var(--shard-tx), var(--shard-ty)) scale(1.08) rotate(var(--shard-rotate, 0deg));
+  46% {
+    opacity: 0.65;
+    transform: translate(var(--shard-tx), var(--shard-ty)) scale(1.15)
+      rotate(calc(var(--shard-rotate, 0deg) * 0.8));
   }
   100% {
     opacity: 0;
-    transform: translate(calc(var(--shard-tx) * 1.35), calc(var(--shard-ty) * 1.35))
-      scale(1.12)
-      rotate(var(--shard-rotate, 0deg));
+    transform: translate(calc(var(--shard-tx) * 1.4), calc(var(--shard-ty) * 1.4))
+      scale(1.28)
+      rotate(calc(var(--shard-rotate, 0deg) * 0.85));
   }
 }
 .route-edge-group {
