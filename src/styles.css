@@ -2239,11 +2239,21 @@ button {
   filter: blur(0.6px);
 }
 
+.route-edge-shadow--visited {
+  stroke: rgba(59, 130, 246, 0.35);
+  opacity: 0.6;
+}
+
 .route-edge {
   stroke: url(#route-edge-gradient);
   stroke-width: 3px;
   stroke-linecap: round;
   opacity: 0.85;
+}
+
+.route-edge--visited {
+  stroke: rgba(96, 165, 250, 0.65);
+  opacity: 0.9;
 }
 
 .route-edge-glow {
@@ -2275,9 +2285,19 @@ button {
   opacity: 0.85;
 }
 
+.route-node-visited {
+  filter: drop-shadow(0 0 6px rgba(94, 164, 255, 0.45));
+}
+
 
 .route-node-top {
   transition: filter 160ms ease;
+}
+
+.route-node-visited .route-node-top,
+.route-node-visited .route-node-side-front,
+.route-node-visited .route-node-side-back {
+  filter: saturate(0.65) brightness(0.94);
 }
 
 .route-node-side-front,

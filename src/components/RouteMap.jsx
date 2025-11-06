@@ -280,22 +280,54 @@ export default function RouteMap({
     return new Set(Array.isArray(cleared) ? cleared : []);
   }, [cleared]);
 
+  const pathInfo = useMemo(() => {
+    const nodeSet = new Set();
+    const edgeSet = new Set();
+    let cursor = current;
+    while (cursor) {
+      if (nodes[cursor]) {
+        nodeSet.add(cursor);
+      }
+      const parentId = parents[cursor];
+      if (parentId && nodes[parentId]) {
+        nodeSet.add(parentId);
+        const edgeKey =
+          parentId < cursor ? `${parentId}__${cursor}` : `${cursor}__${parentId}`;
+        edgeSet.add(edgeKey);
+      }
+      if (!parentId || parentId === cursor) break;
+      cursor = parentId;
+    }
+    return { nodeSet, edgeSet };
+  }, [current, nodes, parents]);
+
+  const visitedNodes = useMemo(() => {
+    const set = new Set(pathInfo.nodeSet);
+    clearedSet.forEach((id) => {
+      if (nodes[id]) {
+        set.add(id);
+      }
+    });
+    return set;
+  }, [clearedSet, nodes, pathInfo.nodeSet]);
+
+  const visitedEdges = pathInfo.edgeSet;
+
   const visibleNodes = useMemo(() => {
     if (showAllNodes) {
       return new Set(Object.keys(nodes));
     }
-    const visible = new Set();
+    const visible = new Set(visitedNodes);
     if (nodes[current]) {
       visible.add(current);
     }
     const neighbors = Array.from(adj[current] || []);
     neighbors.forEach((id) => {
       if (!nodes[id]) return;
-      if (last && id === last) return;
       visible.add(id);
     });
     return visible;
-  }, [adj, current, debugMode, last, nodes, showAllNodes]);
+  }, [adj, current, nodes, showAllNodes, visitedNodes]);
 
   const [animating, setAnimating] = useState(false);
   const [heroPos, setHeroPos] = useState(() => nodes[current] || { x: 0, y: 0 });
@@ -521,12 +553,12 @@ export default function RouteMap({
           </defs>
 
           {edges
-            .filter((e) =>
-              visibleNodes.has(e.from) && visibleNodes.has(e.to),
-            )
+            .filter((e) => visibleNodes.has(e.from) && visibleNodes.has(e.to))
             .map((e) => {
               const d = pathD(e.from, e.to);
               const key = `${e.from}-${e.to}`;
+              const edgeKey = e.from < e.to ? `${e.from}__${e.to}` : `${e.to}__${e.from}`;
+              const isVisited = visitedEdges.has(edgeKey);
               const isActive =
                 !!activeEdge &&
                 ((activeEdge.from === e.from && activeEdge.to === e.to) ||
@@ -534,12 +566,16 @@ export default function RouteMap({
               return (
                 <g key={key} className="route-edge-group">
                   <path
-                    className="route-edge-shadow"
+                    className={`route-edge-shadow${isVisited ? " route-edge-shadow--visited" : ""}`}
                     d={d}
                     transform="translate(4 -4)"
                     fill="none"
                   />
-                  <path className="route-edge" d={d} fill="none" />
+                  <path
+                    className={`route-edge${isVisited ? " route-edge--visited" : ""}`}
+                    d={d}
+                    fill="none"
+                  />
                   {isActive && animating && (
                     <path
                       className="route-edge-glow"
@@ -567,6 +603,7 @@ export default function RouteMap({
             const pointerTop = bubbleY - pointerHeight;
             const pointerPoints = `${n.x - pointerHalf},${bubbleY} ${n.x + pointerHalf},${bubbleY} ${n.x},${pointerTop}`;
             const isCurrent = current === id;
+            const isVisited = visitedNodes.has(id);
             const variant = isCurrent
               ? "current"
               : id === "start"
@@ -617,6 +654,9 @@ export default function RouteMap({
             return (
               <g
                 key={id}
+                className={`route-node route-node-${variant}${
+                  interactive ? " interactive" : ""
+                }${isVisited ? " route-node-visited" : ""}`}
                 onClick={() => {
                   if (!canClick(id)) return;
                   if (onMoveStart) onMoveStart(id);
@@ -630,12 +670,9 @@ export default function RouteMap({
                     beginTravel(id);
                   }
                 }}
-                className={`route-node route-node-${variant}${
-                  interactive ? " interactive" : ""
-                }`}
                 style={{
                   cursor: interactive ? "pointer" : "default",
-                  opacity: interactive ? 1 : 0.6,
+                  opacity: interactive ? 1 : 0.85,
                 }}
                 tabIndex={interactive ? 0 : undefined}
                 role={interactive ? "button" : "presentation"}
