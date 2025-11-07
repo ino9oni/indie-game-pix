@@ -502,28 +502,26 @@ export default function RouteMap({
 
   return (
     <main className="screen route">
+      <div className={`route-encounter-overlay${encountering ? " active" : ""}`}>
+        <div className="encounter-dimmer" />
+        <div className="encounter-fracture" />
+        {ENCOUNTER_SHARDS.map((shard) => (
+          <span
+            key={shard.key}
+            className={`encounter-shard ${shard.key}`}
+            style={{
+              "--shard-rotate": `${shard.rotate}deg`,
+              "--shard-tx": shard.tx,
+              "--shard-ty": shard.ty,
+              "--shard-delay": shard.delay,
+            }}
+          />
+        ))}
+      </div>
       <div
         className={`route-canvas${encountering ? " encounter-zoom" : ""}`}
         ref={canvasRef}
       >
-        <div
-          className={`route-encounter-overlay${encountering ? " active" : ""}`}
-        >
-          <div className="encounter-dimmer" />
-          <div className="encounter-fracture" />
-          {ENCOUNTER_SHARDS.map((shard) => (
-            <span
-              key={shard.key}
-              className={`encounter-shard ${shard.key}`}
-              style={{
-                "--shard-rotate": `${shard.rotate}deg`,
-                "--shard-tx": shard.tx,
-                "--shard-ty": shard.ty,
-                "--shard-delay": shard.delay,
-              }}
-            />
-          ))}
-        </div>
         <svg
           viewBox={viewBox}
           className="route-svg"

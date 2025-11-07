@@ -2067,11 +2067,12 @@ button {
 /* Route */
 .screen.route {
   position: relative;
+  --route-pad: clamp(24px, 6vw, 64px);
   min-height: calc(100vh - 140px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(24px, 6vw, 64px);
+  padding: var(--route-pad);
 }
 .route-canvas {
   background: rgba(12, 18, 38, 0.72);
@@ -2096,10 +2097,13 @@ button {
 }
 
 .route-encounter-overlay {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  top: calc(var(--route-pad) * -1);
+  right: calc(var(--route-pad) * -1);
+  bottom: calc(var(--route-pad) * -1);
+  left: calc(var(--route-pad) * -1);
   pointer-events: none;
-  border-radius: 0;
+  border-radius: clamp(16px, 4vw, 32px);
   z-index: 24;
   overflow: hidden;
 }
@@ -2113,16 +2117,16 @@ button {
 }
 
 .route-encounter-overlay .encounter-dimmer {
-  background: radial-gradient(circle at center, rgba(88, 198, 255, 0.26) 0%, rgba(15, 23, 42, 0.92) 60%);
+  background: radial-gradient(circle at center, rgba(124, 58, 237, 0.35) 0%, rgba(8, 5, 24, 0.92) 60%);
 }
 
 .route-encounter-overlay .encounter-fracture {
   inset: -18%;
   background:
-    radial-gradient(circle at center, rgba(202, 255, 191, 0.32) 0%, transparent 55%),
+    radial-gradient(circle at center, rgba(196, 181, 253, 0.34) 0%, transparent 55%),
     repeating-conic-gradient(
       from 0deg,
-      rgba(134, 239, 172, 0.2) 0deg 9deg,
+      rgba(124, 58, 237, 0.22) 0deg 9deg,
       transparent 9deg 18deg
     );
   mix-blend-mode: screen;
@@ -2132,11 +2136,11 @@ button {
 .route-encounter-overlay .encounter-shard {
   inset: -16%;
   background:
-    linear-gradient(140deg, rgba(167, 243, 208, 0.42), rgba(165, 180, 252, 0.16)),
-    radial-gradient(circle at 45% 45%, rgba(224, 231, 255, 0.62), transparent 65%);
+    linear-gradient(145deg, rgba(236, 72, 153, 0.35), rgba(129, 140, 248, 0.18)),
+    radial-gradient(circle at 45% 45%, rgba(233, 213, 255, 0.62), transparent 65%);
   border-radius: 24px;
   transform: translate(0, 0) scale(1) rotate(var(--shard-rotate, 0deg));
-  filter: drop-shadow(0 0 18px rgba(164, 231, 255, 0.45));
+  filter: drop-shadow(0 0 22px rgba(147, 51, 234, 0.46));
   mix-blend-mode: screen;
   --shard-tx: 0%;
   --shard-ty: 0%;
