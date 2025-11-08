@@ -53,11 +53,414 @@ function createFallbackGrid(size, variant = 0) {
   return grid;
 }
 
+function transposeGrid(grid) {
+  if (!grid.length) return [];
+  return grid[0].map((_, col) => grid.map((row) => row[col]));
+}
+
+function countTrueCells(grid) {
+  let total = 0;
+  grid.forEach((row) =>
+    row.forEach((cell) => {
+      if (cell) total += 1;
+    }),
+  );
+  return total;
+}
+
+function getLineSegments(line) {
+  const segments = [];
+  let start = null;
+  for (let i = 0; i <= line.length; i += 1) {
+    if (line[i]) {
+      if (start == null) start = i;
+    } else if (start != null) {
+      segments.push({ start, length: i - start });
+      start = null;
+    }
+  }
+  return segments;
+}
+
+function breakLongRuns(line, maxRun) {
+  const arr = line.slice();
+  if (maxRun <= 0) return arr;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const segments = getLineSegments(arr);
+    const oversized = segments.find((seg) => seg.length > maxRun);
+    if (!oversized) break;
+    const breakIndex = oversized.start + Math.floor(oversized.length / 2);
+    arr[breakIndex] = false;
+    changed = true;
+  }
+  return arr;
+}
+
+function limitSegmentCount(line, maxSegments) {
+  if (!Number.isFinite(maxSegments) || maxSegments <= 0) return line.slice();
+  const arr = line.slice();
+  let segments = getLineSegments(arr);
+  while (segments.length > maxSegments) {
+    const seg = segments[segments.length - 1];
+    const removeIndex = seg.start + Math.floor(seg.length / 2);
+    arr[removeIndex] = false;
+    segments = getLineSegments(arr);
+  }
+  return arr;
+}
+
+function applyLineAdjustments(grid, handler) {
+  const next = grid.map((row) => row.slice());
+  next.forEach((row, idx) => {
+    next[idx] = handler(row);
+  });
+  const cols = transposeGrid(next);
+  cols.forEach((col, idx) => {
+    cols[idx] = handler(col);
+  });
+  const adjusted = transposeGrid(cols);
+  return adjusted;
+}
+
+function getLongestRun(line) {
+  const segments = getLineSegments(line);
+  if (!segments.length) return 0;
+  return Math.max(...segments.map((seg) => seg.length));
+}
+
+function createRowPattern(size, length, grid = null, rowIndex = -1, rng = Math.random) {
+  const baseRow = Array(size).fill(false);
+  const maxOffset = Math.max(0, size - length);
+  if (!grid || rowIndex < 0 || maxOffset === 0) {
+    const start = maxOffset > 0 ? Math.floor(rng() * (maxOffset + 1)) : 0;
+    const row = baseRow.slice();
+    for (let i = 0; i < length; i += 1) {
+      row[start + i] = true;
+    }
+    return row;
+  }
+
+  const candidates = [];
+  for (let start = 0; start <= maxOffset; start += 1) {
+    const candidateRow = baseRow.slice();
+    for (let i = 0; i < length; i += 1) {
+      candidateRow[start + i] = true;
+    }
+    const testGrid = grid.map((existingRow, idx) => (idx === rowIndex ? candidateRow : existingRow));
+    const penalty = computeUltraHintPenalty(testGrid);
+    candidates.push({ penalty, row: candidateRow });
+  }
+  const minPenalty = Math.min(...candidates.map((c) => c.penalty));
+  const best = candidates.filter((option) => option.penalty <= minPenalty + 1e-6);
+  const pick = best[Math.floor(rng() * best.length)];
+  return pick?.row ? pick.row.slice() : baseRow;
+}
+
+function enforceUltraRowTargets(grid, rng = Math.random, { forceReassign = false } = {}) {
+  const size = grid.length;
+  const next = grid.map((row) => row.slice());
+  const assigned = new Set();
+  const shouldReassign = forceReassign || computeUltraHintPenalty(next) > ULTRA_HINT_TOLERANCE;
+  const profiles = next.map((row, index) => ({
+    index,
+    longest: getLongestRun(row),
+  }));
+
+  ULTRA_ROW_TARGETS.forEach((target) => {
+    let remaining = target.count;
+    const pickLength = () =>
+      target.max === target.min
+        ? target.max
+        : target.min + Math.floor(rng() * (target.max - target.min + 1));
+    profiles.forEach((profile) => {
+      if (remaining <= 0) return;
+      if (assigned.has(profile.index)) return;
+      if (profile.longest >= target.min && profile.longest <= target.max) {
+        if (shouldReassign) {
+          const targetLength = pickLength();
+          next[profile.index] = createRowPattern(size, targetLength, next, profile.index, rng);
+        }
+        assigned.add(profile.index);
+        remaining -= 1;
+      }
+    });
+    while (remaining > 0) {
+      const candidates = profiles
+        .map((profile) => profile.index)
+        .filter((index) => !assigned.has(index));
+      if (!candidates.length) break;
+      const pick = candidates[Math.floor(rng() * candidates.length)];
+      const targetLength = pickLength();
+      next[pick] = createRowPattern(size, targetLength, next, pick, rng);
+      assigned.add(pick);
+      remaining -= 1;
+    }
+  });
+
+  return next;
+}
+
+function enforceUltraHintDistribution(grid, rng = Math.random) {
+  let adjusted = grid.map((row) => row.slice());
+  for (let i = 0; i < 2; i += 1) {
+    adjusted = enforceUltraRowTargets(adjusted, rng, { forceReassign: true });
+    const transposed = transposeGrid(adjusted);
+    const normalizedCols = enforceUltraRowTargets(transposed, rng, { forceReassign: true });
+    adjusted = transposeGrid(normalizedCols);
+  }
+  return adjusted;
+}
+
+function rebalanceUltraHints(grid, rng = Math.random, iterations = 20000) {
+  const size = grid.length;
+  let current = grid.map((row) => row.slice());
+  let penalty = computeUltraHintPenalty(current);
+  let bestPenalty = penalty;
+  let bestGrid = current.map((row) => row.slice());
+
+  for (let i = 0; i < iterations && penalty > ULTRA_HINT_TOLERANCE; i += 1) {
+    const r = Math.floor(rng() * size);
+    const c = Math.floor(rng() * size);
+    current[r][c] = !current[r][c];
+    const nextPenalty = computeUltraHintPenalty(current);
+    const delta = nextPenalty - penalty;
+    const temperature = Math.max(0.0001, 1 - i / iterations);
+    if (delta <= 0 || rng() < Math.exp(-Math.max(0, delta) / temperature)) {
+      penalty = nextPenalty;
+      if (nextPenalty < bestPenalty) {
+        bestPenalty = nextPenalty;
+        bestGrid = current.map((row) => row.slice());
+      }
+    } else {
+      current[r][c] = !current[r][c];
+    }
+  }
+
+  return bestPenalty < penalty ? bestGrid : current;
+}
+
+function isHorizontallySymmetric(grid) {
+  return grid.every((row) => row.every((cell, idx) => cell === row[row.length - 1 - idx]));
+}
+
+function isVerticallySymmetric(grid) {
+  const height = grid.length;
+  return grid.every((row, rIdx) => row.every((cell, cIdx) => cell === grid[height - 1 - rIdx][cIdx]));
+}
+
+const DIFFICULTY_LIMITS = {
+  middle: {
+    minDensity: 0.28,
+    maxDensity: 0.42,
+    maxRunRatio: 0.5,
+    maxSegments: 4,
+    preventSymmetry: true,
+  },
+  hard: {
+    minDensity: 0.35,
+    maxDensity: 0.55,
+    maxRunRatio: 1,
+    maxSegments: 0,
+    preventSymmetry: true,
+  },
+  ultra: {
+    minDensity: 0.35,
+    maxDensity: 0.55,
+    maxRunRatio: 1,
+    maxSegments: 0,
+    preventSymmetry: true,
+  },
+};
+
+const DIFFICULTY_TIERS = {
+  practice: "intro",
+  easy: "intro",
+  middle: "core",
+  hard: "advanced",
+  ultra: "master",
+};
+
+const ULTRA_ROW_TARGETS = [
+  { count: 1, min: 10, max: 10 },
+  { count: 1, min: 7, max: 9 },
+  { count: 4, min: 4, max: 6 },
+  { count: 3, min: 2, max: 3 },
+  { count: 1, min: 1, max: 1 },
+];
+
+const ULTRA_HINT_PERCENTS = {
+  10: 0.1,
+  9: 0.0334,
+  8: 0.0333,
+  7: 0.0333,
+  6: 0.1334,
+  5: 0.1333,
+  4: 0.1333,
+  3: 0.15,
+  2: 0.15,
+  1: 0.1,
+};
+
+const ULTRA_HINT_TOLERANCE = 0.05;
+
+function buildHintHistogram(grid) {
+  const histogram = {};
+  let total = 0;
+  const { rows, cols } = computeClues(grid);
+  rows.concat(cols).forEach((clues) => {
+    clues.forEach((value) => {
+      if (value <= 0) return;
+      histogram[value] = (histogram[value] || 0) + 1;
+      total += 1;
+    });
+  });
+  return { histogram, total };
+}
+
+function computeUltraHintPenalty(grid) {
+  const { histogram, total } = buildHintHistogram(grid);
+  if (!total) return 0;
+  let penalty = 0;
+  Object.entries(ULTRA_HINT_PERCENTS).forEach(([hint, target]) => {
+    const actual = (histogram[hint] || 0) / total;
+    const diff = Math.abs(actual - target);
+    const overTolerance = Math.max(0, diff - ULTRA_HINT_TOLERANCE);
+    penalty += overTolerance * overTolerance;
+  });
+  const size = grid.length;
+  for (let col = 0; col < size; col += 1) {
+    let run = 0;
+    let maxRun = 0;
+    for (let row = 0; row < size; row += 1) {
+      if (grid[row][col]) {
+        run += 1;
+        if (run > maxRun) {
+          maxRun = run;
+        }
+      } else {
+        run = 0;
+      }
+    }
+    if (maxRun > size * 0.9) {
+      penalty += (maxRun - size * 0.9) * 0.05;
+    }
+  }
+  return penalty;
+}
+
+function randomIndex(list, rng = Math.random) {
+  if (!list.length) return -1;
+  return Math.floor(rng() * list.length);
+}
+
+function enforceDensity(grid, { minDensity, maxDensity }, rng = Math.random) {
+  const totalCells = grid.length * grid.length;
+  const flatIndices = [];
+  grid.forEach((row, r) =>
+    row.forEach((cell, c) => {
+      flatIndices.push({ r, c, filled: cell });
+    }),
+  );
+  let filled = countTrueCells(grid);
+  const desiredMin = Math.floor(totalCells * minDensity);
+  const desiredMax = Math.ceil(totalCells * maxDensity);
+  const next = grid.map((row) => row.slice());
+
+  while (filled > desiredMax) {
+    const candidates = flatIndices.filter((cell) => next[cell.r][cell.c]);
+    if (!candidates.length) break;
+    const idx = randomIndex(candidates, rng);
+    const pick = candidates[idx];
+    next[pick.r][pick.c] = false;
+    filled -= 1;
+  }
+  const emptyCells = flatIndices.filter((cell) => !next[cell.r][cell.c]);
+  while (filled < desiredMin && emptyCells.length) {
+    const idx = randomIndex(emptyCells, rng);
+    const pick = emptyCells.splice(idx, 1)[0];
+    next[pick.r][pick.c] = true;
+    filled += 1;
+  }
+  return next;
+}
+
+function breakSymmetry(grid) {
+  const next = grid.map((row) => row.slice());
+  if (isHorizontallySymmetric(next)) {
+    const size = next.length;
+    for (let r = 0; r < size; r += 1) {
+      for (let c = Math.floor(size / 2); c < size; c += 1) {
+        if (next[r][c]) {
+          next[r][c] = false;
+          return next;
+        }
+      }
+    }
+  }
+  if (isVerticallySymmetric(next)) {
+    const size = next.length;
+    for (let r = Math.floor(size / 2); r < size; r += 1) {
+      for (let c = 0; c < size; c += 1) {
+        if (next[r][c]) {
+          next[r][c] = false;
+          return next;
+        }
+      }
+    }
+  }
+  return next;
+}
+
+function normalizeGridForDifficulty(grid, difficulty, rng = Math.random) {
+  const limits = DIFFICULTY_LIMITS[difficulty];
+  if (!limits) return clonePuzzle(grid);
+  const size = grid.length;
+  const maxRun = Math.max(2, Math.floor(size * limits.maxRunRatio));
+  const useAdvancedHintBalancing =
+    size >= 10 && (difficulty === "hard" || difficulty === "ultra");
+  const shouldAdjustSegments = !useAdvancedHintBalancing;
+
+  let normalized = clonePuzzle(grid);
+  if (limits.preventSymmetry) {
+    normalized = breakSymmetry(normalized);
+  }
+  normalized = enforceDensity(normalized, limits, rng);
+  if (useAdvancedHintBalancing && size === 10) {
+    normalized = enforceUltraHintDistribution(normalized, rng);
+    normalized = rebalanceUltraHints(normalized, rng, 20000);
+    normalized = enforceDensity(normalized, limits, rng);
+    let penalty = computeUltraHintPenalty(normalized);
+    let safeguard = 0;
+    while (penalty > ULTRA_HINT_TOLERANCE && safeguard < 3) {
+      normalized = enforceUltraHintDistribution(normalized, rng);
+      normalized = rebalanceUltraHints(normalized, rng, 12000);
+      normalized = enforceDensity(normalized, limits, rng);
+      penalty = computeUltraHintPenalty(normalized);
+      safeguard += 1;
+    }
+  } else if (shouldAdjustSegments) {
+    normalized = applyLineAdjustments(normalized, (line) => {
+      let adjusted = breakLongRuns(line, maxRun);
+      adjusted = limitSegmentCount(adjusted, limits.maxSegments);
+      return adjusted;
+    });
+  }
+  normalized = enforceDensity(normalized, limits, rng);
+  return normalized;
+}
+
 function pattern(rows) {
   return rows.map((row) => row.split("").map((ch) => ch === "#"));
 }
 
-function pickTemplateVariant(template, size, rng, { allowTransforms, overlays, requireUniqueSolution }) {
+function pickTemplateVariant(
+  template,
+  size,
+  rng,
+  { allowTransforms, overlays, requireUniqueSolution, difficulty },
+) {
   if (!template) return null;
   const modes = allowTransforms
     ? [
@@ -85,7 +488,9 @@ function pickTemplateVariant(template, size, rng, { allowTransforms, overlays, r
       if (requireUniqueSolution && !hasUniqueSolution(candidate)) {
         continue;
       }
-      return clonePuzzle(candidate);
+      const appliedDifficulty = template?.glyphMeta?.difficulty || difficulty || null;
+      const normalizedVariant = normalizeGridForDifficulty(candidate, appliedDifficulty, rng);
+      return clonePuzzle(normalizedVariant);
     }
   }
   return null;
@@ -568,14 +973,16 @@ function createGlyphTemplate({
   collectionIndex,
   difficulty,
 }) {
+  const normalizedGrid = normalizeGridForDifficulty(grid, difficulty);
   return {
-    grid,
+    grid: normalizedGrid,
     glyphMeta: {
       glyphId,
       glyphLabel,
       meaningText,
       collectionIndex,
       difficulty,
+      difficultyTier: DIFFICULTY_TIERS[difficulty] || "intro",
     },
   };
 }
@@ -1554,7 +1961,7 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   const seen = new Set();
   const enforceRecentGuard = templates.length > count;
 
-  const variantOptions = { allowTransforms, overlays, requireUniqueSolution };
+  const variantOptions = { allowTransforms, overlays, requireUniqueSolution, difficulty };
 
   for (let i = 0; i < selection.length && results.length < count; i += 1) {
     const template = selection[i];
