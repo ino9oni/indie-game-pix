@@ -409,6 +409,18 @@ body {
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.45);
 }
 
+.tutorial-options-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tutorial-options-column .primary,
+.tutorial-options-column .ghost {
+  width: 100%;
+  justify-content: center;
+}
+
 .tutorial-dialog-body {
   line-height: 1.7;
   font-size: clamp(0.95rem, 1.5vw, 1.05rem);
@@ -425,6 +437,30 @@ body {
   margin-top: 0.6rem;
   font-weight: 700;
   color: #fde68a;
+}
+
+.tutorial-combo-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.tutorial-progress {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #bae6fd;
+}
+
+.tutorial-illustration {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  background: rgba(29, 78, 216, 0.18);
+  text-align: center;
+  font-family: "IBM Plex Mono", "Fira Code", monospace;
+  color: #e0f2fe;
 }
 
 .tutorial-actions {
