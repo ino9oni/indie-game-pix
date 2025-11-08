@@ -2,9 +2,17 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: 1.0.0
+Current release: v9.0.0
 
-## Release Highlights (1.0.0)
+## Release Highlights (v9.0.0)
+
+前回リリース (v8.1.0) からの主な変更:
+
+- チュートリアル完了後にコンボ／スペル／ジャマー解説レッスンを追加し、6枚構成のスライドで選択的に学べる分岐を導入。
+- レッスン内にピクロスミニボード図解を描画し、スペル発動やジャマーが盤面へ与える影響を視覚的に説明。
+- HARD/ULTRA の 10x10 お題生成を再調整し、行列ヒント分布とテンプレート正規化を難度ごとに最適化。
+
+## Previous Release Highlights (1.0.0)
 
 - タイトル画面とゲーム開始フローを刷新し、ゲームパッドでも操作できるフルコントローラサポートを追加。
 - 会話・ピクロス画面でのポートレート配置やナビゲーションを調整し、視認性と操作感を改善。
