@@ -32,87 +32,90 @@ const getComboTipsSeen = () => {
 };
 
 function ComboDiagram({ slideId, fallback }) {
+  const BoardMini = ({ pattern, label, jam = false, beam = false }) => (
+    <div className={`diagram-board ${jam ? "is-jam" : ""}`}>
+      {pattern.map((row, rIdx) =>
+        row.split("").map((cell, cIdx) => {
+          const key = `${rIdx}-${cIdx}`;
+          const cellClass =
+            cell === "#"
+              ? "filled"
+              : cell === "x"
+                ? "cross"
+                : cell === "m"
+                  ? "miss"
+                  : cell === "?"
+                    ? "maybe"
+                    : cell === "h"
+                      ? "highlight"
+                      : "";
+          return <span key={key} className={`diagram-cell ${cellClass}`} />;
+        }),
+      )}
+      {beam && <div className="diagram-board-beam" aria-hidden="true" />}
+      {label && <div className="diagram-board-label">{label}</div>}
+    </div>
+  );
+
   switch (slideId) {
     case "definition":
       return (
         <div className="tutorial-diagram diagram-combo-flow" role="img" aria-label="コンボがミスで途切れる例">
-          <div className="diagram-row">
-            <span className="diagram-token filled">✔</span>
-            <span className="diagram-token filled">✔</span>
-            <span className="diagram-token filled">✔</span>
-            <span className="diagram-arrow">➜</span>
-            <span className="diagram-token miss">MISS</span>
-            <span className="diagram-arrow">➜</span>
-            <span className="diagram-counter">Combo 0</span>
-          </div>
+          <BoardMini pattern={["hhhhh", ".....", ".....", ".....", "..m.."]} label="HERO Board" />
+          <div className="diagram-arrow">➜ ミス ➜</div>
+          <div className="diagram-counter">Combo 0</div>
         </div>
       );
     case "conditions":
       return (
         <div className="tutorial-diagram diagram-conditions" role="img" aria-label="コンボに加算される操作例">
-          <div className="diagram-column">
-            <span className="diagram-token filled">✔</span>
-            <span>正解 Fill</span>
-          </div>
-          <div className="diagram-column">
-            <span className="diagram-token cross">×</span>
-            <span>正しい ×</span>
-          </div>
-          <div className="diagram-column muted">
-            <span className="diagram-token maybe">?</span>
-            <span>Maybe / 誤操作</span>
-          </div>
+          <BoardMini pattern={["..#..", ".#?#.", "..#..", ".....", "....."]} label="正解 Fill" />
+          <BoardMini pattern={[".....", "..x..", ".....", ".....", "....."]} label="正しい ×" />
+          <BoardMini pattern={[".....", "..m..", ".....", ".....", "....."]} label="誤操作" jam />
         </div>
       );
     case "spell":
       return (
-        <div className="tutorial-diagram diagram-spell" role="img" aria-label="スペル発動の流れ">
-          <button type="button" className="diagram-spell-button" disabled>
-            SPELL READY
-          </button>
-          <div className="diagram-speech">「私の番ね！」</div>
-          <div className="diagram-spell-beam">ジャマー発動!!</div>
+        <div className="tutorial-diagram diagram-spell" role="img" aria-label="スペルを撃つと相手盤面へ影響する様子">
+          <BoardMini pattern={["..#..", ".###.", "..#..", ".....", "....."]} label="HERO" />
+          <div className="diagram-spell-arrow">SPELL ➜</div>
+          <BoardMini pattern={[".....", ".....", "..###", ".....", "....."]} label="ENEMY" beam jam />
         </div>
       );
     case "jammer":
       return (
-        <div className="tutorial-diagram diagram-jammer" role="img" aria-label="ジャマーのレベル例">
-          {[1, 2, 3, 4, 5].map((level) => (
-            <div key={level} className="diagram-bar">
-              <span className="diagram-bar-label">Lv{level}</span>
-              <div className="diagram-bar-track">
-                <div className="diagram-bar-fill" style={{ width: `${level * 18}%` }} />
-              </div>
-            </div>
-          ))}
+        <div className="tutorial-diagram diagram-jammer" role="img" aria-label="ジャマーで相手盤面に手戻りが入る例">
+          <BoardMini pattern={["..##.", ".###.", "..##.", ".....", "....."]} label="Before" />
+          <div className="diagram-arrow">ジャマー</div>
+          <BoardMini pattern={["..m..", ".m#m.", "..m..", ".....", "....."]} label="After" jam />
         </div>
       );
     case "usage":
       return (
-        <div className="tutorial-diagram diagram-usage" role="img" aria-label="スペル発動手順">
+        <div className="tutorial-diagram diagram-usage" role="img" aria-label="コンボからスペル発動の手順">
           <div className="diagram-row">
-            <span className="diagram-counter">Combo 4</span>
+            <BoardMini pattern={["..#..", "..#..", "..#..", ".....", "....."]} label="Combo 4" />
             <span className="diagram-arrow">➜</span>
             <button type="button" className="diagram-spell-button" disabled>
-              Cast Spell
+              スペル発動
             </button>
             <span className="diagram-arrow">➜</span>
-            <span className="diagram-counter reset">Combo 0</span>
+            <BoardMini pattern={[".....", ".....", ".....", ".....", "....."]} label="Combo 0" />
           </div>
         </div>
       );
     case "strategy":
       return (
-        <div className="tutorial-diagram diagram-strategy" role="img" aria-label="プレイスタイルの比較">
+        <div className="tutorial-diagram diagram-strategy" role="img" aria-label="プレイスタイルと盤面の比較">
           <div className="diagram-card">
             <strong>SAFE</strong>
-            <span>こまめに撃つ</span>
-            <span>安定＋早解き</span>
+            <BoardMini pattern={["..#..", ".###.", "..#..", ".....", "....."]} label="早撃ち" />
+            <span>こまめに撃って安定</span>
           </div>
           <div className="diagram-card">
             <strong>RISKY</strong>
-            <span>大技を狙う</span>
-            <span>逆転チャンス</span>
+            <BoardMini pattern={[".###.", ".###.", ".###.", ".....", "....."]} label="温存" />
+            <span>溜めて逆転を狙う</span>
           </div>
         </div>
       );
