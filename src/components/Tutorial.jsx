@@ -31,6 +31,101 @@ const getComboTipsSeen = () => {
   return window.localStorage.getItem(COMBO_MEMORY_KEY) === "true";
 };
 
+function ComboDiagram({ slideId, fallback }) {
+  switch (slideId) {
+    case "definition":
+      return (
+        <div className="tutorial-diagram diagram-combo-flow" role="img" aria-label="コンボがミスで途切れる例">
+          <div className="diagram-row">
+            <span className="diagram-token filled">✔</span>
+            <span className="diagram-token filled">✔</span>
+            <span className="diagram-token filled">✔</span>
+            <span className="diagram-arrow">➜</span>
+            <span className="diagram-token miss">MISS</span>
+            <span className="diagram-arrow">➜</span>
+            <span className="diagram-counter">Combo 0</span>
+          </div>
+        </div>
+      );
+    case "conditions":
+      return (
+        <div className="tutorial-diagram diagram-conditions" role="img" aria-label="コンボに加算される操作例">
+          <div className="diagram-column">
+            <span className="diagram-token filled">✔</span>
+            <span>正解 Fill</span>
+          </div>
+          <div className="diagram-column">
+            <span className="diagram-token cross">×</span>
+            <span>正しい ×</span>
+          </div>
+          <div className="diagram-column muted">
+            <span className="diagram-token maybe">?</span>
+            <span>Maybe / 誤操作</span>
+          </div>
+        </div>
+      );
+    case "spell":
+      return (
+        <div className="tutorial-diagram diagram-spell" role="img" aria-label="スペル発動の流れ">
+          <button type="button" className="diagram-spell-button" disabled>
+            SPELL READY
+          </button>
+          <div className="diagram-speech">「私の番ね！」</div>
+          <div className="diagram-spell-beam">ジャマー発動!!</div>
+        </div>
+      );
+    case "jammer":
+      return (
+        <div className="tutorial-diagram diagram-jammer" role="img" aria-label="ジャマーのレベル例">
+          {[1, 2, 3, 4, 5].map((level) => (
+            <div key={level} className="diagram-bar">
+              <span className="diagram-bar-label">Lv{level}</span>
+              <div className="diagram-bar-track">
+                <div className="diagram-bar-fill" style={{ width: `${level * 18}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    case "usage":
+      return (
+        <div className="tutorial-diagram diagram-usage" role="img" aria-label="スペル発動手順">
+          <div className="diagram-row">
+            <span className="diagram-counter">Combo 4</span>
+            <span className="diagram-arrow">➜</span>
+            <button type="button" className="diagram-spell-button" disabled>
+              Cast Spell
+            </button>
+            <span className="diagram-arrow">➜</span>
+            <span className="diagram-counter reset">Combo 0</span>
+          </div>
+        </div>
+      );
+    case "strategy":
+      return (
+        <div className="tutorial-diagram diagram-strategy" role="img" aria-label="プレイスタイルの比較">
+          <div className="diagram-card">
+            <strong>SAFE</strong>
+            <span>こまめに撃つ</span>
+            <span>安定＋早解き</span>
+          </div>
+          <div className="diagram-card">
+            <strong>RISKY</strong>
+            <span>大技を狙う</span>
+            <span>逆転チャンス</span>
+          </div>
+        </div>
+      );
+    default:
+      if (!fallback) return null;
+      return (
+        <div className="tutorial-illustration" role="img" aria-label={fallback}>
+          {fallback}
+        </div>
+      );
+  }
+}
+
 function createEmptyBoard() {
   return Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
 }
@@ -429,15 +524,7 @@ export default function Tutorial({ onExit, onComplete }) {
                     ))}
                   </ul>
                 )}
-                {slide.illustration && (
-                  <div
-                    className="tutorial-illustration"
-                    role="img"
-                    aria-label={slide.illustrationLabel || slide.illustration}
-                  >
-                    {slide.illustration}
-                  </div>
-                )}
+                <ComboDiagram slideId={slide.id} fallback={slide.illustration} />
               </div>
               <div className="tutorial-actions">
                 <button type="button" className="ghost" onClick={handleComboBack} disabled={comboSlide === 0}>
