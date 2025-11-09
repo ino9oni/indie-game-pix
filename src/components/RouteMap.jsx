@@ -1,17 +1,25 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { assetPath } from "../utils/assetPath.js";
 
 // Route map with neighbor-only movement, hero sprite, and animated traversal
-const MAP_MARGIN = 48;
-const MIN_VIEWBOX_WIDTH = 480;
-const MIN_VIEWBOX_HEIGHT = 320;
+const CANVAS_MIN_WIDTH = 960;
+const CANVAS_MIN_HEIGHT = 640;
+const CANVAS_MARGIN = 24;
+const INNER_PADDING_X = 48;
+const INNER_PADDING_Y = 48;
+const EDGE_ANGLE_DEG = 20;
+const EDGE_SLOPE = Math.tan((EDGE_ANGLE_DEG * Math.PI) / 180);
+const HERO_TRAVEL_MIN_MS = 600;
+const HERO_TRAVEL_MAX_MS = 2000;
+const START_VERTICAL_RATIO = 0.78;
+const HORIZONTAL_STEP_SCALE = 0.25;
 
 const ENCOUNTER_SHARDS = [
-  { key: "shard-1", rotate: -14, tx: "-12%", ty: "-6%", delay: "40ms" },
-  { key: "shard-2", rotate: 9, tx: "8%", ty: "-10%", delay: "80ms" },
-  { key: "shard-3", rotate: -4, tx: "-6%", ty: "10%", delay: "120ms" },
-  { key: "shard-4", rotate: 16, tx: "10%", ty: "12%", delay: "160ms" },
-  { key: "shard-5", rotate: 3, tx: "4%", ty: "-4%", delay: "0ms" },
+  { key: "shard-1", rotate: -18, tx: "-22%", ty: "-10%", delay: "60ms" },
+  { key: "shard-2", rotate: 14, tx: "18%", ty: "-16%", delay: "120ms" },
+  { key: "shard-3", rotate: -6, tx: "-14%", ty: "18%", delay: "180ms" },
+  { key: "shard-4", rotate: 22, tx: "22%", ty: "16%", delay: "90ms" },
+  { key: "shard-5", rotate: 4, tx: "-6%", ty: "-2%", delay: "0ms" },
 ];
 
 const NODE_HALF_WIDTH = 18;
@@ -52,48 +60,210 @@ export default function RouteMap({
   last,
   cleared,
   debugMode,
+  showAllNodes = false,
   onArrive,
   onMoveStart,
 }) {
-  const nodes = graph?.nodes ?? {};
+  const rawNodes = graph?.nodes ?? {};
   const edges = graph?.edges ?? [];
   const parents = graph?.parents ?? {};
-const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
+  const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
+
+  const canvasRef = useRef(null);
+  const [canvasSize, setCanvasSize] = useState({
+    width: CANVAS_MIN_WIDTH,
+    height: CANVAS_MIN_HEIGHT,
+  });
+
+  useLayoutEffect(() => {
+    const element = canvasRef.current;
+    if (!element) return undefined;
+
+    const updateSize = () => {
+      const rect = element.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      setCanvasSize({
+        width: rect.width,
+        height: rect.height,
+      });
+    };
+
+    updateSize();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        const { width, height } = entry.contentRect;
+        if (!width || !height) return;
+        setCanvasSize({ width, height });
+      });
+      observer.observe(element);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
 
   const viewBox = useMemo(() => {
-    const points = Object.values(nodes).filter(
-      (n) => Number.isFinite(n?.x) && Number.isFinite(n?.y),
-    );
-    if (points.length === 0) {
-      return "0 0 800 400";
-    }
+    const width = Math.max(1, canvasSize.width);
+    const height = Math.max(1, canvasSize.height);
+    return `0 0 ${width} ${height}`;
+  }, [canvasSize]);
+
+  const childMap = useMemo(() => {
+    const map = {};
+    Object.entries(parents).forEach(([child, parentId]) => {
+      if (!parentId) return;
+      (map[parentId] ||= []).push(child);
+    });
+    return map;
+  }, [parents]);
+
+  const nodes = useMemo(() => {
+    const entries = Object.entries(rawNodes);
+    if (!entries.length) return {};
+
+    const rootId =
+      entries.find(([id]) => !parents[id])?.[0] ||
+      (Object.prototype.hasOwnProperty.call(rawNodes, "start") ? "start" : entries[0][0]);
 
     let minX = Infinity;
     let maxX = -Infinity;
     let minY = Infinity;
     let maxY = -Infinity;
 
-    for (const { x, y } of points) {
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;
+    entries.forEach(([, node]) => {
+      if (Number.isFinite(node?.x)) {
+        minX = Math.min(minX, node.x);
+        maxX = Math.max(maxX, node.x);
+      }
+      if (Number.isFinite(node?.y)) {
+        minY = Math.min(minY, node.y);
+        maxY = Math.max(maxY, node.y);
+      }
+    });
+
+    if (!Number.isFinite(minX)) minX = 0;
+    if (!Number.isFinite(maxX)) maxX = Object.keys(rawNodes).length;
+    if (!Number.isFinite(minY)) minY = 0;
+    if (!Number.isFinite(maxY)) maxY = Object.keys(rawNodes).length;
+
+    const spanX = Math.max(1, maxX - minX);
+    const spanY = Math.max(1, maxY - minY);
+
+    const innerWidth = Math.max(
+      1,
+      canvasSize.width - INNER_PADDING_X * 2,
+    );
+    const innerHeight = Math.max(
+      1,
+      canvasSize.height - INNER_PADDING_Y * 2,
+    );
+
+    const depthMap = {};
+    const queue = [rootId];
+    depthMap[rootId] = 0;
+    while (queue.length) {
+      const currentId = queue.shift();
+      const children = childMap[currentId] || [];
+      children.forEach((childId) => {
+        if (depthMap[childId] != null) return;
+        depthMap[childId] = (depthMap[currentId] || 0) + 1;
+        queue.push(childId);
+      });
     }
 
-    const width = Math.max(1, maxX - minX);
-    const height = Math.max(1, maxY - minY);
+    const maxDepth = Math.max(...Object.values(depthMap));
+    const baseStep =
+      maxDepth > 0 ? innerWidth / maxDepth : innerWidth / 2;
+    const horizontalStep = Math.max(
+      baseStep * HORIZONTAL_STEP_SCALE,
+      innerWidth * 0.12,
+    );
+    const slopeStep = horizontalStep * EDGE_SLOPE;
 
-    const paddedWidth = width + MAP_MARGIN * 2;
-    const paddedHeight = height + MAP_MARGIN * 2;
+    const positioned = {};
+    const startY = Math.min(
+      INNER_PADDING_Y + innerHeight,
+      INNER_PADDING_Y + innerHeight * START_VERTICAL_RATIO,
+    );
+    positioned[rootId] = {
+      ...rawNodes[rootId],
+      x: INNER_PADDING_X,
+      y: startY,
+    };
 
-    const finalWidth = Math.max(paddedWidth, MIN_VIEWBOX_WIDTH);
-    const finalHeight = Math.max(paddedHeight, MIN_VIEWBOX_HEIGHT);
+    const traversalQueue = [rootId];
+    const visited = new Set([rootId]);
+    while (traversalQueue.length) {
+      const parentId = traversalQueue.shift();
+      const parentNode = positioned[parentId];
+      const children = childMap[parentId] || [];
+      children.forEach((childId, index) => {
+        if (!rawNodes[childId]) return;
+        if (visited.has(childId)) return;
+        const depth = depthMap[childId] ?? (depthMap[parentId] || 0) + 1;
+        const normX = (rawNodes[childId].x - minX) / spanX;
+        let targetX =
+          INNER_PADDING_X + normX * innerWidth ||
+          (INNER_PADDING_X + depth * horizontalStep);
+        if (!Number.isFinite(targetX)) {
+          targetX = INNER_PADDING_X + depth * horizontalStep;
+        }
+        const dx = targetX - parentNode.x;
+        if (Math.abs(dx) < horizontalStep * 0.25) {
+          targetX = parentNode.x + Math.sign(dx || 1) * horizontalStep;
+        }
 
-    const offsetX = minX - MAP_MARGIN - (finalWidth - paddedWidth) / 2;
-    const offsetY = minY - MAP_MARGIN - (finalHeight - paddedHeight) / 2;
+        const directionSign = (() => {
+          const rawParent = rawNodes[parentId];
+          const rawChild = rawNodes[childId];
+          const rawDelta =
+            Number(rawChild?.y) - Number(rawParent?.y);
+          if (Math.abs(rawDelta) > 1) {
+            return Math.sign(rawDelta);
+          }
+          if (children.length > 1) {
+            return index % 2 === 0 ? 1 : -1;
+          }
+          return rawDelta === 0 ? 1 : Math.sign(rawDelta);
+        })();
 
-    return `${offsetX} ${offsetY} ${finalWidth} ${finalHeight}`;
-  }, [nodes]);
+        const dy = Math.abs(dx || horizontalStep) * EDGE_SLOPE * directionSign;
+        const targetY = Math.min(
+          INNER_PADDING_Y + innerHeight,
+          Math.max(INNER_PADDING_Y, parentNode.y + dy),
+        );
+
+        positioned[childId] = {
+          ...rawNodes[childId],
+          x: Math.min(
+            INNER_PADDING_X + innerWidth,
+            Math.max(INNER_PADDING_X, targetX),
+          ),
+          y: targetY,
+        };
+        visited.add(childId);
+        traversalQueue.push(childId);
+      });
+    }
+
+    // Fallback for any nodes not reached through parents map
+    entries.forEach(([id, node]) => {
+      if (positioned[id]) return;
+      const nx = (node.x - minX) / spanX;
+      const ny = (node.y - minY) / spanY;
+      positioned[id] = {
+        ...node,
+        x: INNER_PADDING_X + nx * innerWidth,
+        y: INNER_PADDING_Y + ny * innerHeight,
+      };
+    });
+
+    return positioned;
+  }, [rawNodes, parents, childMap, canvasSize]);
 
   const adj = useMemo(() => {
     const m = {};
@@ -110,28 +280,54 @@ const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
     return new Set(Array.isArray(cleared) ? cleared : []);
   }, [cleared]);
 
+  const pathInfo = useMemo(() => {
+    const nodeSet = new Set();
+    const edgeSet = new Set();
+    let cursor = current;
+    while (cursor) {
+      if (nodes[cursor]) {
+        nodeSet.add(cursor);
+      }
+      const parentId = parents[cursor];
+      if (parentId && nodes[parentId]) {
+        nodeSet.add(parentId);
+        const edgeKey =
+          parentId < cursor ? `${parentId}__${cursor}` : `${cursor}__${parentId}`;
+        edgeSet.add(edgeKey);
+      }
+      if (!parentId || parentId === cursor) break;
+      cursor = parentId;
+    }
+    return { nodeSet, edgeSet };
+  }, [current, nodes, parents]);
+
+  const visitedNodes = useMemo(() => {
+    const set = new Set(pathInfo.nodeSet);
+    clearedSet.forEach((id) => {
+      if (nodes[id]) {
+        set.add(id);
+      }
+    });
+    return set;
+  }, [clearedSet, nodes, pathInfo.nodeSet]);
+
+  const visitedEdges = pathInfo.edgeSet;
+
   const visibleNodes = useMemo(() => {
-    if (debugMode) {
+    if (showAllNodes) {
       return new Set(Object.keys(nodes));
     }
-    const visible = new Set();
-    const isVisible = (id) => {
-      if (!id) return false;
-      if (visible.has(id)) return true;
-      if (id === "start") return true;
-      if (clearedSet.has(id)) return true;
-      if (id === current) return true;
-      const parent = parents[id];
-      if (!parent) return true;
-      if (clearedSet.has(parent)) return true;
-      if (parent === current) return true;
-      return false;
-    };
-    Object.keys(nodes).forEach((id) => {
-      if (isVisible(id)) visible.add(id);
+    const visible = new Set(visitedNodes);
+    if (nodes[current]) {
+      visible.add(current);
+    }
+    const neighbors = Array.from(adj[current] || []);
+    neighbors.forEach((id) => {
+      if (!nodes[id]) return;
+      visible.add(id);
     });
     return visible;
-  }, [nodes, parents, clearedSet, current, debugMode]);
+  }, [adj, current, nodes, showAllNodes, visitedNodes]);
 
   const [animating, setAnimating] = useState(false);
   const [heroPos, setHeroPos] = useState(() => nodes[current] || { x: 0, y: 0 });
@@ -182,52 +378,7 @@ const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
     const fromNode = nodes[fromId];
     const toNode = nodes[toId];
     if (!fromNode || !toNode) return "";
-
-    const dx = toNode.x - fromNode.x;
-    const dy = toNode.y - fromNode.y;
-    const sx = Math.sign(dx);
-    const sy = Math.sign(dy);
-
-    const points = [[fromNode.x, fromNode.y]];
-
-    if (dx !== 0) {
-      const horizontalY = fromNode.y + (sx > 0 ? 3 : -3);
-      const exitX = fromNode.x + sx * (NODE_HALF_WIDTH + 2);
-      points.push([exitX, horizontalY]);
-
-      const entryX = toNode.x - sx * (NODE_HALF_WIDTH + 2);
-      points.push([entryX, horizontalY]);
-    }
-
-    if (dy !== 0) {
-      const verticalX =
-        dx !== 0
-          ? toNode.x - sx * (NODE_HALF_WIDTH + 2)
-          : fromNode.x + (dy > 0 ? 2 : -2);
-      const exitY = fromNode.y + sy * (NODE_HALF_HEIGHT + 2);
-      points.push([verticalX, exitY]);
-
-      const entryY = toNode.y - sy * (NODE_HALF_HEIGHT + 2);
-      points.push([verticalX, entryY]);
-    }
-
-    if (dx !== 0) {
-      const entryX = toNode.x - sx * (NODE_HALF_WIDTH + 2);
-      const finalY = dy !== 0 ? toNode.y - sy * (NODE_HALF_HEIGHT + 2) : fromNode.y + (sx > 0 ? 3 : -3);
-      points.push([entryX, finalY]);
-    }
-
-    points.push([toNode.x, toNode.y]);
-
-    const simplified = points.filter((point, index, arr) => {
-      if (index === 0) return true;
-      const prev = arr[index - 1];
-      return prev[0] !== point[0] || prev[1] !== point[1];
-    });
-
-    return simplified
-      .map(([px, py], idx) => `${idx === 0 ? "M" : "L"} ${px} ${py}`)
-      .join(" ");
+    return `M ${fromNode.x} ${fromNode.y} L ${toNode.x} ${toNode.y}`;
   };
 
   const cancelAnimation = () => {
@@ -260,27 +411,9 @@ const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
       return;
     }
 
-    const horizontal = to.x - from.x;
-    const vertical = to.y - from.y;
-    const segments = [];
-    if (horizontal !== 0) {
-      segments.push({
-        axis: "x",
-        start: { x: from.x, y: from.y },
-        end: { x: to.x, y: from.y },
-        length: Math.abs(horizontal),
-      });
-    }
-    if (vertical !== 0) {
-      segments.push({
-        axis: "y",
-        start: { x: to.x, y: from.y },
-        end: { x: to.x, y: to.y },
-        length: Math.abs(vertical),
-      });
-    }
-
-    const totalLength = segments.reduce((acc, seg) => acc + seg.length, 0);
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const totalLength = Math.hypot(dx, dy);
     if (totalLength === 0) {
       setHeroPos(to);
       setAnimating(false);
@@ -291,38 +424,19 @@ const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
 
     setAnimating(true);
     setActiveEdge({ from: current, to: targetId });
-    const duration = 2000; // ms
+    const duration = Math.min(
+      HERO_TRAVEL_MAX_MS,
+      Math.max(HERO_TRAVEL_MIN_MS, totalLength * 6),
+    );
     const startRef = { value: null };
 
     const step = (timestamp) => {
       if (!startRef.value) startRef.value = timestamp;
       const progress = Math.min(1, (timestamp - startRef.value) / duration);
-      let distance = totalLength * progress;
-      let position = { x: from.x, y: from.y };
-
-      for (const seg of segments) {
-        if (seg.length === 0) {
-          position = { ...seg.end };
-          continue;
-        }
-        if (distance <= seg.length) {
-          const ratio = distance / seg.length;
-          if (seg.axis === "x") {
-            position = {
-              x: seg.start.x + (seg.end.x - seg.start.x) * ratio,
-              y: seg.start.y,
-            };
-          } else {
-            position = {
-              x: seg.start.x,
-              y: seg.start.y + (seg.end.y - seg.start.y) * ratio,
-            };
-          }
-          break;
-        }
-        distance -= seg.length;
-        position = { ...seg.end };
-      }
+      const position = {
+        x: from.x + dx * progress,
+        y: from.y + dy * progress,
+      };
 
       if (mountedRef.current) {
         setHeroPos(position);
@@ -388,27 +502,26 @@ const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
 
   return (
     <main className="screen route">
+      <div className={`route-encounter-overlay${encountering ? " active" : ""}`}>
+        <div className="encounter-dimmer" />
+        <div className="encounter-fracture" />
+        {ENCOUNTER_SHARDS.map((shard) => (
+          <span
+            key={shard.key}
+            className={`encounter-shard ${shard.key}`}
+            style={{
+              "--shard-rotate": `${shard.rotate}deg`,
+              "--shard-tx": shard.tx,
+              "--shard-ty": shard.ty,
+              "--shard-delay": shard.delay,
+            }}
+          />
+        ))}
+      </div>
       <div
         className={`route-canvas${encountering ? " encounter-zoom" : ""}`}
+        ref={canvasRef}
       >
-        <div
-          className={`route-encounter-overlay${encountering ? " active" : ""}`}
-        >
-          <div className="encounter-dimmer" />
-          <div className="encounter-fracture" />
-          {ENCOUNTER_SHARDS.map((shard) => (
-            <span
-              key={shard.key}
-              className={`encounter-shard ${shard.key}`}
-              style={{
-                "--shard-rotate": `${shard.rotate}deg`,
-                "--shard-tx": shard.tx,
-                "--shard-ty": shard.ty,
-                "--shard-delay": shard.delay,
-              }}
-            />
-          ))}
-        </div>
         <svg
           viewBox={viewBox}
           className="route-svg"
@@ -438,12 +551,12 @@ const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
           </defs>
 
           {edges
-            .filter((e) =>
-              visibleNodes.has(e.from) && visibleNodes.has(e.to),
-            )
+            .filter((e) => visibleNodes.has(e.from) && visibleNodes.has(e.to))
             .map((e) => {
               const d = pathD(e.from, e.to);
               const key = `${e.from}-${e.to}`;
+              const edgeKey = e.from < e.to ? `${e.from}__${e.to}` : `${e.to}__${e.from}`;
+              const isVisited = visitedEdges.has(edgeKey);
               const isActive =
                 !!activeEdge &&
                 ((activeEdge.from === e.from && activeEdge.to === e.to) ||
@@ -451,12 +564,16 @@ const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
               return (
                 <g key={key} className="route-edge-group">
                   <path
-                    className="route-edge-shadow"
+                    className={`route-edge-shadow${isVisited ? " route-edge-shadow--visited" : ""}`}
                     d={d}
                     transform="translate(4 -4)"
                     fill="none"
                   />
-                  <path className="route-edge" d={d} fill="none" />
+                  <path
+                    className={`route-edge${isVisited ? " route-edge--visited" : ""}`}
+                    d={d}
+                    fill="none"
+                  />
                   {isActive && animating && (
                     <path
                       className="route-edge-glow"
@@ -484,6 +601,7 @@ const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
             const pointerTop = bubbleY - pointerHeight;
             const pointerPoints = `${n.x - pointerHalf},${bubbleY} ${n.x + pointerHalf},${bubbleY} ${n.x},${pointerTop}`;
             const isCurrent = current === id;
+            const isVisited = visitedNodes.has(id);
             const variant = isCurrent
               ? "current"
               : id === "start"
@@ -534,6 +652,9 @@ const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
             return (
               <g
                 key={id}
+                className={`route-node route-node-${variant}${
+                  interactive ? " interactive" : ""
+                }${isVisited ? " route-node-visited" : ""}`}
                 onClick={() => {
                   if (!canClick(id)) return;
                   if (onMoveStart) onMoveStart(id);
@@ -547,12 +668,9 @@ const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
                     beginTravel(id);
                   }
                 }}
-                className={`route-node route-node-${variant}${
-                  interactive ? " interactive" : ""
-                }`}
                 style={{
                   cursor: interactive ? "pointer" : "default",
-                  opacity: interactive ? 1 : 0.6,
+                  opacity: interactive ? 1 : 0.85,
                 }}
                 tabIndex={interactive ? 0 : undefined}
                 role={interactive ? "button" : "presentation"}

@@ -2,9 +2,17 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: 1.0.0
+Current release: v9.0.0
 
-## Release Highlights (1.0.0)
+## Release Highlights (v9.0.0)
+
+前回リリース (v8.1.0) からの主な変更:
+
+- チュートリアル完了後にコンボ／スペル／ジャマー解説レッスンを追加し、6枚構成のスライドで選択的に学べる分岐を導入。
+- レッスン内にピクロスミニボード図解を描画し、スペル発動やジャマーが盤面へ与える影響を視覚的に説明。
+- HARD/ULTRA の 10x10 お題生成を再調整し、行列ヒント分布とテンプレート正規化を難度ごとに最適化。
+
+## Previous Release Highlights (1.0.0)
 
 - タイトル画面とゲーム開始フローを刷新し、ゲームパッドでも操作できるフルコントローラサポートを追加。
 - 会話・ピクロス画面でのポートレート配置やナビゲーションを調整し、視認性と操作感を改善。
@@ -23,7 +31,8 @@ Current release: 1.0.0
   - Place your generated title image at `public/title.png` (e.g., from Sora). The app will load it automatically on the Opening screen.
   - The header has a Sound toggle. Default is Off. Turn it On to enable SFX and start BGM (WAV). BGM keeps playing across screens.
 
-- Choose a level: `easy` (5x5), `middle` (10x10), `high` (15x15).
+- Choose a level: `easy` (5x5), `middle` (5x5), `high` (15x15).
+- Story battles (practice/easy/middle/hard/ultra) now share 5x5 boards for both HERO and ENEMY to keep matches brisk.
 - Each level has 5 puzzles. Pick one to start.
 - You have 20 minutes. Submit anytime to check your answer.
 - If your grid matches the solution at end/submit: Clear. Otherwise: Game Over.

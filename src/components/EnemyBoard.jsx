@@ -10,6 +10,7 @@ export default function EnemyBoard({
   hiddenColClues = [],
   lockedRowClues = [],
   lockedColClues = [],
+  fadedCells = [],
 }) {
   const resolvedClues = hintData ?? clues ?? {};
   const rowHints = Array.isArray(resolvedClues.rows) ? resolvedClues.rows : [];
@@ -34,6 +35,7 @@ export default function EnemyBoard({
   }, [computeCellSize]);
 
   const wrapStyle = { "--cell": `${cellPx}px` };
+  const fadedSet = useMemo(() => new Set(fadedCells), [fadedCells]);
   const renderClues = useMemo(
     () => (
       <Clues
@@ -56,12 +58,13 @@ export default function EnemyBoard({
         style={{ gridTemplateColumns: `repeat(${size}, var(--cell))` }}
       >
         {grid.map((row, r) =>
-          row.map((cell, c) => (
-            <div
-              key={`${r}-${c}`}
-              className={`cell ${cell === 1 ? "filled" : ""}`}
-            />
-          )),
+          row.map((cell, c) => {
+            const key = `${r}-${c}`;
+            const classes = ["cell"];
+            if (cell === 1) classes.push("filled");
+            if (fadedSet.has(key)) classes.push("faded");
+            return <div key={key} className={classes.join(" ")} />;
+          }),
         )}
       </div>
     </div>

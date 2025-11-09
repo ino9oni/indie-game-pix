@@ -1,13 +1,16 @@
 import React, { useEffect } from "react";
 import audio from "../audio/AudioManager.js";
+import { assetPath } from "../utils/assetPath.js";
 
-export default function GameOver({ onContinue, onQuit }) {
+const HERO_LOSE_IMAGE = assetPath("assets/img/character/hero/hero_lose.png");
+
+export default function EnemyVictory({ heroName, onContinue, onQuit }) {
   useEffect(() => {
     try {
       audio.stopPlayMusic?.();
       audio.playGameOver?.();
     } catch (err) {
-      console.error("GameOver: failed to trigger defeat audio", err);
+      console.error("EnemyVictory: failed to trigger defeat audio", err);
     }
     const handler = (event) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -24,10 +27,15 @@ export default function GameOver({ onContinue, onQuit }) {
     return () => window.removeEventListener("keydown", handler);
   }, [onContinue, onQuit]);
 
+  const resolvedName = heroName?.trim() || "主人公";
+
   return (
-    <main className="screen gameover">
-      <h1 className="headline">Game Over</h1>
-      <p className="sub">時間切れ、または解答が一致しませんでした。</p>
+    <main className="screen enemy-victory">
+      <h1 className="headline">{`${resolvedName} LOSE`}</h1>
+      <p className="sub">敵がすべてのお題を解き明かした！</p>
+      <div className="portrait">
+        <img src={HERO_LOSE_IMAGE} alt={`${resolvedName} defeat portrait`} />
+      </div>
       <div className="actions">
         <button className="ghost" onClick={onContinue}>
           Continue

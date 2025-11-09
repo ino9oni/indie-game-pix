@@ -3,19 +3,28 @@ import React from "react";
 export default function Opening({
   onStart,
   onNewGame,
+  onTutorial,
   focusedIndex = 0,
   usingGamepad = false,
 }) {
   const buttons = [
     {
+      label: "Tutorial",
+      description: "基本操作をガイド付きで学びます",
+      onPress: onTutorial,
+      variant: "ghost",
+    },
+    {
       label: "New Game",
       description: "進行状況を消去して新しく開始",
       onPress: onNewGame,
+      variant: "primary",
     },
     {
       label: "Continue",
       description: "セーブデータをロードします",
       onPress: onStart,
+      variant: "ghost",
     },
   ];
 
@@ -29,7 +38,7 @@ export default function Opening({
       <div className="actions">
         {buttons.map((btn, index) => {
           const selected = usingGamepad && focusedIndex === index;
-          const variant = index === 0 ? "primary" : "ghost";
+          const variant = btn.variant || "ghost";
           return (
             <button
               key={btn.label}
