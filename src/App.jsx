@@ -94,6 +94,15 @@ const GAMEPAD_BUTTON = {
   RIGHT: 15,
 };
 const GAMEPAD_REPEAT_MS = 180;
+const SPELL_FREEZE_DURATION = 900;
+const SPELL_CINEMATIC_DURATION = 1200;
+const SPELL_THEME_MAP = {
+  practice: "radiant",
+  easy: "tide",
+  middle: "quake",
+  hard: "venom",
+  ultra: "inferno",
+};
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -562,6 +571,16 @@ function countCorrectFilled(grid, solution) {
   return count;
 }
 
+function resolveSpellTheme(difficulty) {
+  const key = (difficulty || "").toLowerCase();
+  if (key.includes("ultra")) return SPELL_THEME_MAP.ultra;
+  if (key.includes("hard")) return SPELL_THEME_MAP.hard;
+  if (key.includes("middle") || key.includes("normal")) return SPELL_THEME_MAP.middle;
+  if (key.includes("easy")) return SPELL_THEME_MAP.easy;
+  if (key.includes("practice")) return SPELL_THEME_MAP.practice;
+  return SPELL_THEME_MAP.practice;
+}
+
 function createComboTrack() {
   return {
     count: 0,
@@ -813,6 +832,8 @@ export default function App() {
   const [enemyGrid, setEnemyGrid] = useState([]);
   const [activeSpell, setActiveSpell] = useState(null);
   const [spellSpeech, setSpellSpeech] = useState({ hero: null, enemy: null });
+  const [spellFreeze, setSpellFreeze] = useState(false);
+  const [spellCinematic, setSpellCinematic] = useState(null);
   const [conversationTransition, setConversationTransition] = useState("none");
   const [postClearAction, setPostClearAction] = useState(null);
   const [glyphCollection, setGlyphCollection] = useState(
@@ -913,32 +934,70 @@ export default function App() {
     });
   }, []);
 
-  const showSpellOverlay = useCallback((payload) => {
-    if (spellOverlayTimeoutRef.current) {
-      clearTimeout(spellOverlayTimeoutRef.current);
-      spellOverlayTimeoutRef.current = null;
+  const startSpellFreeze = useCallback(() => {
+    if (spellFreezeTimeoutRef.current) {
+      clearTimeout(spellFreezeTimeoutRef.current);
+      spellFreezeTimeoutRef.current = null;
     }
-    setActiveSpell(payload);
-
-    const caster = payload?.caster;
-    const speechText = typeof payload?.speech === "string" ? payload.speech.trim() : "";
-
-    if (caster && speechText) {
-      if (speechTimeoutRef.current[caster]) {
-        clearTimeout(speechTimeoutRef.current[caster]);
-      }
-      setSpellSpeech((prev) => ({ ...prev, [caster]: speechText }));
-      speechTimeoutRef.current[caster] = setTimeout(() => {
-        setSpellSpeech((prev) => ({ ...prev, [caster]: null }));
-        speechTimeoutRef.current[caster] = null;
-      }, SPELL_SPEECH_DURATION);
-    }
-
-    spellOverlayTimeoutRef.current = setTimeout(() => {
-      setActiveSpell(null);
-      spellOverlayTimeoutRef.current = null;
-    }, SPELL_SPEECH_DURATION);
+    setSpellFreeze(true);
+    spellFreezeTimeoutRef.current = setTimeout(() => {
+      setSpellFreeze(false);
+      spellFreezeTimeoutRef.current = null;
+    }, SPELL_FREEZE_DURATION);
   }, []);
+
+  const showSpellOverlay = useCallback(
+    (payload) => {
+      if (spellOverlayTimeoutRef.current) {
+        clearTimeout(spellOverlayTimeoutRef.current);
+        spellOverlayTimeoutRef.current = null;
+      }
+      setActiveSpell(payload);
+      startSpellFreeze();
+
+      const caster = payload?.caster;
+      const speechText = typeof payload?.speech === "string" ? payload.speech.trim() : "";
+      const casterImage =
+        payload?.image ||
+        (caster === "hero"
+          ? HERO_IMAGES.angry
+          : CHARACTERS[battleNode]?.images?.angry || HERO_IMAGES.angry);
+      const nodeDifficulty = CHARACTERS[battleNode]?.difficulty || level;
+      const theme = resolveSpellTheme(nodeDifficulty);
+
+      setSpellCinematic({
+        caster,
+        theme,
+        image: casterImage,
+        name: payload?.name || "Spell",
+        description: payload?.description || "",
+      });
+      if (spellCinematicTimeoutRef.current) {
+        clearTimeout(spellCinematicTimeoutRef.current);
+      }
+      spellCinematicTimeoutRef.current = setTimeout(() => {
+        setSpellCinematic(null);
+        spellCinematicTimeoutRef.current = null;
+      }, SPELL_CINEMATIC_DURATION);
+
+      if (caster && speechText) {
+        if (speechTimeoutRef.current[caster]) {
+          clearTimeout(speechTimeoutRef.current[caster]);
+        }
+        setSpellSpeech((prev) => ({ ...prev, [caster]: speechText }));
+        speechTimeoutRef.current[caster] = setTimeout(() => {
+          setSpellSpeech((prev) => ({ ...prev, [caster]: null }));
+          speechTimeoutRef.current[caster] = null;
+        }, SPELL_SPEECH_DURATION);
+      }
+
+      spellOverlayTimeoutRef.current = setTimeout(() => {
+        setActiveSpell(null);
+        spellOverlayTimeoutRef.current = null;
+      }, SPELL_SPEECH_DURATION);
+    },
+    [battleNode, level, startSpellFreeze],
+  );
 
   const applyStageEffect = useCallback(
     (caster, stageId) => {
@@ -1133,6 +1192,8 @@ export default function App() {
   const enemySolverRef = useRef(null);
   const hiddenTimersRef = useRef({ hidden: null, locked: null, faded: null, enemyFaded: null });
   const spellOverlayTimeoutRef = useRef(null);
+  const spellFreezeTimeoutRef = useRef(null);
+  const spellCinematicTimeoutRef = useRef(null);
   const speechTimeoutRef = useRef({ hero: null, enemy: null });
   const conversationControlsRef = useRef(null);
   const lastGamepadButtonsRef = useRef({});
@@ -1226,6 +1287,9 @@ export default function App() {
     setFadedCells([]);
     setEnemyFadedCells([]);
     setSpellSpeech({ hero: null, enemy: null });
+    setSpellFreeze(false);
+    setSpellCinematic(null);
+    setActiveSpell(null);
     const speechTimers = speechTimeoutRef.current;
     Object.keys(speechTimers).forEach((side) => {
       if (speechTimers[side]) {
@@ -1236,6 +1300,14 @@ export default function App() {
     if (spellOverlayTimeoutRef.current) {
       clearTimeout(spellOverlayTimeoutRef.current);
       spellOverlayTimeoutRef.current = null;
+    }
+    if (spellFreezeTimeoutRef.current) {
+      clearTimeout(spellFreezeTimeoutRef.current);
+      spellFreezeTimeoutRef.current = null;
+    }
+    if (spellCinematicTimeoutRef.current) {
+      clearTimeout(spellCinematicTimeoutRef.current);
+      spellCinematicTimeoutRef.current = null;
     }
   }, []);
   function resetProgress() {
@@ -1268,7 +1340,7 @@ export default function App() {
 
   useEffect(() => {
     if (screen !== "picross") return;
-    if (paused) return;
+    if (paused || spellFreeze) return;
     const id = setInterval(() => {
       setRemaining((r) => {
         const nr = Math.max(0, r - 1);
@@ -1280,7 +1352,7 @@ export default function App() {
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [screen, paused, handleSubmit]);
+  }, [screen, paused, spellFreeze, handleSubmit]);
 
   useEffect(() => {
     try {
@@ -1682,6 +1754,17 @@ export default function App() {
         timers[side] = null;
       }
     });
+  }, []);
+
+  useEffect(() => () => {
+    if (spellFreezeTimeoutRef.current) {
+      clearTimeout(spellFreezeTimeoutRef.current);
+      spellFreezeTimeoutRef.current = null;
+    }
+    if (spellCinematicTimeoutRef.current) {
+      clearTimeout(spellCinematicTimeoutRef.current);
+      spellCinematicTimeoutRef.current = null;
+    }
   }, []);
 
   function beginPicrossForNode(nodeId) {
@@ -2509,7 +2592,7 @@ export default function App() {
     if (!battleNode) return;
     const enemySolution = enemySolutionRef.current;
     if (!enemySolution.length) return;
-    if (paused) {
+    if (paused || spellFreeze) {
       stopEnemySolver();
       return;
     }
@@ -2584,6 +2667,7 @@ export default function App() {
     enemyWins,
     puzzleSequence.length,
     paused,
+    spellFreeze,
     stopEnemySolver,
     handleEnemyPuzzleClear,
     incrementCombo,
@@ -2982,6 +3066,29 @@ export default function App() {
 
   return (
     <div className="app">
+      {screen === "picross" && spellCinematic && (
+        <div className={`spell-cinematic-overlay ${spellCinematic.theme}`}>
+          <div className="spell-cinematic-backdrop" />
+          <div className="spell-cinematic-content">
+            <div className={`spell-cinematic-actor ${spellCinematic.caster || "hero"}`}>
+              {spellCinematic.image ? (
+                <img src={spellCinematic.image} alt={`${spellCinematic.name} caster`} />
+              ) : (
+                <span className="spell-cinematic-placeholder">Spell</span>
+              )}
+            </div>
+            <div className="spell-cinematic-text">
+              <div className="spell-cinematic-name">{spellCinematic.name}</div>
+              <div className="spell-cinematic-desc">{spellCinematic.description}</div>
+            </div>
+          </div>
+          <div className={`spell-cinematic-aurora ${spellCinematic.theme}`} aria-hidden="true">
+            <span className="aurora-core" />
+            <span className="aurora-ring" />
+            <span className="aurora-spark" />
+          </div>
+        </div>
+      )}
       {screen !== "prologue" && (
         <Background
           seed={bgSeed}
@@ -3224,7 +3331,7 @@ export default function App() {
                       lockedRowClues={lockedRowClues}
                       lockedColClues={lockedColClues}
                       fadedCells={fadedCells}
-                      disabled={paused || boardLocks.hero}
+                      disabled={paused || spellFreeze || boardLocks.hero}
                       onGridChange={maybeCompletePuzzle}
                       highlightCell={
                         inputMode === "gamepad" && screen === "picross"
