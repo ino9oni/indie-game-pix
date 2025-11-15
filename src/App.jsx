@@ -2249,9 +2249,7 @@ export default function App() {
       })
       .filter(Boolean);
     setRecentGlyphUnlocks(unlockDetails);
-    if (unlockDetails.length > 0) {
-      audio.playCollectionUnlock?.();
-    }
+    // 勝利ファンファーレを際立たせるため、アンロック専用SEは再生しない
     glyphUnlocksRef.current = new Map();
     let nextAction = null;
     if (pendingNode) {

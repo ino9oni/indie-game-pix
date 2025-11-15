@@ -34,23 +34,23 @@ const NODE_SHADOW_RY = NODE_HALF_HEIGHT * 0.8;
 const NODE_VARIANTS = {
   normal: {
     topGradient: "node-top-normal",
-    frontSide: "#1b5fb8",
-    backSide: "#0b3d74",
+    frontSide: "var(--accent-secondary)",
+    backSide: "rgba(6, 10, 22, 0.9)",
   },
   current: {
     topGradient: "node-top-current",
-    frontSide: "#1f8f51",
-    backSide: "#0f4f2b",
+    frontSide: "var(--accent-primary-strong)",
+    backSide: "rgba(6, 26, 32, 0.9)",
   },
   start: {
     topGradient: "node-top-start",
-    frontSide: "#c05621",
-    backSide: "#92400e",
+    frontSide: "var(--accent-primary)",
+    backSide: "rgba(6, 18, 30, 0.9)",
   },
   end: {
     topGradient: "node-top-end",
-    frontSide: "#7c3aed",
-    backSide: "#4c1d95",
+    frontSide: "var(--accent-secondary-strong)",
+    backSide: "rgba(20, 16, 48, 0.9)",
   },
 };
 
@@ -529,24 +529,24 @@ export default function RouteMap({
         >
           <defs>
             <linearGradient id="node-top-normal" x1="0%" y1="50%" x2="100%" y2="50%">
-              <stop offset="0%" stopColor="#4dd0ff" />
-              <stop offset="100%" stopColor="#1671c4" />
+              <stop offset="0%" stopColor="var(--accent-secondary-strong)" />
+              <stop offset="100%" stopColor="var(--accent-secondary)" />
             </linearGradient>
             <linearGradient id="node-top-current" x1="0%" y1="50%" x2="100%" y2="50%">
-              <stop offset="0%" stopColor="#4ade80" />
-              <stop offset="100%" stopColor="#15803d" />
+              <stop offset="0%" stopColor="var(--accent-primary-strong)" />
+              <stop offset="100%" stopColor="var(--accent-primary)" />
             </linearGradient>
             <linearGradient id="node-top-start" x1="0%" y1="50%" x2="100%" y2="50%">
-              <stop offset="0%" stopColor="#fbbf24" />
-              <stop offset="100%" stopColor="#b45309" />
+              <stop offset="0%" stopColor="var(--accent-primary)" />
+              <stop offset="100%" stopColor="rgba(25, 229, 194, 0.8)" />
             </linearGradient>
             <linearGradient id="node-top-end" x1="0%" y1="50%" x2="100%" y2="50%">
-              <stop offset="0%" stopColor="#c4b5fd" />
-              <stop offset="100%" stopColor="#6d28d9" />
+              <stop offset="0%" stopColor="var(--accent-secondary-strong)" />
+              <stop offset="100%" stopColor="rgba(90, 86, 224, 0.85)" />
             </linearGradient>
             <linearGradient id="route-edge-gradient" x1="0%" y1="50%" x2="100%" y2="50%">
-              <stop offset="0%" stopColor="#9dd7ff" />
-              <stop offset="100%" stopColor="#2563eb" />
+              <stop offset="0%" stopColor="var(--accent-primary-strong)" />
+              <stop offset="100%" stopColor="var(--accent-secondary-strong)" />
             </linearGradient>
           </defs>
 
