@@ -75,6 +75,7 @@ const HERO_IMAGES = {
   normal: assetPath("assets/img/character/hero/hero_normal.png"),
   angry: assetPath("assets/img/character/hero/hero_angry.png"),
   smile: assetPath("assets/img/character/hero/hero_smile.png"),
+  fullbody: assetPath("assets/img/character/hero/hero_fullbody.png"),
 };
 const TITLE_IMAGE = assetPath("assets/img/title.png");
 const HERO_FULLBODY = assetPath("assets/img/character/hero/hero_fullbody.png");
@@ -168,6 +169,8 @@ const ENEMY_AI_CONFIG = {
 };
 
 const SPELL_SPEECH_DURATION = 4000;
+const SPELL_BOARD_FOCUS_DELAY = 600;
+const SPELL_BOARD_FOCUS_DURATION = 700;
 
 const COMBO_STAGE_DEFS = [
   { id: "stage1", threshold: 10 },
@@ -960,17 +963,21 @@ export default function App() {
       const casterImage =
         payload?.image ||
         (caster === "hero"
-          ? HERO_IMAGES.angry
+          ? HERO_IMAGES.fullbody
           : CHARACTERS[battleNode]?.images?.angry || HERO_IMAGES.angry);
       const nodeDifficulty = CHARACTERS[battleNode]?.difficulty || level;
       const theme = resolveSpellTheme(nodeDifficulty);
 
       setSpellCinematic({
         caster,
+        target: payload?.target || (caster === "hero" ? "enemy" : "hero"),
         theme,
         image: casterImage,
         name: payload?.name || "Spell",
         description: payload?.description || "",
+        impact: payload?.impactCells || [],
+        boardSize: payload?.boardSize || 10,
+        showBoard: false,
       });
       if (spellCinematicTimeoutRef.current) {
         clearTimeout(spellCinematicTimeoutRef.current);
@@ -995,6 +1002,21 @@ export default function App() {
         setActiveSpell(null);
         spellOverlayTimeoutRef.current = null;
       }, SPELL_SPEECH_DURATION);
+
+      if (spellBoardFocusTimeoutRef.current.delay) {
+        clearTimeout(spellBoardFocusTimeoutRef.current.delay);
+      }
+      if (spellBoardFocusTimeoutRef.current.hide) {
+        clearTimeout(spellBoardFocusTimeoutRef.current.hide);
+      }
+      spellBoardFocusTimeoutRef.current.delay = setTimeout(() => {
+        setSpellCinematic((prev) => (prev ? { ...prev, showBoard: true } : prev));
+        spellBoardFocusTimeoutRef.current.delay = null;
+        spellBoardFocusTimeoutRef.current.hide = setTimeout(() => {
+          setSpellCinematic((prev) => (prev ? { ...prev, showBoard: false } : prev));
+          spellBoardFocusTimeoutRef.current.hide = null;
+        }, SPELL_BOARD_FOCUS_DURATION);
+      }, SPELL_BOARD_FOCUS_DELAY);
     },
     [battleNode, level, startSpellFreeze],
   );
@@ -1131,6 +1153,9 @@ export default function App() {
         description: stageMeta?.description || "",
         image: casterMeta.image,
         speech: stageMeta?.speech,
+        impactCells: coords.map(({ r, c }) => ({ r, c })),
+        boardSize: size,
+        target,
       });
       audio.playSpellAttack(caster === "hero" ? "hero" : "enemy");
       launchProjectile(caster === "hero" ? "hero" : "enemy");
@@ -1194,6 +1219,7 @@ export default function App() {
   const spellOverlayTimeoutRef = useRef(null);
   const spellFreezeTimeoutRef = useRef(null);
   const spellCinematicTimeoutRef = useRef(null);
+  const spellBoardFocusTimeoutRef = useRef({ delay: null, hide: null });
   const speechTimeoutRef = useRef({ hero: null, enemy: null });
   const conversationControlsRef = useRef(null);
   const lastGamepadButtonsRef = useRef({});
@@ -1308,6 +1334,14 @@ export default function App() {
     if (spellCinematicTimeoutRef.current) {
       clearTimeout(spellCinematicTimeoutRef.current);
       spellCinematicTimeoutRef.current = null;
+    }
+    if (spellBoardFocusTimeoutRef.current.delay) {
+      clearTimeout(spellBoardFocusTimeoutRef.current.delay);
+      spellBoardFocusTimeoutRef.current.delay = null;
+    }
+    if (spellBoardFocusTimeoutRef.current.hide) {
+      clearTimeout(spellBoardFocusTimeoutRef.current.hide);
+      spellBoardFocusTimeoutRef.current.hide = null;
     }
   }, []);
   function resetProgress() {
@@ -1764,6 +1798,14 @@ export default function App() {
     if (spellCinematicTimeoutRef.current) {
       clearTimeout(spellCinematicTimeoutRef.current);
       spellCinematicTimeoutRef.current = null;
+    }
+    if (spellBoardFocusTimeoutRef.current.delay) {
+      clearTimeout(spellBoardFocusTimeoutRef.current.delay);
+      spellBoardFocusTimeoutRef.current.delay = null;
+    }
+    if (spellBoardFocusTimeoutRef.current.hide) {
+      clearTimeout(spellBoardFocusTimeoutRef.current.hide);
+      spellBoardFocusTimeoutRef.current.hide = null;
     }
   }, []);
 
@@ -3086,6 +3128,36 @@ export default function App() {
             <span className="aurora-core" />
             <span className="aurora-ring" />
             <span className="aurora-spark" />
+          </div>
+          <div
+            className={`spell-board-impact ${spellCinematic.target || "enemy"} ${
+              spellCinematic.showBoard ? "visible" : ""
+            }`}
+            aria-hidden="true"
+          >
+            <div
+              className="spell-board-grid"
+              style={{
+                gridTemplateColumns: `repeat(${spellCinematic.boardSize || 10}, 1fr)`,
+              }}
+            >
+              {Array.from({ length: (spellCinematic.boardSize || 10) ** 2 }).map((_, idx) => {
+                const size = spellCinematic.boardSize || 10;
+                const r = Math.floor(idx / size);
+                const c = idx % size;
+                const impactKey = `${r}-${c}`;
+                const active = spellCinematic.impact?.some(
+                  (cell) => cell.r === r && cell.c === c,
+                );
+                return (
+                  <span
+                    key={impactKey}
+                    className={`spell-board-cell ${active ? "impact" : ""}`}
+                  />
+                );
+              })}
+            </div>
+            <div className={`spell-board-flare ${spellCinematic.theme}`} />
           </div>
         </div>
       )}
