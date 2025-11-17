@@ -2,9 +2,17 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: v9.0.0
+Current release: v9.1.0
 
-## Release Highlights (v9.0.0)
+## Release Highlights (v9.1.0)
+
+前回リリース (v9.0.0) からの主な変更:
+
+- ガイド付きチュートリアルモードを追加し、新規背景アートとチュートリアルBGMを同梱。
+- ヒーロー／エネミーの全身・勝利/敗北ポートレートを刷新し、エネミー勝利画面を追加。
+- ファンファーレやチュートリアルBGM、コレクションアンロックSEなど音源を更新し、10x10対応を含むピクロス/ルートの演出を調整。
+
+## Previous Release Highlights (v9.0.0)
 
 前回リリース (v8.1.0) からの主な変更:
 
