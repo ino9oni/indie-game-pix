@@ -95,8 +95,8 @@ const GAMEPAD_BUTTON = {
   RIGHT: 15,
 };
 const GAMEPAD_REPEAT_MS = 180;
-const SPELL_FREEZE_DURATION = 900;
-const SPELL_CINEMATIC_DURATION = 1200;
+const SPELL_FREEZE_DURATION = 2200;
+const SPELL_CINEMATIC_DURATION = 2100;
 const SPELL_THEME_MAP = {
   practice: "radiant",
   easy: "tide",
@@ -168,9 +168,9 @@ const ENEMY_AI_CONFIG = {
   "elf-ultra": { interval: 600, errorRate: 0.03 },
 };
 
-const SPELL_SPEECH_DURATION = 4000;
-const SPELL_BOARD_FOCUS_DELAY = 600;
-const SPELL_BOARD_FOCUS_DURATION = 700;
+const SPELL_SPEECH_DURATION = 1200;
+const SPELL_BOARD_FOCUS_DELAY = 1100;
+const SPELL_BOARD_FOCUS_DURATION = 650;
 
 const COMBO_STAGE_DEFS = [
   { id: "stage1", threshold: 10 },
@@ -967,6 +967,24 @@ export default function App() {
           : CHARACTERS[battleNode]?.images?.angry || HERO_IMAGES.angry);
       const nodeDifficulty = CHARACTERS[battleNode]?.difficulty || level;
       const theme = resolveSpellTheme(nodeDifficulty);
+      const impactCells = Array.isArray(payload?.impactCells) ? payload.impactCells : [];
+      const boardSize = payload?.boardSize || 10;
+      // Expand impact cells to a small halo so近傍セルも光る
+      const haloCells = [];
+      const seen = new Set();
+      impactCells.forEach(({ r, c }) => {
+        for (let dr = -1; dr <= 1; dr += 1) {
+          for (let dc = -1; dc <= 1; dc += 1) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr < 0 || nr >= boardSize || nc < 0 || nc >= boardSize) continue;
+            const key = `${nr}-${nc}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            haloCells.push({ r: nr, c: nc });
+          }
+        }
+      });
 
       setSpellCinematic({
         caster,
@@ -975,9 +993,12 @@ export default function App() {
         image: casterImage,
         name: payload?.name || "Spell",
         description: payload?.description || "",
-        impact: payload?.impactCells || [],
-        boardSize: payload?.boardSize || 10,
+        speech: speechText || "",
+        impact: impactCells,
+        impactHalo: haloCells,
+        boardSize,
         showBoard: false,
+        attachToBoard: payload?.attachToBoard ?? payload?.target === "enemy",
       });
       if (spellCinematicTimeoutRef.current) {
         clearTimeout(spellCinematicTimeoutRef.current);
@@ -3111,52 +3132,56 @@ export default function App() {
           <div className="spell-cinematic-backdrop" />
           <div className="spell-cinematic-content">
             <div className={`spell-cinematic-actor ${spellCinematic.caster || "hero"}`}>
-              {spellCinematic.image ? (
+                  {spellCinematic.image ? (
                 <img src={spellCinematic.image} alt={`${spellCinematic.name} caster`} />
               ) : (
                 <span className="spell-cinematic-placeholder">Spell</span>
               )}
-            </div>
-            <div className="spell-cinematic-text">
-              <div className="spell-cinematic-name">{spellCinematic.name}</div>
-              <div className="spell-cinematic-desc">{spellCinematic.description}</div>
-            </div>
-          </div>
-          <div className={`spell-cinematic-aurora ${spellCinematic.theme}`} aria-hidden="true">
-            <span className="aurora-core" />
-            <span className="aurora-ring" />
+                </div>
+                <div className="spell-cinematic-text">
+                  <div className="spell-cinematic-name">{spellCinematic.name}</div>
+                  <div className="spell-cinematic-desc">{spellCinematic.description}</div>
+                  {spellCinematic.speech ? (
+                    <div className="spell-cinematic-speech">{spellCinematic.speech}</div>
+                  ) : null}
+                </div>
+              </div>
+              <div className={`spell-cinematic-aurora ${spellCinematic.theme}`} aria-hidden="true">
+                <span className="aurora-core" />
+                <span className="aurora-ring" />
             <span className="aurora-spark" />
           </div>
-          <div
-            className={`spell-board-impact ${spellCinematic.target || "enemy"} ${
-              spellCinematic.showBoard ? "visible" : ""
-            }`}
-            aria-hidden="true"
-          >
+          {!spellCinematic.attachToBoard && (
             <div
-              className="spell-board-grid"
-              style={{
-                gridTemplateColumns: `repeat(${spellCinematic.boardSize || 10}, 1fr)`,
-              }}
+              className={`spell-board-impact ${spellCinematic.target || "enemy"} ${
+                spellCinematic.showBoard ? "visible" : ""
+              }`}
+              aria-hidden="true"
             >
-              {Array.from({ length: (spellCinematic.boardSize || 10) ** 2 }).map((_, idx) => {
-                const size = spellCinematic.boardSize || 10;
-                const r = Math.floor(idx / size);
-                const c = idx % size;
-                const impactKey = `${r}-${c}`;
-                const active = spellCinematic.impact?.some(
-                  (cell) => cell.r === r && cell.c === c,
-                );
-                return (
-                  <span
-                    key={impactKey}
-                    className={`spell-board-cell ${active ? "impact" : ""}`}
-                  />
-                );
-              })}
+              <div
+                className="spell-board-grid"
+                style={{
+                  gridTemplateColumns: `repeat(${spellCinematic.boardSize || 10}, 1fr)`,
+                }}
+              >
+                {Array.from({ length: (spellCinematic.boardSize || 10) ** 2 }).map((_, idx) => {
+                  const size = spellCinematic.boardSize || 10;
+                  const r = Math.floor(idx / size);
+                  const c = idx % size;
+                  const impactKey = `${r}-${c}`;
+                  const active = spellCinematic.impact?.some(
+                    (cell) => cell.r === r && cell.c === c,
+                  );
+                  const halo =
+                    !active &&
+                    spellCinematic.impactHalo?.some((cell) => cell.r === r && cell.c === c);
+                  const cls = active ? "impact" : halo ? "impact-near" : "";
+                  return <span key={impactKey} className={`spell-board-cell ${cls}`} />;
+                })}
+              </div>
+              <div className={`spell-board-flare ${spellCinematic.theme}`} />
             </div>
-            <div className={`spell-board-flare ${spellCinematic.theme}`} />
-          </div>
+          )}
         </div>
       )}
       {screen !== "prologue" && (
@@ -3442,6 +3467,38 @@ export default function App() {
                 </div>
                 <div className="panel-board enemy">
                   <div className="board-frame enemy">
+                    {spellCinematic?.attachToBoard &&
+                      spellCinematic?.target === "enemy" &&
+                      spellCinematic.showBoard && (
+                        <div className={`spell-board-impact onboard ${spellCinematic.theme}`}>
+                          <div
+                            className="spell-board-grid"
+                            style={{
+                              gridTemplateColumns: `repeat(${spellCinematic.boardSize || 10}, 1fr)`,
+                            }}
+                          >
+                            {Array.from({ length: (spellCinematic.boardSize || 10) ** 2 }).map(
+                              (_, idx) => {
+                                const size = spellCinematic.boardSize || 10;
+                                const r = Math.floor(idx / size);
+                                const c = idx % size;
+                                const impactKey = `${r}-${c}`;
+                                const active = spellCinematic.impact?.some(
+                                  (cell) => cell.r === r && cell.c === c,
+                                );
+                                const halo =
+                                  !active &&
+                                  spellCinematic.impactHalo?.some(
+                                    (cell) => cell.r === r && cell.c === c,
+                                  );
+                                const cls = active ? "impact" : halo ? "impact-near" : "";
+                                return <span key={impactKey} className={`spell-board-cell ${cls}`} />;
+                              },
+                            )}
+                          </div>
+                          <div className={`spell-board-flare ${spellCinematic.theme}`} />
+                        </div>
+                      )}
                     <EnemyBoard
                       size={size}
                       grid={enemyGrid}
