@@ -95,6 +95,10 @@ const GAMEPAD_BUTTON = {
 };
 const GAMEPAD_REPEAT_MS = 180;
 
+// Spell effect timings
+const SPELL_EFFECT_DURATION = 1600;
+const SPELL_EFFECT_FREEZE = 600;
+
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const normalizeHeroName = (value) => {
@@ -995,9 +999,10 @@ export default function App() {
   const [lockedRowClues, setLockedRowClues] = useState([]);
   const [lockedColClues, setLockedColClues] = useState([]);
   const [fadedCells, setFadedCells] = useState([]);
-  const [enemyFadedCells, setEnemyFadedCells] = useState([]);
-  const [paused, setPaused] = useState(false);
-  const [projectiles, setProjectiles] = useState([]);
+const [enemyFadedCells, setEnemyFadedCells] = useState([]);
+const [paused, setPaused] = useState(false);
+const [projectiles, setProjectiles] = useState([]);
+  const [spellEffect, setSpellEffect] = useState(null);
   const [comboState, setComboState] = useState(() => ({
     hero: createComboTrack(),
     enemy: createComboTrack(),
@@ -1229,7 +1234,34 @@ export default function App() {
         description: stageMeta?.description || "",
         image: casterMeta.image,
         speech: stageMeta?.speech,
+        target,
+        boardSize: size,
+        impact: coords.map(({ r, c }) => ({ r, c })),
       });
+
+      // シネマティック演出用の確定エフェクト（フェイルセーフ込み）
+      if (spellEffectTimeoutRef.current) {
+        clearTimeout(spellEffectTimeoutRef.current);
+        spellEffectTimeoutRef.current = null;
+      }
+      setSpellEffect({
+        caster,
+        target,
+        name: stageMeta?.name || "Spell",
+        description: stageMeta?.description || "",
+        speech: stageMeta?.speech,
+        image: casterMeta.image,
+        boardSize: size,
+        impact: coords.map(({ r, c }) => ({ r, c })),
+        theme: resolveSpellTheme(battleNode),
+      });
+      setTimeout(() => {
+        lockBoard(target);
+      }, SPELL_EFFECT_FREEZE);
+      spellEffectTimeoutRef.current = setTimeout(() => {
+        setSpellEffect(null);
+        spellEffectTimeoutRef.current = null;
+      }, SPELL_EFFECT_DURATION);
       audio.playSpellAttack(caster === "hero" ? "hero" : "enemy");
       launchProjectile(caster === "hero" ? "hero" : "enemy");
     },
@@ -1297,7 +1329,7 @@ export default function App() {
   const gamepadCursorRef = useRef({ row: 0, col: 0 });
   const lastGamepadUsedRef = useRef(0);
   const heroStateRef = useRef({});
-  const enemyProgressRef = useRef({ filled: 0, total: 0 });
+const enemyProgressRef = useRef({ filled: 0, total: 0 });
   const totalCellsRef = useRef(0);
   const boardLockTimeoutRef = useRef({ hero: null, enemy: null });
   const enemyStageCooldownRef = useRef(null);
@@ -1305,7 +1337,8 @@ export default function App() {
   const puzzleSolvedRef = useRef(false);
   const enemySolutionRef = useRef([]);
   const enemyGridRef = useRef([]);
-  const enemyGuessStateRef = useRef({ lastGuess: 0 });
+const enemyGuessStateRef = useRef({ lastGuess: 0 });
+  const spellEffectTimeoutRef = useRef(null);
   const [enemySolutionVersion, setEnemySolutionVersion] = useState(0);
 
   useEffect(() => {
@@ -2643,6 +2676,13 @@ export default function App() {
     if (screen !== "picross") {
       resetAllCombos();
     }
+    if (screen !== "picross") {
+      setSpellEffect(null);
+      if (spellEffectTimeoutRef.current) {
+        clearTimeout(spellEffectTimeoutRef.current);
+        spellEffectTimeoutRef.current = null;
+      }
+    }
   }, [screen, resetAllCombos]);
 
   useEffect(() => {
@@ -2685,6 +2725,7 @@ export default function App() {
       stopEnemySolver();
       clearSpellEffects();
       setActiveSpell(null);
+      setSpellEffect(null);
       setEnemyGrid([]);
       enemyGridRef.current = [];
       setPuzzleSequence([]);
@@ -3163,6 +3204,54 @@ export default function App() {
 
   return (
     <div className="app">
+      {screen === "picross" && spellEffect && (
+        <div className={`spell-cinematic-overlay ${spellEffect.theme || "radiant"}`}>
+          <div className="spell-cinematic-backdrop" />
+          <div className="spell-cinematic-content">
+            <div className={`spell-cinematic-actor ${spellEffect.caster || "hero"}`}>
+              {spellEffect.image ? (
+                <img src={spellEffect.image} alt={`${spellEffect.name} caster`} />
+              ) : (
+                <span className="spell-cinematic-placeholder">Spell</span>
+              )}
+            </div>
+            <div className="spell-cinematic-text">
+              <div className="spell-cinematic-name">{spellEffect.name}</div>
+              <div className="spell-cinematic-desc">{spellEffect.description}</div>
+              {spellEffect.speech ? (
+                <div className="spell-cinematic-speech">{spellEffect.speech}</div>
+              ) : null}
+            </div>
+          </div>
+          <div className={`spell-cinematic-aurora ${spellEffect.theme || "radiant"}`} aria-hidden="true">
+            <span className="aurora-core" />
+            <span className="aurora-ring" />
+            <span className="aurora-spark" />
+          </div>
+          <div
+            className={`spell-board-impact ${spellEffect.target || "enemy"} visible`}
+            aria-hidden="true"
+          >
+            <div
+              className="spell-board-grid"
+              style={{
+                gridTemplateColumns: `repeat(${spellEffect.boardSize || 10}, 1fr)`,
+              }}
+            >
+              {Array.from({ length: (spellEffect.boardSize || 10) ** 2 }).map((_, idx) => {
+                const size = spellEffect.boardSize || 10;
+                const r = Math.floor(idx / size);
+                const c = idx % size;
+                const impactKey = `${r}-${c}`;
+                const isImpact = spellEffect.impact?.some((cell) => cell.r === r && cell.c === c);
+                const cls = isImpact ? "impact" : "";
+                return <span key={impactKey} className={`spell-board-cell ${cls}`} />;
+              })}
+            </div>
+            <div className={`spell-board-flare ${spellEffect.theme || "radiant"}`} />
+          </div>
+        </div>
+      )}
       {screen !== "prologue" && (
         <Background
           seed={bgSeed}
