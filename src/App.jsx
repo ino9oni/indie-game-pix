@@ -81,6 +81,18 @@ const HERO_FULLBODY = assetPath("assets/img/character/hero/hero_fullbody.png");
 const ENDING_BACKGROUND_IMAGE = assetPath("assets/img/background/ending.png");
 const MAP_BACKGROUND_IMAGE = assetPath("assets/img/background/map.png");
 
+const resolveSpellTheme = (nodeId) => {
+  const normalized = normalizeNodeId(nodeId);
+  const meta = CHARACTERS[normalized];
+  const diff = (meta?.difficulty || "").toLowerCase();
+  if (diff.includes("ultra")) return "inferno";
+  if (diff.includes("hard")) return "venom";
+  if (diff.includes("middle") || diff.includes("normal")) return "quake";
+  if (diff.includes("easy")) return "tide";
+  if (diff.includes("practice")) return "radiant";
+  return "radiant";
+};
+
 const GAMEPAD_BUTTON = {
   A: 0,
   B: 1,
@@ -1222,10 +1234,14 @@ export default function App() {
         lockBoard("hero");
       }
 
+      const enemyImages = battleNode ? CHARACTERS[battleNode]?.images || {} : {};
       const casterMeta =
         caster === "hero"
-          ? { image: HERO_IMAGES.angry }
-          : { image: CHARACTERS[battleNode]?.images?.angry };
+          ? { image: HERO_IMAGES.angry || HERO_FULLBODY }
+          : {
+              image:
+                enemyImages.angry || enemyImages.fullbody || enemyImages.normal || HERO_FULLBODY,
+            };
 
       showSpellOverlay({
         caster,
@@ -1271,8 +1287,13 @@ export default function App() {
   const triggerComboStage = useCallback(
     (side, stageId) => {
       if (!stageId) return;
-      applyStageEffect(side, stageId);
-      resetCombo(side);
+      try {
+        applyStageEffect(side, stageId);
+      } catch (err) {
+        console.error("applyStageEffect failed", err);
+      } finally {
+        resetCombo(side);
+      }
     },
     [applyStageEffect, resetCombo],
   );
