@@ -515,8 +515,12 @@ function shuffle(array) {
 const countFilledCells = (grid) => {
   if (!Array.isArray(grid)) return 0;
   return grid.reduce(
-    (total, row) =>
-      total + row.reduce((rowSum, cell) => rowSum + (cell === 1 ? 1 : 0), 0),
+    (total, row = []) =>
+      total +
+      row.reduce((rowSum, cell) => {
+        const filled = cell === 1 || cell === true;
+        return rowSum + (filled ? 1 : 0);
+      }, 0),
     0,
   );
 };
