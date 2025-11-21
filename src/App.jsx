@@ -3144,12 +3144,8 @@ export default function App() {
     puzzleSequence.length || enemyPuzzleSequence.length || getPuzzleGoalForNode(battleNode);
   const currentRound = Math.max(playerWins, enemyWins);
   const displayPuzzleStep = Math.min(currentRound + 1, puzzleGoal);
-  const totalCells = totalCellsRef.current || 1;
-  const playerProgressCount = countCorrectFilled(grid, solution);
-  const playerProgressRatio = totalCells ? playerProgressCount / totalCells : 0;
-  const enemyProgressRatio = totalCells
-    ? Math.min(1, enemyProgressRef.current.filled / totalCells)
-    : 0;
+  const playerProgressRatio = puzzleGoal ? playerWins / puzzleGoal : 0;
+  const enemyProgressRatio = puzzleGoal ? enemyWins / puzzleGoal : 0;
 
   const renderSpellSlot = (side) => {
     const spell = activeSpell && activeSpell.caster === side ? activeSpell : null;
