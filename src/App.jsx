@@ -102,6 +102,23 @@ const normalizeHeroName = (value) => {
   return trimmed.length ? trimmed : DEFAULT_HERO_NAME;
 };
 
+const gridsMatch = (gridA, gridB, tolerance = 0) => {
+  if (!Array.isArray(gridA) || !Array.isArray(gridB) || gridA.length !== gridB.length) return false;
+  let mismatch = 0;
+  for (let r = 0; r < gridA.length; r += 1) {
+    const rowA = gridA[r] || [];
+    const rowB = gridB[r] || [];
+    if (rowA.length !== rowB.length) return false;
+    for (let c = 0; c < rowA.length; c += 1) {
+      if (Boolean(rowA[c]) !== Boolean(rowB[c])) {
+        mismatch += 1;
+        if (mismatch > tolerance) return false;
+      }
+    }
+  }
+  return mismatch <= tolerance;
+};
+
 function loadGlyphCollection() {
   try {
     const raw = JSON.parse(localStorage.getItem("picrossGlyphCollection") ?? "{}");
@@ -151,14 +168,15 @@ function persistGlyphCollection(collection, solved) {
 }
 
 const ENEMY_AI_CONFIG = {
-  "elf-practice": { interval: 1400, errorRate: 0.15 },
-  "elf-easy": { interval: 1100, errorRate: 0.1 },
-  "elf-middle": { interval: 900, errorRate: 0.08 },
-  "elf-hard": { interval: 750, errorRate: 0.05 },
-  "elf-ultra": { interval: 600, errorRate: 0.03 },
+  "elf-practice": { interval: 1400, errorRate: 0.15, guessCooldown: 2000 },
+  "elf-easy": { interval: 1100, errorRate: 0.1, guessCooldown: 2600 },
+  "elf-middle": { interval: 900, errorRate: 0.08, guessCooldown: 3200 },
+  "elf-hard": { interval: 750, errorRate: 0.05, guessCooldown: 4200 },
+  "elf-ultra": { interval: 600, errorRate: 0.03, guessCooldown: 5200 },
 };
 
 const SPELL_SPEECH_DURATION = 4000;
+const ENEMY_MATCH_TOLERANCE = 0; // 許容する不一致セル数（0で完全一致必須）
 
 const COMBO_STAGE_DEFS = [
   { id: "stage1", threshold: 10 },
@@ -396,7 +414,7 @@ const ENEMY_STAGE_SETS = {
   ],
 };
 
-const DEFAULT_ENEMY_CONFIG = { interval: 1200, errorRate: 0.08 };
+const DEFAULT_ENEMY_CONFIG = { interval: 1200, errorRate: 0.08, guessCooldown: 3500 };
 
 function deriveDifficultyFromSize(n) {
   if (n <= 5) return "easy";
@@ -477,6 +495,157 @@ function shuffle(array) {
   }
   return arr;
 }
+
+const countFilledCells = (grid) => {
+  if (!Array.isArray(grid)) return 0;
+  return grid.reduce(
+    (total, row) =>
+      total + row.reduce((rowSum, cell) => rowSum + (cell === 1 ? 1 : 0), 0),
+    0,
+  );
+};
+
+const maskMatchesClues = (mask, length, clues) => {
+  const normalizedClues = Array.isArray(clues) ? clues.filter((value) => value > 0) : [];
+  const runs = [];
+  let count = 0;
+  for (let i = 0; i < length; i += 1) {
+    if ((mask >> i) & 1) {
+      count += 1;
+    } else if (count > 0) {
+      runs.push(count);
+      count = 0;
+    }
+  }
+  if (count > 0) runs.push(count);
+  if (!normalizedClues.length) return runs.length === 0;
+  if (runs.length !== normalizedClues.length) return false;
+  for (let i = 0; i < runs.length; i += 1) {
+    if (runs[i] !== normalizedClues[i]) return false;
+  }
+  return true;
+};
+
+const solveLineWithBrute = (line, clues) => {
+  const length = line.length;
+  const normalizedLine = Array.from({ length }, (_, idx) => {
+    const value = line[idx];
+    if (value === 1) return 1;
+    if (value === -1) return -1;
+    return 0;
+  });
+  const normalizedClues = Array.isArray(clues) ? clues.filter((value) => value > 0) : [];
+  const maxMask = 1 << length;
+  const solutions = [];
+  for (let mask = 0; mask < maxMask; mask += 1) {
+    let valid = true;
+    for (let i = 0; i < length; i += 1) {
+      const bit = (mask >> i) & 1;
+      if (normalizedLine[i] === 1 && bit === 0) {
+        valid = false;
+        break;
+      }
+      if (normalizedLine[i] === -1 && bit === 1) {
+        valid = false;
+        break;
+      }
+    }
+    if (!valid) continue;
+    if (!maskMatchesClues(mask, length, normalizedClues)) continue;
+    solutions.push(mask);
+  }
+  if (!solutions.length) {
+    return {
+      fills: [],
+      blanks: [],
+      probabilities: Array(length).fill(0.5),
+    };
+  }
+  const fillCounts = new Array(length).fill(0);
+  solutions.forEach((mask) => {
+    for (let i = 0; i < length; i += 1) {
+      if ((mask >> i) & 1) fillCounts[i] += 1;
+    }
+  });
+  const fills = [];
+  const blanks = [];
+  const probabilities = new Array(length).fill(0);
+  for (let i = 0; i < length; i += 1) {
+    const prob = fillCounts[i] / solutions.length;
+    probabilities[i] = prob;
+    if (prob === 1 && normalizedLine[i] !== 1) fills.push(i);
+    else if (prob === 0 && normalizedLine[i] !== -1) blanks.push(i);
+  }
+  return { fills, blanks, probabilities };
+};
+
+const computeEnemyDeductions = (grid, rowHints = [], colHints = []) => {
+  const size = grid.length || rowHints.length || colHints.length || 0;
+  const fills = new Map();
+  const blanks = new Map();
+  const probabilities = new Map();
+  const registerFill = (r, c, source) => {
+    const key = `${r}-${c}`;
+    fills.set(key, { r, c, source });
+    blanks.delete(key);
+  };
+  const registerBlank = (r, c, source) => {
+    const key = `${r}-${c}`;
+    if (fills.has(key)) return;
+    blanks.set(key, { r, c, source });
+  };
+  const registerProb = (r, c, prob) => {
+    if (prob <= 0 || prob >= 1) return;
+    const key = `${r}-${c}`;
+    const prev = probabilities.get(key);
+    const combined = prev == null ? prob : 1 - (1 - prev) * (1 - prob);
+    probabilities.set(key, combined);
+  };
+  for (let r = 0; r < size; r += 1) {
+    const line = grid[r] ? grid[r].slice() : Array(size).fill(0);
+    const result = solveLineWithBrute(line, rowHints[r] || []);
+    result.fills.forEach((c) => registerFill(r, c, "row"));
+    result.blanks.forEach((c) => registerBlank(r, c, "row"));
+    result.probabilities.forEach((prob, c) => {
+      if (line[c] !== 0) return;
+      registerProb(r, c, prob);
+    });
+  }
+  for (let c = 0; c < size; c += 1) {
+    const line = grid.map((row) => (row?.[c] ?? 0));
+    const result = solveLineWithBrute(line, colHints[c] || []);
+    result.fills.forEach((r) => registerFill(r, c, "col"));
+    result.blanks.forEach((r) => registerBlank(r, c, "col"));
+    result.probabilities.forEach((prob, r) => {
+      if (line[r] !== 0) return;
+      registerProb(r, c, prob);
+    });
+  }
+  return {
+    fills: Array.from(fills.values()),
+    blanks: Array.from(blanks.values()),
+    probabilities,
+  };
+};
+
+const pickEnemyGuess = (probMap, grid) => {
+  if (!(probMap instanceof Map)) return null;
+  const candidates = [];
+  probMap.forEach((prob, key) => {
+    const [rStr, cStr] = key.split("-");
+    const r = Number(rStr);
+    const c = Number(cStr);
+    if (!Number.isFinite(r) || !Number.isFinite(c)) return;
+    if (grid[r]?.[c] !== 0) return;
+    if (prob === 0.5) return;
+    candidates.push({ r, c, prob });
+  });
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => Math.abs(b.prob - 0.5) - Math.abs(a.prob - 0.5));
+  const target = candidates[0];
+  if (!target) return null;
+  return { ...target, type: target.prob >= 0.5 ? "fill" : "blank" };
+};
 
 function computeReadyStages(count, prevReady = []) {
   const readySet = new Set(prevReady);
@@ -1007,18 +1176,6 @@ export default function App() {
             enemyProgressRef.current.filled - removalQueue.length,
           );
         }
-        const state = enemyOrderRef.current;
-        const remaining = state.list.slice(state.index);
-        const appended = [...removalQueue, ...remaining];
-        const dedupe = new Map();
-        appended.forEach(({ r, c }) => {
-          const key = `${r}-${c}`;
-          dedupe.set(key, { r, c });
-        });
-        enemyOrderRef.current = {
-          list: Array.from(dedupe.values()),
-          index: 0,
-        };
         if (coords.length) {
           const keys = coords.map(({ key }) => key);
           setEnemyFadedCells(keys);
@@ -1145,9 +1302,10 @@ export default function App() {
   const boardLockTimeoutRef = useRef({ hero: null, enemy: null });
   const enemyStageCooldownRef = useRef(null);
   const enemyCastingRef = useRef(false);
-  const enemyOrderRef = useRef({ list: [], index: 0 });
   const puzzleSolvedRef = useRef(false);
   const enemySolutionRef = useRef([]);
+  const enemyGridRef = useRef([]);
+  const enemyGuessStateRef = useRef({ lastGuess: 0 });
   const [enemySolutionVersion, setEnemySolutionVersion] = useState(0);
 
   useEffect(() => {
@@ -1254,6 +1412,7 @@ export default function App() {
     setEnemyWins(0);
     setActiveSpell(null);
     setEnemyGrid([]);
+    enemyGridRef.current = [];
     setPostClearAction(null);
     glyphUnlocksRef.current = new Map();
     setRecentGlyphUnlocks([]);
@@ -1299,6 +1458,10 @@ export default function App() {
   useEffect(() => {
     enemyScoreRef.current = enemyScore;
   }, [enemyScore]);
+
+  useEffect(() => {
+    enemyGridRef.current = enemyGrid;
+  }, [enemyGrid]);
 
   useEffect(() => {
     displayEnemyScoreRef.current = displayEnemyScore;
@@ -1743,8 +1906,7 @@ export default function App() {
     setDisplayEnemyScore(0);
     setEnemyScoreAnimating(false);
 
-    const total = heroSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
-    totalCellsRef.current = total;
+    totalCellsRef.current = countFilledCells(heroSolution);
     heroStateRef.current = {
       lastCorrect: null,
       crossStreak: 0,
@@ -1756,10 +1918,13 @@ export default function App() {
     enemySolutionRef.current = enemySolution;
     enemyProgressRef.current = {
       filled: 0,
-      total: enemySolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
+      total: countFilledCells(enemySolution),
     };
-    enemyOrderRef.current = { list: [], index: 0 };
-    setEnemyGrid(emptyGrid(enemySolution.length));
+    {
+      const freshEnemyGrid = emptyGrid(enemySolution.length);
+      enemyGridRef.current = freshEnemyGrid;
+      setEnemyGrid(freshEnemyGrid);
+    }
     setEnemySolutionVersion((v) => v + 1);
     setPlayerWins(0);
     setEnemyWins(0);
@@ -1793,8 +1958,7 @@ export default function App() {
       setSolution(nextSolution);
       setGrid(emptyGrid(n));
       realtimeBonusRef.current = new Set();
-      const total = nextSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
-      totalCellsRef.current = total;
+      totalCellsRef.current = countFilledCells(nextSolution);
       heroStateRef.current = {
         lastCorrect: null,
         crossStreak: 0,
@@ -1822,10 +1986,11 @@ export default function App() {
       enemySolutionRef.current = nextSolution;
       enemyProgressRef.current = {
         filled: 0,
-        total: nextSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
+        total: countFilledCells(nextSolution),
       };
-      enemyOrderRef.current = { list: [], index: 0 };
-      setEnemyGrid(emptyGrid(n));
+      const freshEnemyGrid = emptyGrid(n);
+      enemyGridRef.current = freshEnemyGrid;
+      setEnemyGrid(freshEnemyGrid);
       setEnemySolutionVersion((v) => v + 1);
       resetAllCombos();
     },
@@ -2178,6 +2343,12 @@ export default function App() {
   }
 
   const handleEnemyPuzzleClear = useCallback(() => {
+    const solutionGrid = enemySolutionRef.current || [];
+    const enemyGridSnapshot = enemyGridRef.current || [];
+    const isMatch = gridsMatch(enemyGridSnapshot, solutionGrid, ENEMY_MATCH_TOLERANCE);
+    if (!isMatch) {
+      return;
+    }
     const totalNeeded =
       enemyPuzzleSequence.length || puzzleSequence.length || getPuzzleGoalForNode(battleNode);
     const nextWins = enemyWins + 1;
@@ -2371,6 +2542,28 @@ export default function App() {
     maybeCompletePuzzle(fresh);
   }, [maybeCompletePuzzle, resetAllCombos, screen, solution.length]);
 
+  const applyEnemyMark = useCallback(
+    (row, col, value) => {
+      setEnemyGrid((prev) => {
+        const size =
+          solution.length || prev.length || enemySolutionRef.current.length || 5;
+        const base = prev.length ? prev.map((cells) => cells.slice()) : emptyGrid(size);
+        if (!base[row]) return prev;
+        const current = base[row][col];
+        if (current === value) return prev;
+        if (current === 1 && value === -1) return prev;
+        base[row][col] = value;
+        enemyGridRef.current = base;
+        return base;
+      });
+      if (value === 1) {
+        incrementCombo("enemy");
+      }
+      enemyProgressRef.current.filled = countFilledCells(enemyGridRef.current);
+    },
+    [incrementCombo, solution.length],
+  );
+
   const togglePaused = useCallback(() => {
     setPaused((prev) => {
       const next = !prev;
@@ -2493,6 +2686,7 @@ export default function App() {
       clearSpellEffects();
       setActiveSpell(null);
       setEnemyGrid([]);
+      enemyGridRef.current = [];
       setPuzzleSequence([]);
       setEnemyPuzzleSequence([]);
       setHeroPuzzleIndex(0);
@@ -2507,86 +2701,73 @@ export default function App() {
   useEffect(() => {
     if (screen !== "picross") return;
     if (!battleNode) return;
-    const enemySolution = enemySolutionRef.current;
-    if (!enemySolution.length) return;
+    if (!solution.length) return;
     if (paused) {
       stopEnemySolver();
       return;
     }
+    const rowHints = Array.isArray(clues?.rows) ? clues.rows : [];
+    const colHints = Array.isArray(clues?.cols) ? clues.cols : [];
     const config = ENEMY_AI_CONFIG[battleNode] || DEFAULT_ENEMY_CONFIG;
-    const coords = [];
-    enemySolution.forEach((row, r) =>
-      row.forEach((cell, c) => {
-        if (cell) coords.push({ r, c });
-      }),
-    );
-    const alreadyInitialized =
-      enemyProgressRef.current.total === coords.length && enemyOrderRef.current.list.length;
-    if (!alreadyInitialized) {
-      enemyOrderRef.current = { list: shuffle(coords), index: 0 };
-      enemyProgressRef.current = {
-        filled: 0,
-        total: coords.length,
-      };
-      setEnemyGrid(emptyGrid(enemySolution.length));
+    if (!enemyGridRef.current.length) {
+      const fresh = emptyGrid(solution.length);
+      enemyGridRef.current = fresh;
+      setEnemyGrid(fresh);
     }
     stopEnemySolver();
     const timer = setInterval(() => {
-      if (boardLocksRef.current.enemy) {
-        return;
-      }
+      if (boardLocksRef.current.enemy) return;
       const totalNeeded = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
       if (playerWins >= totalNeeded || enemyWins >= totalNeeded) {
         stopEnemySolver();
         return;
       }
-      const state = enemyOrderRef.current;
-      if (!state.list.length) {
-        stopEnemySolver();
-        handleEnemyPuzzleClear();
-        return;
-      }
-      if (state.index >= state.list.length) {
-        stopEnemySolver();
-        handleEnemyPuzzleClear();
-        return;
-      }
-      const target = state.list[state.index];
-      state.index += 1;
+      const gridState =
+        enemyGridRef.current.length > 0 ? enemyGridRef.current : emptyGrid(solution.length);
+      const deductions = computeEnemyDeductions(gridState, rowHints, colHints);
       if (Math.random() < config.errorRate) {
         return;
       }
-      const { r, c } = target;
-      let placed = false;
-      setEnemyGrid((prev) => {
-        if (prev[r]?.[c] === 1) return prev;
-        const next = prev.length ? prev.map((row) => row.slice()) : emptyGrid(enemySolution.length);
-        next[r][c] = 1;
-        placed = true;
-        return next;
-      });
-      if (placed) {
-        incrementCombo("enemy");
+      if (deductions.fills.length) {
+        const { r, c } = deductions.fills[0];
+        applyEnemyMark(r, c, 1);
+      } else if (deductions.blanks.length) {
+        const { r, c } = deductions.blanks[0];
+        applyEnemyMark(r, c, -1);
+      } else {
+        const now = Date.now();
+        const guessCooldown = config.guessCooldown ?? 3500;
+        if (now - enemyGuessStateRef.current.lastGuess >= guessCooldown) {
+          const guess = pickEnemyGuess(deductions.probabilities, gridState);
+          if (guess) {
+            applyEnemyMark(guess.r, guess.c, guess.type === "fill" ? 1 : -1);
+            enemyGuessStateRef.current.lastGuess = now;
+          }
+        }
       }
-      enemyProgressRef.current.filled += 1;
-      if (enemyProgressRef.current.filled >= enemyProgressRef.current.total) {
+      enemyProgressRef.current.filled = countFilledCells(enemyGridRef.current);
+      if (
+        gridsMatch(enemyGridRef.current, enemySolutionRef.current, ENEMY_MATCH_TOLERANCE) &&
+        enemyProgressRef.current.filled >= enemyProgressRef.current.total
+      ) {
         stopEnemySolver();
         handleEnemyPuzzleClear();
       }
-    }, Math.max(120, config.interval));
+    }, Math.max(200, config.interval));
     enemySolverRef.current = timer;
     return () => clearInterval(timer);
   }, [
     screen,
     battleNode,
-    enemySolutionVersion,
+    solution.length,
+    clues,
+    puzzleSequence.length,
     playerWins,
     enemyWins,
-    puzzleSequence.length,
     paused,
     stopEnemySolver,
     handleEnemyPuzzleClear,
-    incrementCombo,
+    applyEnemyMark,
   ]);
 
 

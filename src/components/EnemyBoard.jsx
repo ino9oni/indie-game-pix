@@ -62,6 +62,7 @@ export default function EnemyBoard({
             const key = `${r}-${c}`;
             const classes = ["cell"];
             if (cell === 1) classes.push("filled");
+            if (cell === -1) classes.push("blank");
             if (fadedSet.has(key)) classes.push("faded");
             return <div key={key} className={classes.join(" ")} />;
           }),
