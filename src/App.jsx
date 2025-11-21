@@ -75,23 +75,12 @@ const HERO_IMAGES = {
   normal: assetPath("assets/img/character/hero/hero_normal.png"),
   angry: assetPath("assets/img/character/hero/hero_angry.png"),
   smile: assetPath("assets/img/character/hero/hero_smile.png"),
+  fullbody: assetPath("assets/img/character/hero/hero_fullbody.png"),
 };
 const TITLE_IMAGE = assetPath("assets/img/title.png");
 const HERO_FULLBODY = assetPath("assets/img/character/hero/hero_fullbody.png");
 const ENDING_BACKGROUND_IMAGE = assetPath("assets/img/background/ending.png");
 const MAP_BACKGROUND_IMAGE = assetPath("assets/img/background/map.png");
-
-const resolveSpellTheme = (nodeId) => {
-  const normalized = normalizeNodeId(nodeId);
-  const meta = CHARACTERS[normalized];
-  const diff = (meta?.difficulty || "").toLowerCase();
-  if (diff.includes("ultra")) return "inferno";
-  if (diff.includes("hard")) return "venom";
-  if (diff.includes("middle") || diff.includes("normal")) return "quake";
-  if (diff.includes("easy")) return "tide";
-  if (diff.includes("practice")) return "radiant";
-  return "radiant";
-};
 
 const GAMEPAD_BUTTON = {
   A: 0,
@@ -106,33 +95,21 @@ const GAMEPAD_BUTTON = {
   RIGHT: 15,
 };
 const GAMEPAD_REPEAT_MS = 180;
-
-// Spell effect timings
-const SPELL_EFFECT_DURATION = 1600;
-const SPELL_EFFECT_FREEZE = 600;
+const SPELL_FREEZE_DURATION = 2200;
+const SPELL_CINEMATIC_DURATION = 2100;
+const SPELL_THEME_MAP = {
+  practice: "radiant",
+  easy: "tide",
+  middle: "quake",
+  hard: "venom",
+  ultra: "inferno",
+};
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const normalizeHeroName = (value) => {
   const trimmed = (value ?? "").trim();
   return trimmed.length ? trimmed : DEFAULT_HERO_NAME;
-};
-
-const gridsMatch = (gridA, gridB, tolerance = 0) => {
-  if (!Array.isArray(gridA) || !Array.isArray(gridB) || gridA.length !== gridB.length) return false;
-  let mismatch = 0;
-  for (let r = 0; r < gridA.length; r += 1) {
-    const rowA = gridA[r] || [];
-    const rowB = gridB[r] || [];
-    if (rowA.length !== rowB.length) return false;
-    for (let c = 0; c < rowA.length; c += 1) {
-      if (Boolean(rowA[c]) !== Boolean(rowB[c])) {
-        mismatch += 1;
-        if (mismatch > tolerance) return false;
-      }
-    }
-  }
-  return mismatch <= tolerance;
 };
 
 function loadGlyphCollection() {
@@ -184,15 +161,16 @@ function persistGlyphCollection(collection, solved) {
 }
 
 const ENEMY_AI_CONFIG = {
-  "elf-practice": { interval: 1400, errorRate: 0.15, guessCooldown: 2000 },
-  "elf-easy": { interval: 1100, errorRate: 0.1, guessCooldown: 2600 },
-  "elf-middle": { interval: 900, errorRate: 0.08, guessCooldown: 3200 },
-  "elf-hard": { interval: 750, errorRate: 0.05, guessCooldown: 4200 },
-  "elf-ultra": { interval: 600, errorRate: 0.03, guessCooldown: 5200 },
+  "elf-practice": { interval: 1400, errorRate: 0.15 },
+  "elf-easy": { interval: 1100, errorRate: 0.1 },
+  "elf-middle": { interval: 900, errorRate: 0.08 },
+  "elf-hard": { interval: 750, errorRate: 0.05 },
+  "elf-ultra": { interval: 600, errorRate: 0.03 },
 };
 
-const SPELL_SPEECH_DURATION = 4000;
-const ENEMY_MATCH_TOLERANCE = 0; // 許容する不一致セル数（0で完全一致必須）
+const SPELL_SPEECH_DURATION = 1200;
+const SPELL_BOARD_FOCUS_DELAY = 1100;
+const SPELL_BOARD_FOCUS_DURATION = 650;
 
 const COMBO_STAGE_DEFS = [
   { id: "stage1", threshold: 10 },
@@ -430,7 +408,7 @@ const ENEMY_STAGE_SETS = {
   ],
 };
 
-const DEFAULT_ENEMY_CONFIG = { interval: 1200, errorRate: 0.08, guessCooldown: 3500 };
+const DEFAULT_ENEMY_CONFIG = { interval: 1200, errorRate: 0.08 };
 
 function deriveDifficultyFromSize(n) {
   if (n <= 5) return "easy";
@@ -511,161 +489,6 @@ function shuffle(array) {
   }
   return arr;
 }
-
-const countFilledCells = (grid) => {
-  if (!Array.isArray(grid)) return 0;
-  return grid.reduce(
-    (total, row = []) =>
-      total +
-      row.reduce((rowSum, cell) => {
-        const filled = cell === 1 || cell === true;
-        return rowSum + (filled ? 1 : 0);
-      }, 0),
-    0,
-  );
-};
-
-const maskMatchesClues = (mask, length, clues) => {
-  const normalizedClues = Array.isArray(clues) ? clues.filter((value) => value > 0) : [];
-  const runs = [];
-  let count = 0;
-  for (let i = 0; i < length; i += 1) {
-    if ((mask >> i) & 1) {
-      count += 1;
-    } else if (count > 0) {
-      runs.push(count);
-      count = 0;
-    }
-  }
-  if (count > 0) runs.push(count);
-  if (!normalizedClues.length) return runs.length === 0;
-  if (runs.length !== normalizedClues.length) return false;
-  for (let i = 0; i < runs.length; i += 1) {
-    if (runs[i] !== normalizedClues[i]) return false;
-  }
-  return true;
-};
-
-const solveLineWithBrute = (line, clues) => {
-  const length = line.length;
-  const normalizedLine = Array.from({ length }, (_, idx) => {
-    const value = line[idx];
-    if (value === 1) return 1;
-    if (value === -1) return -1;
-    return 0;
-  });
-  const normalizedClues = Array.isArray(clues) ? clues.filter((value) => value > 0) : [];
-  const maxMask = 1 << length;
-  const solutions = [];
-  for (let mask = 0; mask < maxMask; mask += 1) {
-    let valid = true;
-    for (let i = 0; i < length; i += 1) {
-      const bit = (mask >> i) & 1;
-      if (normalizedLine[i] === 1 && bit === 0) {
-        valid = false;
-        break;
-      }
-      if (normalizedLine[i] === -1 && bit === 1) {
-        valid = false;
-        break;
-      }
-    }
-    if (!valid) continue;
-    if (!maskMatchesClues(mask, length, normalizedClues)) continue;
-    solutions.push(mask);
-  }
-  if (!solutions.length) {
-    return {
-      fills: [],
-      blanks: [],
-      probabilities: Array(length).fill(0.5),
-    };
-  }
-  const fillCounts = new Array(length).fill(0);
-  solutions.forEach((mask) => {
-    for (let i = 0; i < length; i += 1) {
-      if ((mask >> i) & 1) fillCounts[i] += 1;
-    }
-  });
-  const fills = [];
-  const blanks = [];
-  const probabilities = new Array(length).fill(0);
-  for (let i = 0; i < length; i += 1) {
-    const prob = fillCounts[i] / solutions.length;
-    probabilities[i] = prob;
-    if (prob === 1 && normalizedLine[i] !== 1) fills.push(i);
-    else if (prob === 0 && normalizedLine[i] !== -1) blanks.push(i);
-  }
-  return { fills, blanks, probabilities };
-};
-
-const computeEnemyDeductions = (grid, rowHints = [], colHints = []) => {
-  const size = grid.length || rowHints.length || colHints.length || 0;
-  const fills = new Map();
-  const blanks = new Map();
-  const probabilities = new Map();
-  const registerFill = (r, c, source) => {
-    const key = `${r}-${c}`;
-    fills.set(key, { r, c, source });
-    blanks.delete(key);
-  };
-  const registerBlank = (r, c, source) => {
-    const key = `${r}-${c}`;
-    if (fills.has(key)) return;
-    blanks.set(key, { r, c, source });
-  };
-  const registerProb = (r, c, prob) => {
-    if (prob <= 0 || prob >= 1) return;
-    const key = `${r}-${c}`;
-    const prev = probabilities.get(key);
-    const combined = prev == null ? prob : 1 - (1 - prev) * (1 - prob);
-    probabilities.set(key, combined);
-  };
-  for (let r = 0; r < size; r += 1) {
-    const line = grid[r] ? grid[r].slice() : Array(size).fill(0);
-    const result = solveLineWithBrute(line, rowHints[r] || []);
-    result.fills.forEach((c) => registerFill(r, c, "row"));
-    result.blanks.forEach((c) => registerBlank(r, c, "row"));
-    result.probabilities.forEach((prob, c) => {
-      if (line[c] !== 0) return;
-      registerProb(r, c, prob);
-    });
-  }
-  for (let c = 0; c < size; c += 1) {
-    const line = grid.map((row) => (row?.[c] ?? 0));
-    const result = solveLineWithBrute(line, colHints[c] || []);
-    result.fills.forEach((r) => registerFill(r, c, "col"));
-    result.blanks.forEach((r) => registerBlank(r, c, "col"));
-    result.probabilities.forEach((prob, r) => {
-      if (line[r] !== 0) return;
-      registerProb(r, c, prob);
-    });
-  }
-  return {
-    fills: Array.from(fills.values()),
-    blanks: Array.from(blanks.values()),
-    probabilities,
-  };
-};
-
-const pickEnemyGuess = (probMap, grid) => {
-  if (!(probMap instanceof Map)) return null;
-  const candidates = [];
-  probMap.forEach((prob, key) => {
-    const [rStr, cStr] = key.split("-");
-    const r = Number(rStr);
-    const c = Number(cStr);
-    if (!Number.isFinite(r) || !Number.isFinite(c)) return;
-    if (grid[r]?.[c] !== 0) return;
-    if (prob === 0.5) return;
-    candidates.push({ r, c, prob });
-  });
-  if (!candidates.length) return null;
-  candidates.sort((a, b) => Math.abs(b.prob - 0.5) - Math.abs(a.prob - 0.5));
-  const target = candidates[0];
-  if (!target) return null;
-  return { ...target, type: target.prob >= 0.5 ? "fill" : "blank" };
-};
 
 function computeReadyStages(count, prevReady = []) {
   const readySet = new Set(prevReady);
@@ -749,6 +572,16 @@ function countCorrectFilled(grid, solution) {
     }
   }
   return count;
+}
+
+function resolveSpellTheme(difficulty) {
+  const key = (difficulty || "").toLowerCase();
+  if (key.includes("ultra")) return SPELL_THEME_MAP.ultra;
+  if (key.includes("hard")) return SPELL_THEME_MAP.hard;
+  if (key.includes("middle") || key.includes("normal")) return SPELL_THEME_MAP.middle;
+  if (key.includes("easy")) return SPELL_THEME_MAP.easy;
+  if (key.includes("practice")) return SPELL_THEME_MAP.practice;
+  return SPELL_THEME_MAP.practice;
 }
 
 function createComboTrack() {
@@ -1001,8 +834,9 @@ export default function App() {
   const [enemyWins, setEnemyWins] = useState(0);
   const [enemyGrid, setEnemyGrid] = useState([]);
   const [activeSpell, setActiveSpell] = useState(null);
-  const [spellEffect, setSpellEffect] = useState(null);
   const [spellSpeech, setSpellSpeech] = useState({ hero: null, enemy: null });
+  const [spellFreeze, setSpellFreeze] = useState(false);
+  const [spellCinematic, setSpellCinematic] = useState(null);
   const [conversationTransition, setConversationTransition] = useState("none");
   const [postClearAction, setPostClearAction] = useState(null);
   const [glyphCollection, setGlyphCollection] = useState(
@@ -1103,32 +937,110 @@ export default function App() {
     });
   }, []);
 
-  const showSpellOverlay = useCallback((payload) => {
-    if (spellOverlayTimeoutRef.current) {
-      clearTimeout(spellOverlayTimeoutRef.current);
-      spellOverlayTimeoutRef.current = null;
+  const startSpellFreeze = useCallback(() => {
+    if (spellFreezeTimeoutRef.current) {
+      clearTimeout(spellFreezeTimeoutRef.current);
+      spellFreezeTimeoutRef.current = null;
     }
-    setActiveSpell(payload);
-
-    const caster = payload?.caster;
-    const speechText = typeof payload?.speech === "string" ? payload.speech.trim() : "";
-
-    if (caster && speechText) {
-      if (speechTimeoutRef.current[caster]) {
-        clearTimeout(speechTimeoutRef.current[caster]);
-      }
-      setSpellSpeech((prev) => ({ ...prev, [caster]: speechText }));
-      speechTimeoutRef.current[caster] = setTimeout(() => {
-        setSpellSpeech((prev) => ({ ...prev, [caster]: null }));
-        speechTimeoutRef.current[caster] = null;
-      }, SPELL_SPEECH_DURATION);
-    }
-
-    spellOverlayTimeoutRef.current = setTimeout(() => {
-      setActiveSpell(null);
-      spellOverlayTimeoutRef.current = null;
-    }, SPELL_SPEECH_DURATION);
+    setSpellFreeze(true);
+    spellFreezeTimeoutRef.current = setTimeout(() => {
+      setSpellFreeze(false);
+      spellFreezeTimeoutRef.current = null;
+    }, SPELL_FREEZE_DURATION);
   }, []);
+
+  const showSpellOverlay = useCallback(
+    (payload) => {
+      if (spellOverlayTimeoutRef.current) {
+        clearTimeout(spellOverlayTimeoutRef.current);
+        spellOverlayTimeoutRef.current = null;
+      }
+      setActiveSpell(payload);
+      startSpellFreeze();
+
+      const caster = payload?.caster;
+      const speechText = typeof payload?.speech === "string" ? payload.speech.trim() : "";
+      const casterImage =
+        payload?.image ||
+        (caster === "hero"
+          ? HERO_IMAGES.fullbody
+          : CHARACTERS[battleNode]?.images?.angry || HERO_IMAGES.angry);
+      const nodeDifficulty = CHARACTERS[battleNode]?.difficulty || level;
+      const theme = resolveSpellTheme(nodeDifficulty);
+      const impactCells = Array.isArray(payload?.impactCells) ? payload.impactCells : [];
+      const boardSize = payload?.boardSize || 10;
+      // Expand impact cells to a small halo so近傍セルも光る
+      const haloCells = [];
+      const seen = new Set();
+      impactCells.forEach(({ r, c }) => {
+        for (let dr = -1; dr <= 1; dr += 1) {
+          for (let dc = -1; dc <= 1; dc += 1) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr < 0 || nr >= boardSize || nc < 0 || nc >= boardSize) continue;
+            const key = `${nr}-${nc}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            haloCells.push({ r: nr, c: nc });
+          }
+        }
+      });
+
+      setSpellCinematic({
+        caster,
+        target: payload?.target || (caster === "hero" ? "enemy" : "hero"),
+        theme,
+        image: casterImage,
+        name: payload?.name || "Spell",
+        description: payload?.description || "",
+        speech: speechText || "",
+        impact: impactCells,
+        impactHalo: haloCells,
+        boardSize,
+        showBoard: false,
+        attachToBoard: payload?.attachToBoard ?? payload?.target === "enemy",
+      });
+      if (spellCinematicTimeoutRef.current) {
+        clearTimeout(spellCinematicTimeoutRef.current);
+      }
+      spellCinematicTimeoutRef.current = setTimeout(() => {
+        setSpellCinematic(null);
+        spellCinematicTimeoutRef.current = null;
+      }, SPELL_CINEMATIC_DURATION);
+
+      if (caster && speechText) {
+        if (speechTimeoutRef.current[caster]) {
+          clearTimeout(speechTimeoutRef.current[caster]);
+        }
+        setSpellSpeech((prev) => ({ ...prev, [caster]: speechText }));
+        speechTimeoutRef.current[caster] = setTimeout(() => {
+          setSpellSpeech((prev) => ({ ...prev, [caster]: null }));
+          speechTimeoutRef.current[caster] = null;
+        }, SPELL_SPEECH_DURATION);
+      }
+
+      spellOverlayTimeoutRef.current = setTimeout(() => {
+        setActiveSpell(null);
+        spellOverlayTimeoutRef.current = null;
+      }, SPELL_SPEECH_DURATION);
+
+      if (spellBoardFocusTimeoutRef.current.delay) {
+        clearTimeout(spellBoardFocusTimeoutRef.current.delay);
+      }
+      if (spellBoardFocusTimeoutRef.current.hide) {
+        clearTimeout(spellBoardFocusTimeoutRef.current.hide);
+      }
+      spellBoardFocusTimeoutRef.current.delay = setTimeout(() => {
+        setSpellCinematic((prev) => (prev ? { ...prev, showBoard: true } : prev));
+        spellBoardFocusTimeoutRef.current.delay = null;
+        spellBoardFocusTimeoutRef.current.hide = setTimeout(() => {
+          setSpellCinematic((prev) => (prev ? { ...prev, showBoard: false } : prev));
+          spellBoardFocusTimeoutRef.current.hide = null;
+        }, SPELL_BOARD_FOCUS_DURATION);
+      }, SPELL_BOARD_FOCUS_DELAY);
+    },
+    [battleNode, level, startSpellFreeze],
+  );
 
   const applyStageEffect = useCallback(
     (caster, stageId) => {
@@ -1197,6 +1109,18 @@ export default function App() {
             enemyProgressRef.current.filled - removalQueue.length,
           );
         }
+        const state = enemyOrderRef.current;
+        const remaining = state.list.slice(state.index);
+        const appended = [...removalQueue, ...remaining];
+        const dedupe = new Map();
+        appended.forEach(({ r, c }) => {
+          const key = `${r}-${c}`;
+          dedupe.set(key, { r, c });
+        });
+        enemyOrderRef.current = {
+          list: Array.from(dedupe.values()),
+          index: 0,
+        };
         if (coords.length) {
           const keys = coords.map(({ key }) => key);
           setEnemyFadedCells(keys);
@@ -1238,14 +1162,10 @@ export default function App() {
         lockBoard("hero");
       }
 
-      const enemyImages = battleNode ? CHARACTERS[battleNode]?.images || {} : {};
       const casterMeta =
         caster === "hero"
-          ? { image: HERO_IMAGES.angry || HERO_FULLBODY }
-          : {
-              image:
-                enemyImages.angry || enemyImages.fullbody || enemyImages.normal || HERO_FULLBODY,
-            };
+          ? { image: HERO_IMAGES.angry }
+          : { image: CHARACTERS[battleNode]?.images?.angry };
 
       showSpellOverlay({
         caster,
@@ -1254,34 +1174,10 @@ export default function App() {
         description: stageMeta?.description || "",
         image: casterMeta.image,
         speech: stageMeta?.speech,
-        target,
+        impactCells: coords.map(({ r, c }) => ({ r, c })),
         boardSize: size,
-        impact: coords.map(({ r, c }) => ({ r, c })),
-      });
-
-      // シネマティック演出用の確定エフェクト（フェイルセーフ込み）
-      if (spellEffectTimeoutRef.current) {
-        clearTimeout(spellEffectTimeoutRef.current);
-        spellEffectTimeoutRef.current = null;
-      }
-      setSpellEffect({
-        caster,
         target,
-        name: stageMeta?.name || "Spell",
-        description: stageMeta?.description || "",
-        speech: stageMeta?.speech,
-        image: casterMeta.image,
-        boardSize: size,
-        impact: coords.map(({ r, c }) => ({ r, c })),
-        theme: resolveSpellTheme(battleNode),
       });
-      setTimeout(() => {
-        lockBoard(target);
-      }, SPELL_EFFECT_FREEZE);
-      spellEffectTimeoutRef.current = setTimeout(() => {
-        setSpellEffect(null);
-        spellEffectTimeoutRef.current = null;
-      }, SPELL_EFFECT_DURATION);
       audio.playSpellAttack(caster === "hero" ? "hero" : "enemy");
       launchProjectile(caster === "hero" ? "hero" : "enemy");
     },
@@ -1291,13 +1187,8 @@ export default function App() {
   const triggerComboStage = useCallback(
     (side, stageId) => {
       if (!stageId) return;
-      try {
-        applyStageEffect(side, stageId);
-      } catch (err) {
-        console.error("applyStageEffect failed", err);
-      } finally {
-        resetCombo(side);
-      }
+      applyStageEffect(side, stageId);
+      resetCombo(side);
     },
     [applyStageEffect, resetCombo],
   );
@@ -1347,6 +1238,9 @@ export default function App() {
   const enemySolverRef = useRef(null);
   const hiddenTimersRef = useRef({ hidden: null, locked: null, faded: null, enemyFaded: null });
   const spellOverlayTimeoutRef = useRef(null);
+  const spellFreezeTimeoutRef = useRef(null);
+  const spellCinematicTimeoutRef = useRef(null);
+  const spellBoardFocusTimeoutRef = useRef({ delay: null, hide: null });
   const speechTimeoutRef = useRef({ hero: null, enemy: null });
   const conversationControlsRef = useRef(null);
   const lastGamepadButtonsRef = useRef({});
@@ -1359,11 +1253,9 @@ export default function App() {
   const boardLockTimeoutRef = useRef({ hero: null, enemy: null });
   const enemyStageCooldownRef = useRef(null);
   const enemyCastingRef = useRef(false);
+  const enemyOrderRef = useRef({ list: [], index: 0 });
   const puzzleSolvedRef = useRef(false);
   const enemySolutionRef = useRef([]);
-  const enemyGridRef = useRef([]);
-  const enemyGuessStateRef = useRef({ lastGuess: 0 });
-  const spellEffectTimeoutRef = useRef(null);
   const [enemySolutionVersion, setEnemySolutionVersion] = useState(0);
 
   useEffect(() => {
@@ -1442,6 +1334,9 @@ export default function App() {
     setFadedCells([]);
     setEnemyFadedCells([]);
     setSpellSpeech({ hero: null, enemy: null });
+    setSpellFreeze(false);
+    setSpellCinematic(null);
+    setActiveSpell(null);
     const speechTimers = speechTimeoutRef.current;
     Object.keys(speechTimers).forEach((side) => {
       if (speechTimers[side]) {
@@ -1452,6 +1347,22 @@ export default function App() {
     if (spellOverlayTimeoutRef.current) {
       clearTimeout(spellOverlayTimeoutRef.current);
       spellOverlayTimeoutRef.current = null;
+    }
+    if (spellFreezeTimeoutRef.current) {
+      clearTimeout(spellFreezeTimeoutRef.current);
+      spellFreezeTimeoutRef.current = null;
+    }
+    if (spellCinematicTimeoutRef.current) {
+      clearTimeout(spellCinematicTimeoutRef.current);
+      spellCinematicTimeoutRef.current = null;
+    }
+    if (spellBoardFocusTimeoutRef.current.delay) {
+      clearTimeout(spellBoardFocusTimeoutRef.current.delay);
+      spellBoardFocusTimeoutRef.current.delay = null;
+    }
+    if (spellBoardFocusTimeoutRef.current.hide) {
+      clearTimeout(spellBoardFocusTimeoutRef.current.hide);
+      spellBoardFocusTimeoutRef.current.hide = null;
     }
   }, []);
   function resetProgress() {
@@ -1470,7 +1381,6 @@ export default function App() {
     setEnemyWins(0);
     setActiveSpell(null);
     setEnemyGrid([]);
-    enemyGridRef.current = [];
     setPostClearAction(null);
     glyphUnlocksRef.current = new Map();
     setRecentGlyphUnlocks([]);
@@ -1485,7 +1395,7 @@ export default function App() {
 
   useEffect(() => {
     if (screen !== "picross") return;
-    if (paused) return;
+    if (paused || spellFreeze) return;
     const id = setInterval(() => {
       setRemaining((r) => {
         const nr = Math.max(0, r - 1);
@@ -1497,7 +1407,7 @@ export default function App() {
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [screen, paused, handleSubmit]);
+  }, [screen, paused, spellFreeze, handleSubmit]);
 
   useEffect(() => {
     try {
@@ -1516,10 +1426,6 @@ export default function App() {
   useEffect(() => {
     enemyScoreRef.current = enemyScore;
   }, [enemyScore]);
-
-  useEffect(() => {
-    enemyGridRef.current = enemyGrid;
-  }, [enemyGrid]);
 
   useEffect(() => {
     displayEnemyScoreRef.current = displayEnemyScore;
@@ -1905,6 +1811,25 @@ export default function App() {
     });
   }, []);
 
+  useEffect(() => () => {
+    if (spellFreezeTimeoutRef.current) {
+      clearTimeout(spellFreezeTimeoutRef.current);
+      spellFreezeTimeoutRef.current = null;
+    }
+    if (spellCinematicTimeoutRef.current) {
+      clearTimeout(spellCinematicTimeoutRef.current);
+      spellCinematicTimeoutRef.current = null;
+    }
+    if (spellBoardFocusTimeoutRef.current.delay) {
+      clearTimeout(spellBoardFocusTimeoutRef.current.delay);
+      spellBoardFocusTimeoutRef.current.delay = null;
+    }
+    if (spellBoardFocusTimeoutRef.current.hide) {
+      clearTimeout(spellBoardFocusTimeoutRef.current.hide);
+      spellBoardFocusTimeoutRef.current.hide = null;
+    }
+  }, []);
+
   function beginPicrossForNode(nodeId) {
     const normalizedId = normalizeNodeId(nodeId);
     const meta = CHARACTERS[normalizedId];
@@ -1964,7 +1889,8 @@ export default function App() {
     setDisplayEnemyScore(0);
     setEnemyScoreAnimating(false);
 
-    totalCellsRef.current = countFilledCells(heroSolution);
+    const total = heroSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
+    totalCellsRef.current = total;
     heroStateRef.current = {
       lastCorrect: null,
       crossStreak: 0,
@@ -1976,13 +1902,10 @@ export default function App() {
     enemySolutionRef.current = enemySolution;
     enemyProgressRef.current = {
       filled: 0,
-      total: countFilledCells(enemySolution),
+      total: enemySolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
     };
-    {
-      const freshEnemyGrid = emptyGrid(enemySolution.length);
-      enemyGridRef.current = freshEnemyGrid;
-      setEnemyGrid(freshEnemyGrid);
-    }
+    enemyOrderRef.current = { list: [], index: 0 };
+    setEnemyGrid(emptyGrid(enemySolution.length));
     setEnemySolutionVersion((v) => v + 1);
     setPlayerWins(0);
     setEnemyWins(0);
@@ -2016,7 +1939,8 @@ export default function App() {
       setSolution(nextSolution);
       setGrid(emptyGrid(n));
       realtimeBonusRef.current = new Set();
-      totalCellsRef.current = countFilledCells(nextSolution);
+      const total = nextSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
+      totalCellsRef.current = total;
       heroStateRef.current = {
         lastCorrect: null,
         crossStreak: 0,
@@ -2044,11 +1968,10 @@ export default function App() {
       enemySolutionRef.current = nextSolution;
       enemyProgressRef.current = {
         filled: 0,
-        total: countFilledCells(nextSolution),
+        total: nextSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
       };
-      const freshEnemyGrid = emptyGrid(n);
-      enemyGridRef.current = freshEnemyGrid;
-      setEnemyGrid(freshEnemyGrid);
+      enemyOrderRef.current = { list: [], index: 0 };
+      setEnemyGrid(emptyGrid(n));
       setEnemySolutionVersion((v) => v + 1);
       resetAllCombos();
     },
@@ -2347,9 +2270,7 @@ export default function App() {
       })
       .filter(Boolean);
     setRecentGlyphUnlocks(unlockDetails);
-    if (unlockDetails.length > 0) {
-      audio.playCollectionUnlock?.();
-    }
+    // 勝利ファンファーレを際立たせるため、アンロック専用SEは再生しない
     glyphUnlocksRef.current = new Map();
     let nextAction = null;
     if (pendingNode) {
@@ -2401,12 +2322,6 @@ export default function App() {
   }
 
   const handleEnemyPuzzleClear = useCallback(() => {
-    const solutionGrid = enemySolutionRef.current || [];
-    const enemyGridSnapshot = enemyGridRef.current || [];
-    const isMatch = gridsMatch(enemyGridSnapshot, solutionGrid, ENEMY_MATCH_TOLERANCE);
-    if (!isMatch) {
-      return;
-    }
     const totalNeeded =
       enemyPuzzleSequence.length || puzzleSequence.length || getPuzzleGoalForNode(battleNode);
     const nextWins = enemyWins + 1;
@@ -2600,28 +2515,6 @@ export default function App() {
     maybeCompletePuzzle(fresh);
   }, [maybeCompletePuzzle, resetAllCombos, screen, solution.length]);
 
-  const applyEnemyMark = useCallback(
-    (row, col, value) => {
-      setEnemyGrid((prev) => {
-        const size =
-          solution.length || prev.length || enemySolutionRef.current.length || 5;
-        const base = prev.length ? prev.map((cells) => cells.slice()) : emptyGrid(size);
-        if (!base[row]) return prev;
-        const current = base[row][col];
-        if (current === value) return prev;
-        if (current === 1 && value === -1) return prev;
-        base[row][col] = value;
-        enemyGridRef.current = base;
-        return base;
-      });
-      if (value === 1) {
-        incrementCombo("enemy");
-      }
-      enemyProgressRef.current.filled = countFilledCells(enemyGridRef.current);
-    },
-    [incrementCombo, solution.length],
-  );
-
   const togglePaused = useCallback(() => {
     setPaused((prev) => {
       const next = !prev;
@@ -2701,13 +2594,6 @@ export default function App() {
     if (screen !== "picross") {
       resetAllCombos();
     }
-    if (screen !== "picross") {
-      setSpellEffect(null);
-      if (spellEffectTimeoutRef.current) {
-        clearTimeout(spellEffectTimeoutRef.current);
-        spellEffectTimeoutRef.current = null;
-      }
-    }
   }, [screen, resetAllCombos]);
 
   useEffect(() => {
@@ -2750,9 +2636,7 @@ export default function App() {
       stopEnemySolver();
       clearSpellEffects();
       setActiveSpell(null);
-      setSpellEffect(null);
       setEnemyGrid([]);
-      enemyGridRef.current = [];
       setPuzzleSequence([]);
       setEnemyPuzzleSequence([]);
       setHeroPuzzleIndex(0);
@@ -2767,73 +2651,87 @@ export default function App() {
   useEffect(() => {
     if (screen !== "picross") return;
     if (!battleNode) return;
-    if (!solution.length) return;
-    if (paused) {
+    const enemySolution = enemySolutionRef.current;
+    if (!enemySolution.length) return;
+    if (paused || spellFreeze) {
       stopEnemySolver();
       return;
     }
-    const rowHints = Array.isArray(clues?.rows) ? clues.rows : [];
-    const colHints = Array.isArray(clues?.cols) ? clues.cols : [];
     const config = ENEMY_AI_CONFIG[battleNode] || DEFAULT_ENEMY_CONFIG;
-    if (!enemyGridRef.current.length) {
-      const fresh = emptyGrid(solution.length);
-      enemyGridRef.current = fresh;
-      setEnemyGrid(fresh);
+    const coords = [];
+    enemySolution.forEach((row, r) =>
+      row.forEach((cell, c) => {
+        if (cell) coords.push({ r, c });
+      }),
+    );
+    const alreadyInitialized =
+      enemyProgressRef.current.total === coords.length && enemyOrderRef.current.list.length;
+    if (!alreadyInitialized) {
+      enemyOrderRef.current = { list: shuffle(coords), index: 0 };
+      enemyProgressRef.current = {
+        filled: 0,
+        total: coords.length,
+      };
+      setEnemyGrid(emptyGrid(enemySolution.length));
     }
     stopEnemySolver();
     const timer = setInterval(() => {
-      if (boardLocksRef.current.enemy) return;
+      if (boardLocksRef.current.enemy) {
+        return;
+      }
       const totalNeeded = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
       if (playerWins >= totalNeeded || enemyWins >= totalNeeded) {
         stopEnemySolver();
         return;
       }
-      const gridState =
-        enemyGridRef.current.length > 0 ? enemyGridRef.current : emptyGrid(solution.length);
-      const deductions = computeEnemyDeductions(gridState, rowHints, colHints);
+      const state = enemyOrderRef.current;
+      if (!state.list.length) {
+        stopEnemySolver();
+        handleEnemyPuzzleClear();
+        return;
+      }
+      if (state.index >= state.list.length) {
+        stopEnemySolver();
+        handleEnemyPuzzleClear();
+        return;
+      }
+      const target = state.list[state.index];
+      state.index += 1;
       if (Math.random() < config.errorRate) {
         return;
       }
-      if (deductions.fills.length) {
-        const { r, c } = deductions.fills[0];
-        applyEnemyMark(r, c, 1);
-      } else if (deductions.blanks.length) {
-        const { r, c } = deductions.blanks[0];
-        applyEnemyMark(r, c, -1);
-      } else {
-        const now = Date.now();
-        const guessCooldown = config.guessCooldown ?? 3500;
-        if (now - enemyGuessStateRef.current.lastGuess >= guessCooldown) {
-          const guess = pickEnemyGuess(deductions.probabilities, gridState);
-          if (guess) {
-            applyEnemyMark(guess.r, guess.c, guess.type === "fill" ? 1 : -1);
-            enemyGuessStateRef.current.lastGuess = now;
-          }
-        }
+      const { r, c } = target;
+      let placed = false;
+      setEnemyGrid((prev) => {
+        if (prev[r]?.[c] === 1) return prev;
+        const next = prev.length ? prev.map((row) => row.slice()) : emptyGrid(enemySolution.length);
+        next[r][c] = 1;
+        placed = true;
+        return next;
+      });
+      if (placed) {
+        incrementCombo("enemy");
       }
-      enemyProgressRef.current.filled = countFilledCells(enemyGridRef.current);
-      if (
-        gridsMatch(enemyGridRef.current, enemySolutionRef.current, ENEMY_MATCH_TOLERANCE) &&
-        enemyProgressRef.current.filled >= enemyProgressRef.current.total
-      ) {
+      enemyProgressRef.current.filled += 1;
+      if (enemyProgressRef.current.filled >= enemyProgressRef.current.total) {
         stopEnemySolver();
         handleEnemyPuzzleClear();
       }
-    }, Math.max(200, config.interval));
+    }, Math.max(120, config.interval));
     enemySolverRef.current = timer;
     return () => clearInterval(timer);
   }, [
     screen,
     battleNode,
-    solution.length,
-    clues,
-    puzzleSequence.length,
+    enemySolutionVersion,
     playerWins,
     enemyWins,
+    puzzleSequence.length,
     paused,
+    spellFreeze,
     stopEnemySolver,
     handleEnemyPuzzleClear,
-    applyEnemyMark,
+    incrementCombo,
   ]);
 
 
@@ -3149,7 +3047,8 @@ export default function App() {
   const currentRound = Math.max(playerWins, enemyWins);
   const displayPuzzleStep = Math.min(currentRound + 1, puzzleGoal);
   const totalCells = totalCellsRef.current || 1;
-  const playerProgressRatio = totalCells ? countCorrectFilled(grid, solution) / totalCells : 0;
+  const playerProgressCount = countCorrectFilled(grid, solution);
+  const playerProgressRatio = totalCells ? playerProgressCount / totalCells : 0;
   const enemyProgressRatio = totalCells
     ? Math.min(1, enemyProgressRef.current.filled / totalCells)
     : 0;
@@ -3228,52 +3127,61 @@ export default function App() {
 
   return (
     <div className="app">
-      {screen === "picross" && spellEffect && (
-        <div className={`spell-cinematic-overlay ${spellEffect.theme || "radiant"}`}>
+      {screen === "picross" && spellCinematic && (
+        <div className={`spell-cinematic-overlay ${spellCinematic.theme}`}>
           <div className="spell-cinematic-backdrop" />
           <div className="spell-cinematic-content">
-            <div className={`spell-cinematic-actor ${spellEffect.caster || "hero"}`}>
-              {spellEffect.image ? (
-                <img src={spellEffect.image} alt={`${spellEffect.name} caster`} />
+            <div className={`spell-cinematic-actor ${spellCinematic.caster || "hero"}`}>
+                  {spellCinematic.image ? (
+                <img src={spellCinematic.image} alt={`${spellCinematic.name} caster`} />
               ) : (
                 <span className="spell-cinematic-placeholder">Spell</span>
               )}
-            </div>
-            <div className="spell-cinematic-text">
-              <div className="spell-cinematic-name">{spellEffect.name}</div>
-              <div className="spell-cinematic-desc">{spellEffect.description}</div>
-              {spellEffect.speech ? (
-                <div className="spell-cinematic-speech">{spellEffect.speech}</div>
-              ) : null}
-            </div>
-          </div>
-          <div className={`spell-cinematic-aurora ${spellEffect.theme || "radiant"}`} aria-hidden="true">
-            <span className="aurora-core" />
-            <span className="aurora-ring" />
+                </div>
+                <div className="spell-cinematic-text">
+                  <div className="spell-cinematic-name">{spellCinematic.name}</div>
+                  <div className="spell-cinematic-desc">{spellCinematic.description}</div>
+                  {spellCinematic.speech ? (
+                    <div className="spell-cinematic-speech">{spellCinematic.speech}</div>
+                  ) : null}
+                </div>
+              </div>
+              <div className={`spell-cinematic-aurora ${spellCinematic.theme}`} aria-hidden="true">
+                <span className="aurora-core" />
+                <span className="aurora-ring" />
             <span className="aurora-spark" />
           </div>
-          <div
-            className={`spell-board-impact ${spellEffect.target || "enemy"} visible`}
-            aria-hidden="true"
-          >
+          {!spellCinematic.attachToBoard && (
             <div
-              className="spell-board-grid"
-              style={{
-                gridTemplateColumns: `repeat(${spellEffect.boardSize || 10}, 1fr)`,
-              }}
+              className={`spell-board-impact ${spellCinematic.target || "enemy"} ${
+                spellCinematic.showBoard ? "visible" : ""
+              }`}
+              aria-hidden="true"
             >
-              {Array.from({ length: (spellEffect.boardSize || 10) ** 2 }).map((_, idx) => {
-                const size = spellEffect.boardSize || 10;
-                const r = Math.floor(idx / size);
-                const c = idx % size;
-                const impactKey = `${r}-${c}`;
-                const isImpact = spellEffect.impact?.some((cell) => cell.r === r && cell.c === c);
-                const cls = isImpact ? "impact" : "";
-                return <span key={impactKey} className={`spell-board-cell ${cls}`} />;
-              })}
+              <div
+                className="spell-board-grid"
+                style={{
+                  gridTemplateColumns: `repeat(${spellCinematic.boardSize || 10}, 1fr)`,
+                }}
+              >
+                {Array.from({ length: (spellCinematic.boardSize || 10) ** 2 }).map((_, idx) => {
+                  const size = spellCinematic.boardSize || 10;
+                  const r = Math.floor(idx / size);
+                  const c = idx % size;
+                  const impactKey = `${r}-${c}`;
+                  const active = spellCinematic.impact?.some(
+                    (cell) => cell.r === r && cell.c === c,
+                  );
+                  const halo =
+                    !active &&
+                    spellCinematic.impactHalo?.some((cell) => cell.r === r && cell.c === c);
+                  const cls = active ? "impact" : halo ? "impact-near" : "";
+                  return <span key={impactKey} className={`spell-board-cell ${cls}`} />;
+                })}
+              </div>
+              <div className={`spell-board-flare ${spellCinematic.theme}`} />
             </div>
-            <div className={`spell-board-flare ${spellEffect.theme || "radiant"}`} />
-          </div>
+          )}
         </div>
       )}
       {screen !== "prologue" && (
@@ -3518,7 +3426,7 @@ export default function App() {
                       lockedRowClues={lockedRowClues}
                       lockedColClues={lockedColClues}
                       fadedCells={fadedCells}
-                      disabled={paused || boardLocks.hero}
+                      disabled={paused || spellFreeze || boardLocks.hero}
                       onGridChange={maybeCompletePuzzle}
                       highlightCell={
                         inputMode === "gamepad" && screen === "picross"
@@ -3559,6 +3467,38 @@ export default function App() {
                 </div>
                 <div className="panel-board enemy">
                   <div className="board-frame enemy">
+                    {spellCinematic?.attachToBoard &&
+                      spellCinematic?.target === "enemy" &&
+                      spellCinematic.showBoard && (
+                        <div className={`spell-board-impact onboard ${spellCinematic.theme}`}>
+                          <div
+                            className="spell-board-grid"
+                            style={{
+                              gridTemplateColumns: `repeat(${spellCinematic.boardSize || 10}, 1fr)`,
+                            }}
+                          >
+                            {Array.from({ length: (spellCinematic.boardSize || 10) ** 2 }).map(
+                              (_, idx) => {
+                                const size = spellCinematic.boardSize || 10;
+                                const r = Math.floor(idx / size);
+                                const c = idx % size;
+                                const impactKey = `${r}-${c}`;
+                                const active = spellCinematic.impact?.some(
+                                  (cell) => cell.r === r && cell.c === c,
+                                );
+                                const halo =
+                                  !active &&
+                                  spellCinematic.impactHalo?.some(
+                                    (cell) => cell.r === r && cell.c === c,
+                                  );
+                                const cls = active ? "impact" : halo ? "impact-near" : "";
+                                return <span key={impactKey} className={`spell-board-cell ${cls}`} />;
+                              },
+                            )}
+                          </div>
+                          <div className={`spell-board-flare ${spellCinematic.theme}`} />
+                        </div>
+                      )}
                     <EnemyBoard
                       size={size}
                       grid={enemyGrid}
