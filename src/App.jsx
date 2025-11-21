@@ -985,6 +985,7 @@ export default function App() {
   const [enemyWins, setEnemyWins] = useState(0);
   const [enemyGrid, setEnemyGrid] = useState([]);
   const [activeSpell, setActiveSpell] = useState(null);
+  const [spellEffect, setSpellEffect] = useState(null);
   const [spellSpeech, setSpellSpeech] = useState({ hero: null, enemy: null });
   const [conversationTransition, setConversationTransition] = useState("none");
   const [postClearAction, setPostClearAction] = useState(null);
@@ -999,10 +1000,9 @@ export default function App() {
   const [lockedRowClues, setLockedRowClues] = useState([]);
   const [lockedColClues, setLockedColClues] = useState([]);
   const [fadedCells, setFadedCells] = useState([]);
-const [enemyFadedCells, setEnemyFadedCells] = useState([]);
-const [paused, setPaused] = useState(false);
-const [projectiles, setProjectiles] = useState([]);
-  const [spellEffect, setSpellEffect] = useState(null);
+  const [enemyFadedCells, setEnemyFadedCells] = useState([]);
+  const [paused, setPaused] = useState(false);
+  const [projectiles, setProjectiles] = useState([]);
   const [comboState, setComboState] = useState(() => ({
     hero: createComboTrack(),
     enemy: createComboTrack(),
@@ -1329,7 +1329,7 @@ const [projectiles, setProjectiles] = useState([]);
   const gamepadCursorRef = useRef({ row: 0, col: 0 });
   const lastGamepadUsedRef = useRef(0);
   const heroStateRef = useRef({});
-const enemyProgressRef = useRef({ filled: 0, total: 0 });
+  const enemyProgressRef = useRef({ filled: 0, total: 0 });
   const totalCellsRef = useRef(0);
   const boardLockTimeoutRef = useRef({ hero: null, enemy: null });
   const enemyStageCooldownRef = useRef(null);
@@ -1337,7 +1337,7 @@ const enemyProgressRef = useRef({ filled: 0, total: 0 });
   const puzzleSolvedRef = useRef(false);
   const enemySolutionRef = useRef([]);
   const enemyGridRef = useRef([]);
-const enemyGuessStateRef = useRef({ lastGuess: 0 });
+  const enemyGuessStateRef = useRef({ lastGuess: 0 });
   const spellEffectTimeoutRef = useRef(null);
   const [enemySolutionVersion, setEnemySolutionVersion] = useState(0);
 
