@@ -2,9 +2,17 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: v9.1.0
+Current release: v9.2.0
 
-## Release Highlights (v9.1.0)
+## Release Highlights (v9.2.0)
+
+前回リリース (v9.1.0) からの主な変更:
+
+- スペル発動シネマティックを再構築し、キャラ全身＋オーロラ＋ボード直付けの攻撃エフェクトを復活。
+- ENEMY AI をヒントベース解法に変更し、解答一致＋目標達成時のみ勝利する厳密判定を導入。
+- ピクロス進捗バーをセル充填率ベースに修正し、1セルや1問で100%にならないよう調整。
+
+## Previous Release Highlights (v9.1.0)
 
 前回リリース (v9.0.0) からの主な変更:
 
