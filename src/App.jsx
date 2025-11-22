@@ -2819,7 +2819,7 @@ export default function App() {
     try {
       await bgm.resume();
     } catch {}
-    setScreen("tutorial"); // TODO: replace with endless start flow
+    setScreen("endless-select"); // TODO: implement endless flow
   }, []);
 
   const handleOpeningTutorial = useCallback(async () => {
