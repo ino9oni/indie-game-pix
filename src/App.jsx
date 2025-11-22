@@ -2815,6 +2815,13 @@ export default function App() {
     setScreen("gamestart");
   }, [resetProgress, soundOn, updateHeroName]);
 
+  const handleOpeningEndless = useCallback(async () => {
+    try {
+      await bgm.resume();
+    } catch {}
+    setScreen("tutorial"); // TODO: replace with endless start flow
+  }, []);
+
   const handleOpeningTutorial = useCallback(async () => {
     let proceed = true;
     if (tutorialCompleted) {
@@ -3275,6 +3282,7 @@ export default function App() {
           onStart={handleOpeningContinue}
           onNewGame={handleOpeningNewGame}
           onTutorial={handleOpeningTutorial}
+          onEndless={handleOpeningEndless}
           focusedIndex={openingFocus}
           usingGamepad={inputMode === "gamepad"}
         />

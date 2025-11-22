@@ -3386,7 +3386,23 @@ button:focus-visible {
 }
 .opening .actions button {
   width: 100%;
+  position: relative;
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+.opening .actions .opening-tooltip {
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  transform: translateY(-100%);
+  background: rgba(6, 12, 26, 0.94);
+  border: 1px solid rgba(63, 231, 255, 0.45);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: var(--text);
+  box-shadow: 0 18px 36px rgba(3, 8, 20, 0.6);
+  white-space: normal;
+  width: clamp(200px, 24vw, 280px);
+  z-index: 10;
 }
 .opening .actions button.focused {
   transform: translateY(-2px) scale(1.02);
