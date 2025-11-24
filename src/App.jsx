@@ -70,7 +70,7 @@ const AUTO_BGM_SCREENS = new Set([
   "enemy-victory",
   "tutorial",
 ]);
-const OPENING_OPTION_COUNT = 3;
+const OPENING_OPTION_COUNT = 4;
 const HERO_IMAGES = {
   normal: assetPath("assets/img/character/hero/hero_normal.png"),
   angry: assetPath("assets/img/character/hero/hero_angry.png"),
@@ -179,6 +179,9 @@ const COMBO_STAGE_DEFS = [
   { id: "stage4", threshold: 25 },
   { id: "overdrive", threshold: 30 },
 ];
+
+const ENDLESS_BATCH_SIZE = 20;
+const ENDLESS_REFILL_RATIO = 0.1;
 
 const HERO_STAGE_SET = [
   {
@@ -858,8 +861,18 @@ export default function App() {
     enemy: createComboTrack(),
   }));
   const [boardLocks, setBoardLocks] = useState({ hero: false, enemy: false });
+  const [endlessSize, setEndlessSize] = useState(null);
+  const [endlessQueue, setEndlessQueue] = useState([]);
+  const [endlessGrid, setEndlessGrid] = useState([]);
+  const [endlessSolution, setEndlessSolution] = useState([]);
+  const [endlessClues, setEndlessClues] = useState({ rows: [], cols: [] });
+  const [endlessSolvedCount, setEndlessSolvedCount] = useState(0);
+  const [endlessLoading, setEndlessLoading] = useState(false);
+  const [endlessError, setEndlessError] = useState(null);
   const boardLocksRef = useRef(boardLocks);
   const comboStateRef = useRef(comboState);
+  const endlessSolutionRef = useRef([]);
+  const endlessCurrentRef = useRef(null);
   const size = solution.length;
   const clues = useMemo(() => computeClues(solution), [solution]);
 
@@ -2834,6 +2847,146 @@ export default function App() {
     setScreen("tutorial");
   }, [tutorialCompleted]);
 
+  const resetEndlessState = useCallback(() => {
+    setEndlessSize(null);
+    setEndlessQueue([]);
+    setEndlessGrid([]);
+    setEndlessSolution([]);
+    setEndlessClues({ rows: [], cols: [] });
+    setEndlessSolvedCount(0);
+    endlessSolutionRef.current = [];
+    endlessCurrentRef.current = null;
+    setEndlessError(null);
+    setEndlessLoading(false);
+  }, []);
+
+  const generateEndlessBatch = useCallback((n, count = ENDLESS_BATCH_SIZE) => {
+    const nodeId = n <= 5 ? "elf-easy" : "elf-hard";
+    const generation = generateBattlePuzzles(nodeId, n, count, {
+      requireUniqueSolution: true,
+    });
+    const heroEntries = generation?.heroPuzzles?.length
+      ? generation.heroPuzzles
+      : Array.from({ length: count }, () => ({
+          grid: cloneSolution(createFallbackSolution(n)),
+          glyphMeta: null,
+        }));
+    return heroEntries.map((entry) => ({
+      grid: cloneSolution(entry.grid),
+      glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
+    }));
+  }, []);
+
+  const startEndlessMode = useCallback(
+    async (n) => {
+      resetEndlessState();
+      setEndlessSize(n);
+      setEndlessLoading(true);
+      setScreen("endless");
+      try {
+        if (!soundOn) {
+          try {
+            await audio.enable();
+          } catch {}
+          setSoundOn(true);
+        }
+        await bgm.resume();
+      } catch {}
+      try {
+        const batch = await Promise.resolve().then(() =>
+          generateEndlessBatch(n, ENDLESS_BATCH_SIZE),
+        );
+        setEndlessQueue(batch);
+        setEndlessError(null);
+      } catch (err) {
+        console.error(err);
+        setEndlessError("お題生成に失敗しました。再試行してください。");
+      } finally {
+        setEndlessLoading(false);
+      }
+    },
+    [generateEndlessBatch, resetEndlessState, soundOn],
+  );
+
+  const advanceEndless = useCallback(() => {
+    setEndlessQueue((prev) => prev.slice(1));
+  }, []);
+
+  const handleEndlessGridChange = useCallback(
+    (nextGrid) => {
+      if (!endlessSolutionRef.current?.length) return;
+      if (equalsSolution(nextGrid, endlessSolutionRef.current)) {
+        setEndlessSolvedCount((prev) => prev + 1);
+        advanceEndless();
+      }
+    },
+    [advanceEndless],
+  );
+
+  const handleEndlessQuit = useCallback(() => {
+    const confirm = window.confirm("エンドレスを終了し、オープニングに戻りますか？");
+    if (!confirm) return;
+    resetEndlessState();
+    setScreen("opening");
+  }, [resetEndlessState]);
+
+  useEffect(() => {
+    endlessSolutionRef.current = endlessSolution;
+  }, [endlessSolution]);
+
+  useEffect(() => {
+    if (screen !== "endless") return;
+    const head = endlessQueue[0] || null;
+    if (head === endlessCurrentRef.current) return;
+    endlessCurrentRef.current = head;
+    if (!head) {
+      setEndlessSolution([]);
+      endlessSolutionRef.current = [];
+      setEndlessGrid([]);
+      setEndlessClues({ rows: [], cols: [] });
+      return;
+    }
+    const solutionGrid = cloneSolution(head.grid);
+    endlessSolutionRef.current = solutionGrid;
+    setEndlessSolution(solutionGrid);
+    setEndlessGrid(emptyGrid(solutionGrid.length));
+    setEndlessClues(computeClues(solutionGrid));
+  }, [endlessQueue, screen]);
+
+  useEffect(() => {
+    if (screen !== "endless") return;
+    if (endlessLoading) return;
+    if (!endlessSize) return;
+    const remaining = endlessQueue.length;
+    if (endlessError && remaining > 0) return;
+    const threshold = Math.max(2, Math.ceil(ENDLESS_BATCH_SIZE * ENDLESS_REFILL_RATIO));
+    if (remaining > threshold) return;
+    let cancelled = false;
+    (async () => {
+      setEndlessLoading(true);
+      try {
+        const batch = await generateEndlessBatch(endlessSize, ENDLESS_BATCH_SIZE);
+        if (cancelled) return;
+        setEndlessQueue((prev) => [...prev, ...batch]);
+        setEndlessError(null);
+      } catch (err) {
+        if (!cancelled) setEndlessError("お題の追加生成に失敗しました");
+      } finally {
+        if (!cancelled) setEndlessLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    endlessError,
+    endlessQueue.length,
+    endlessLoading,
+    endlessSize,
+    generateEndlessBatch,
+    screen,
+  ]);
+
   useEffect(() => {
     let animationId;
 
@@ -3199,8 +3352,10 @@ export default function App() {
               ? conversationBackground
               : (screen === "picross" && battleBackground)
                   ? battleBackground
-                  : screen === "opening"
+                  : screen === "opening" || screen === "endless-select"
                 ? TITLE_IMAGE
+                : screen === "endless"
+                  ? MAP_BACKGROUND_IMAGE
                 : screen === "gamestart"
                   ? (gameStartPhase === "before" || gameStartPhase === "after" || gameStartNameVisible
                       ? HERO_FULLBODY
@@ -3286,6 +3441,83 @@ export default function App() {
           focusedIndex={openingFocus}
           usingGamepad={inputMode === "gamepad"}
         />
+      )}
+
+      {screen === "endless-select" && (
+        <section className="screen endless-select">
+          <div className="panel">
+            <p className="eyebrow">Endless Mode</p>
+            <h2 className="headline">盤面サイズを選択</h2>
+            <p className="subtle">
+              HERO ボードのみで、会話やマップなしにピクロスを解き続けます。サイズを選んで開始してください。
+            </p>
+            <div className="endless-options">
+              <button
+                className="primary"
+                onClick={() => startEndlessMode(5)}
+                disabled={endlessLoading}
+              >
+                5×5 ボード
+              </button>
+              <button
+                className="ghost"
+                onClick={() => startEndlessMode(10)}
+                disabled={endlessLoading}
+              >
+                10×10 ボード
+              </button>
+            </div>
+            <div className="endless-select-actions">
+              <button className="ghost" onClick={() => setScreen("opening")}>
+                戻る
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {screen === "endless" && (
+        <section className="screen endless-mode">
+          <div className="panel">
+            <div className="endless-head">
+              <div>
+                <p className="eyebrow">Endless Mode</p>
+                <h2 className="headline">
+                  {endlessSize ? `${endlessSize}×${endlessSize}` : "プレイ中"}
+                </h2>
+              </div>
+              <div className="endless-meta">
+                <span className="status-chip">解いた数: {endlessSolvedCount}</span>
+                <span className="status-chip">ストック: {Math.max(0, endlessQueue.length)}</span>
+              </div>
+              <div className="endless-actions">
+                <button className="primary" onClick={handleEndlessQuit}>
+                  Quit
+                </button>
+              </div>
+            </div>
+            {endlessError ? <div className="callout warn">{endlessError}</div> : null}
+            {endlessLoading && !endlessQueue.length ? (
+              <div className="endless-loading">お題を生成中です…</div>
+            ) : endlessSolution.length ? (
+              <div className="endless-board">
+                <GameBoard
+                  size={endlessSolution.length}
+                  grid={endlessGrid}
+                  setGrid={setEndlessGrid}
+                  hintData={endlessClues}
+                  solution={endlessSolution}
+                  onGridChange={handleEndlessGridChange}
+                />
+              </div>
+            ) : (
+              <div className="endless-loading">次のお題を準備しています…</div>
+            )}
+            {endlessLoading && endlessQueue.length ? (
+              <div className="endless-loading subtle">次のお題を準備中…</div>
+            ) : null}
+          </div>
+        </section>
       )}
 
       {screen === "tutorial" && (

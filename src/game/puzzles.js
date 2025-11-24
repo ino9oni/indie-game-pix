@@ -1929,7 +1929,8 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   const rng = createRng(seedValue);
   const allowTransforms = useAdvancedTransforms;
   const requireUniqueSolution =
-    difficulty !== "practice" && difficulty !== "easy" && size <= 5;
+    options.requireUniqueSolution ??
+    (difficulty !== "practice" && difficulty !== "easy" && size <= 5);
 
   if (!useAdvancedTransforms) {
     const baseSelection = templates.slice(0, Math.min(count, templates.length)).map((entry) => ({
