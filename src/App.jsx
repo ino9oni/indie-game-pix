@@ -485,6 +485,29 @@ function createFallbackSolution(n) {
   ).map((row) => row.map((v) => Boolean(v)));
 }
 
+function makeRandomAnchoredGrid(n, seed = 0) {
+  const rng = () => {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+  };
+  const density = 0.35 + (rng() * 0.25);
+  const grid = Array.from({ length: n }, () =>
+    Array.from({ length: n }, () => rng() < density),
+  );
+  const anchorLen = Math.max(1, Math.ceil(n * 0.6));
+  const anchorRow = seed % n;
+  const anchorCol = (seed * 3) % n;
+  for (let c = 0; c < anchorLen; c += 1) {
+    const col = (anchorCol + c) % n;
+    grid[anchorRow][col] = true;
+  }
+  for (let r = 0; r < anchorLen; r += 1) {
+    const row = (anchorRow + r) % n;
+    grid[row][anchorCol] = true;
+  }
+  return grid.map((row) => row.slice());
+}
+
 function shuffle(array) {
   const arr = array.slice();
   for (let i = arr.length - 1; i > 0; i -= 1) {
@@ -2879,7 +2902,7 @@ export default function App() {
       const nodeId = n <= 5 ? "elf-easy" : "elf-hard";
       const seen = endlessSeenRef.current || new Set();
       const results = [];
-      const maxAttempts = Math.max(count * 10, 30);
+      const maxAttempts = Math.max(count * 15, 60);
       let attempts = 0;
 
       const tryPush = (grid, glyphMeta = null) => {
@@ -2892,38 +2915,29 @@ export default function App() {
 
       while (results.length < count && attempts < maxAttempts) {
         attempts += 1;
-        const batchCount = Math.min(5, Math.max(1, count - results.length));
+        const batchCount = Math.max(5, Math.min(20, (count - results.length) * 3));
         const generation = generateBattlePuzzles(nodeId, n, batchCount, {
           requireUniqueSolution: true,
           enforceAnchorHints: true,
         });
-        const entries = generation?.heroPuzzles?.length
-          ? generation.heroPuzzles
-          : [
-              {
-                grid: cloneSolution(createFallbackSolution(n)),
-                glyphMeta: null,
-              },
-            ];
+        const entries = generation?.heroPuzzles?.length ? generation.heroPuzzles : [];
         entries.forEach((entry) => {
           if (results.length >= count) return;
+          if (!gridHasAnchorLine(entry.grid)) return;
           tryPush(entry.grid, entry.glyphMeta);
         });
         if (attempts % 2 === 0) {
           await deferTick();
         }
+        if (results.length >= count) break;
+        // fallback random anchored grids to reach the quota
+        const randomGrid = makeRandomAnchoredGrid(n, attempts + Date.now());
+        tryPush(randomGrid, null);
       }
 
       let fallbackIdx = 0;
       while (results.length < count && fallbackIdx < maxAttempts) {
-        const base = createFallbackSolution(n);
-        // add a simple anchor by filling a diagonal slice based on fallbackIdx
-        const variant = base.map((row) => row.slice());
-        const offset = fallbackIdx % n;
-        for (let c = 0; c < n; c += 1) {
-          const r = (offset + c) % n;
-          variant[r][c] = true;
-        }
+        const variant = makeRandomAnchoredGrid(n, fallbackIdx + Date.now());
         fallbackIdx += 1;
         tryPush(variant, null);
         if (fallbackIdx % 3 === 0) {
@@ -3575,15 +3589,12 @@ export default function App() {
                   solution={endlessSolution}
                   onGridChange={handleEndlessGridChange}
                 />
-                <div className="endless-progress">
+                <div className="panel-progress hero endless-progress">
                   <div className="progress-track">
                     <div
                       className="progress-fill"
                       style={{ width: `${Math.min(1, endlessProgressRatio) * 100}%` }}
                     />
-                  </div>
-                  <div className="progress-label">
-                    進捗 {endlessProgressCount} / {endlessTotalCells || "―"}
                   </div>
                 </div>
               </div>
