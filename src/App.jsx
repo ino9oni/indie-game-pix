@@ -163,7 +163,7 @@ function persistGlyphCollection(collection, solved) {
 const ENEMY_AI_CONFIG = {
   "elf-practice": { interval: 1400, errorRate: 0.15 },
   "elf-easy": { interval: 1100, errorRate: 0.1 },
-  "elf-middle": { interval: 900, errorRate: 0.08 },
+  "elf-middle": { intervalRange: [5000, 10000], errorRate: 0.16 },
   "elf-hard": { interval: 750, errorRate: 0.05 },
   "elf-ultra": { interval: 600, errorRate: 0.03 },
 };
@@ -1916,7 +1916,10 @@ export default function App() {
     setRecentGlyphUnlocks([]);
 
     const puzzleGoal = getPuzzleGoalForNode(normalizedId);
-    const generation = generateBattlePuzzles(normalizedId, n, puzzleGoal, {});
+    const generation = generateBattlePuzzles(normalizedId, n, puzzleGoal, {
+      enforceAnchorHints: normalizedId === "elf-middle",
+      requireUniqueSolution: normalizedId === "elf-middle",
+    });
     if (import.meta?.env?.DEV && generation?.seed !== undefined) {
       console.debug("[picross] generated puzzles", {
         node: normalizedId,
@@ -2745,8 +2748,18 @@ export default function App() {
       setEnemyGrid(emptyGrid(enemySolution.length));
     }
     stopEnemySolver();
-    const timer = setInterval(() => {
+
+    const nextDelay = () => {
+      if (config.intervalRange && Array.isArray(config.intervalRange)) {
+        const [min, max] = config.intervalRange;
+        return Math.max(120, min + Math.random() * Math.max(0, max - min));
+      }
+      return Math.max(120, config.interval || 1000);
+    };
+
+    const tick = () => {
       if (boardLocksRef.current.enemy) {
+        enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
       const totalNeeded = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
@@ -2755,12 +2768,7 @@ export default function App() {
         return;
       }
       const state = enemyOrderRef.current;
-      if (!state.list.length) {
-        stopEnemySolver();
-        handleEnemyPuzzleClear();
-        return;
-      }
-      if (state.index >= state.list.length) {
+      if (!state.list.length || state.index >= state.list.length) {
         stopEnemySolver();
         handleEnemyPuzzleClear();
         return;
@@ -2768,6 +2776,7 @@ export default function App() {
       const target = state.list[state.index];
       state.index += 1;
       if (Math.random() < config.errorRate) {
+        enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
       const { r, c } = target;
@@ -2786,10 +2795,13 @@ export default function App() {
       if (enemyProgressRef.current.filled >= enemyProgressRef.current.total) {
         stopEnemySolver();
         handleEnemyPuzzleClear();
+        return;
       }
-    }, Math.max(120, config.interval));
-    enemySolverRef.current = timer;
-    return () => clearInterval(timer);
+      enemySolverRef.current = setTimeout(tick, nextDelay());
+    };
+
+    enemySolverRef.current = setTimeout(tick, nextDelay());
+    return () => clearTimeout(enemySolverRef.current);
   }, [
     screen,
     battleNode,
