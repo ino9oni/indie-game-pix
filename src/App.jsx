@@ -3011,8 +3011,20 @@ export default function App() {
   );
 
   const advanceEndless = useCallback(() => {
-    setEndlessQueue((prev) => prev.slice(1));
-  }, []);
+    setEndlessQueue((prev) => {
+      const next = prev.slice(1);
+      // 非同期で補充を仕掛ける（UIブロックを避ける）
+      if (next.length < Math.max(5, Math.ceil(ENDLESS_REFILL_BATCH * ENDLESS_REFILL_RATIO) + 1)) {
+        setTimeout(() => {
+          (async () => {
+            const batch = await generateEndlessBatch(endlessSize || 5, ENDLESS_REFILL_BATCH);
+            setEndlessQueue((current) => [...current, ...batch]);
+          })();
+        }, 0);
+      }
+      return next;
+    });
+  }, [endlessSize, generateEndlessBatch]);
 
   const handleEndlessGridChange = useCallback(
     (nextGrid) => {
