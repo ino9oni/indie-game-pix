@@ -2860,13 +2860,13 @@ export default function App() {
         return;
       }
       const target = state.list[state.index];
+      state.index += 1;
       const successRate = config.successRate ?? 1;
       if (Math.random() > successRate) {
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
       if (Math.random() < (config.errorRate || 0)) {
-        state.index += 1;
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
@@ -2882,7 +2882,6 @@ export default function App() {
       if (placed) {
         incrementCombo("enemy");
       }
-      state.index += 1;
       enemyProgressRef.current.filled += 1;
       const targetRatio = config.targetCompletionRatio || 1;
       const progressRatio =
