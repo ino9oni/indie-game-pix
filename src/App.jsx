@@ -442,13 +442,13 @@ const ENEMY_AI_PRESETS = {
     spellChance: 0.4,
   },
   hard: {
-    intervalRange: [5000, 9000],
+    intervalRange: [3000, 7000],
     successRate: 0.8,
     errorRate: 0.25,
     spellChance: 0.45,
   },
   ultra: {
-    intervalRange: [600, 600],
+    intervalRange: [2000, 6000],
     successRate: 0.9,
     errorRate: 0.03,
     spellChance: 0.6,
