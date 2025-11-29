@@ -1895,6 +1895,27 @@ function hasUniqueSolution(grid) {
   return solutions === 1;
 }
 
+function clueMatchesAnchorPattern(clue, size) {
+  if (!Array.isArray(clue) || !clue.length) return false;
+  const specific = new Set(["4", "5", "3,1", "1,3", "1,1,1"]);
+  const key = clue.join(",");
+  if (size <= 5 && specific.has(key)) return true;
+  const sum = clue.reduce((acc, v) => acc + v, 0);
+  const max = Math.max(...clue);
+  const threshold = Math.max(1, Math.ceil(size * 0.6));
+  return max >= threshold || sum >= threshold;
+}
+
+function gridHasAnchorLine(grid) {
+  const size = grid.length || 0;
+  if (!size) return false;
+  const { rows, cols } = computeClues(grid);
+  return (
+    rows.some((clue) => clueMatchesAnchorPattern(clue, size)) ||
+    cols.some((clue) => clueMatchesAnchorPattern(clue, size))
+  );
+}
+
 function applyOverlays(grid, overlays, size, rng) {
   if (!overlays || !overlays.length) return grid;
   let combined = grid;
@@ -1931,18 +1952,34 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
   const requireUniqueSolution =
     options.requireUniqueSolution ??
     (difficulty !== "practice" && difficulty !== "easy" && size <= 5);
+  const enforceAnchorHints = options.enforceAnchorHints || false;
 
   if (!useAdvancedTransforms) {
-    const baseSelection = templates.slice(0, Math.min(count, templates.length)).map((entry) => ({
-      grid: clonePuzzle(entry.grid),
-      glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
-    }));
-    while (baseSelection.length < count) {
-      const fallbackGrid = createFallbackGrid(size, baseSelection.length);
+    const baseSelection = templates
+      .slice(0, Math.min(count * 2, templates.length))
+      .map((entry) => ({
+        grid: clonePuzzle(entry.grid),
+        glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
+      }))
+      .filter((entry) => (enforceAnchorHints ? gridHasAnchorLine(entry.grid) : true));
+
+    let fallbackAttempts = 0;
+    const maxFallbackAttempts = size * size * 6;
+    while (baseSelection.length < count && fallbackAttempts < maxFallbackAttempts) {
+      const idx = baseSelection.length + fallbackAttempts;
+      const fallbackGrid = createFallbackGrid(size, idx);
+      fallbackAttempts += 1;
+      if (enforceAnchorHints && !gridHasAnchorLine(fallbackGrid)) {
+        continue;
+      }
+      if (requireUniqueSolution && !hasUniqueSolution(fallbackGrid)) {
+        continue;
+      }
       baseSelection.push({ grid: fallbackGrid, glyphMeta: null });
     }
-    const heroPuzzles = baseSelection.map((entry) => cloneTemplateEntry(entry));
-    const enemyPuzzles = baseSelection.map((entry) => clonePuzzle(entry.grid));
+
+    const heroPuzzles = baseSelection.slice(0, count).map((entry) => cloneTemplateEntry(entry));
+    const enemyPuzzles = baseSelection.slice(0, count).map((entry) => clonePuzzle(entry.grid));
     return {
       seed: seedValue,
       heroPuzzles,
@@ -1968,6 +2005,7 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
     const template = selection[i];
     const candidate = pickTemplateVariant(template, size, rng, variantOptions);
     if (!candidate) continue;
+    if (enforceAnchorHints && !gridHasAnchorLine(candidate)) continue;
     const key = gridKey(candidate);
     if (seen.has(key)) continue;
     if (enforceRecentGuard && wasRecentlyGenerated(nodeId, key)) continue;
@@ -1985,6 +2023,7 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
       if (!entry) continue;
       const candidate = pickTemplateVariant(entry, size, rng, variantOptions);
       if (!candidate) continue;
+      if (enforceAnchorHints && !gridHasAnchorLine(candidate)) continue;
       const key = gridKey(candidate);
       if (seen.has(key)) continue;
       if (enforceRecentGuard && wasRecentlyGenerated(nodeId, key)) continue;
@@ -2002,6 +2041,7 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
     fallbackTemplates.forEach((entry) => {
       const candidate = pickTemplateVariant(entry, size, rng, variantOptions);
       if (!candidate) return;
+      if (enforceAnchorHints && !gridHasAnchorLine(candidate)) return;
       const key = gridKey(candidate);
       if (seen.has(key)) return;
       if (enforceRecentGuard && wasRecentlyGenerated(nodeId, key)) return;
@@ -2021,6 +2061,9 @@ export function generateBattlePuzzles(nodeId, size, count, options = {}) {
       const fallbackGrid = createFallbackGrid(size, variant);
       variant += 1;
       if (requireUniqueSolution && !hasUniqueSolution(fallbackGrid)) {
+        continue;
+      }
+      if (enforceAnchorHints && !gridHasAnchorLine(fallbackGrid)) {
         continue;
       }
       const key = gridKey(fallbackGrid);

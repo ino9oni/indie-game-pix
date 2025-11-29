@@ -2864,6 +2864,7 @@ export default function App() {
     const nodeId = n <= 5 ? "elf-easy" : "elf-hard";
     const generation = generateBattlePuzzles(nodeId, n, count, {
       requireUniqueSolution: true,
+      enforceAnchorHints: true,
     });
     const heroEntries = generation?.heroPuzzles?.length
       ? generation.heroPuzzles
