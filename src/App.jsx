@@ -2973,27 +2973,32 @@ export default function App() {
         return;
       }
       // deterministic deduction step
-      const { changed, next, filled } = applyDeterministicEnemyStep(
-        enemyGridRef.current,
-        enemySolution,
-      );
-      if (changed) {
-        setEnemyGrid(next);
-        enemyProgressRef.current.filled += filled.length;
-        enemyGridRef.current = next;
-        enemyOrderRef.current = { list: buildEnemyOrder(next, enemySolution), index: 0 };
-        const targetRatio = config.targetCompletionRatio || 1;
-        const progressRatio =
-          enemyProgressRef.current.total > 0
-            ? enemyProgressRef.current.filled / enemyProgressRef.current.total
-            : 1;
-        if (progressRatio >= targetRatio) {
-          stopEnemySolver();
-          handleEnemyPuzzleClear();
+      const hasProgress =
+        enemyGridRef.current &&
+        enemyGridRef.current.some((row) => row && row.some((cell) => cell !== 0));
+      if (hasProgress) {
+        const { changed, next, filled } = applyDeterministicEnemyStep(
+          enemyGridRef.current,
+          enemySolution,
+        );
+        if (changed) {
+          setEnemyGrid(next);
+          enemyProgressRef.current.filled += filled.length;
+          enemyGridRef.current = next;
+          enemyOrderRef.current = { list: buildEnemyOrder(next, enemySolution), index: 0 };
+          const targetRatio = config.targetCompletionRatio || 1;
+          const progressRatio =
+            enemyProgressRef.current.total > 0
+              ? enemyProgressRef.current.filled / enemyProgressRef.current.total
+              : 1;
+          if (progressRatio >= targetRatio) {
+            stopEnemySolver();
+            handleEnemyPuzzleClear();
+            return;
+          }
+          enemySolverRef.current = setTimeout(tick, nextDelay());
           return;
         }
-        enemySolverRef.current = setTimeout(tick, nextDelay());
-        return;
       }
 
       let state = enemyOrderRef.current;
