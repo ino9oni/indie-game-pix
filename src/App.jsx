@@ -3269,6 +3269,15 @@ export default function App() {
   const enemyProgressRatio = totalCells
     ? Math.min(1, enemyProgressRef.current.filled / totalCells)
     : 0;
+  const endlessTotalCells = endlessSolution?.length
+    ? endlessSolution.reduce(
+        (acc, row) => acc + row.filter((cell) => !!cell).length,
+        0,
+      )
+    : 0;
+  const endlessProgressCount =
+    endlessTotalCells && endlessGrid?.length ? countCorrectFilled(endlessGrid, endlessSolution) : 0;
+  const endlessProgressRatio = endlessTotalCells ? endlessProgressCount / endlessTotalCells : 0;
 
   const renderSpellSlot = (side) => {
     const spell = activeSpell && activeSpell.caster === side ? activeSpell : null;
@@ -3566,6 +3575,17 @@ export default function App() {
                   solution={endlessSolution}
                   onGridChange={handleEndlessGridChange}
                 />
+                <div className="endless-progress">
+                  <div className="progress-track">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${Math.min(1, endlessProgressRatio) * 100}%` }}
+                    />
+                  </div>
+                  <div className="progress-label">
+                    進捗 {endlessProgressCount} / {endlessTotalCells || "―"}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="endless-loading">次のお題を準備しています…</div>
