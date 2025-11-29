@@ -508,6 +508,27 @@ function makeRandomAnchoredGrid(n, seed = 0) {
   return grid.map((row) => row.slice());
 }
 
+function hasAnchorLine(grid) {
+  if (!Array.isArray(grid) || !grid.length) return false;
+  const size = grid.length;
+  const clues = computeClues(grid);
+  const anchorMatches = (clue) => {
+    if (!Array.isArray(clue) || !clue.length) return false;
+    const key = clue.join(",");
+    if (size <= 5 && (key === "4" || key === "5" || key === "3,1" || key === "1,3" || key === "1,1,1")) {
+      return true;
+    }
+    const sum = clue.reduce((acc, v) => acc + v, 0);
+    const max = Math.max(...clue);
+    const threshold = Math.max(1, Math.ceil(size * 0.6));
+    return max >= threshold || sum >= threshold;
+  };
+  return (
+    clues.rows.some((clue) => anchorMatches(clue)) ||
+    clues.cols.some((clue) => anchorMatches(clue))
+  );
+}
+
 function shuffle(array) {
   const arr = array.slice();
   for (let i = arr.length - 1; i > 0; i -= 1) {
@@ -2923,7 +2944,7 @@ export default function App() {
         const entries = generation?.heroPuzzles?.length ? generation.heroPuzzles : [];
         entries.forEach((entry) => {
           if (results.length >= count) return;
-          if (!gridHasAnchorLine(entry.grid)) return;
+          if (!hasAnchorLine(entry.grid)) return;
           tryPush(entry.grid, entry.glyphMeta);
         });
         if (attempts % 2 === 0) {
@@ -2940,6 +2961,16 @@ export default function App() {
         const variant = makeRandomAnchoredGrid(n, fallbackIdx + Date.now());
         fallbackIdx += 1;
         tryPush(variant, null);
+        if (fallbackIdx % 3 === 0) {
+          await deferTick();
+        }
+      }
+
+      // 最終手段：まだ足りなければ重複許容で埋める
+      while (results.length < count) {
+        const variant = makeRandomAnchoredGrid(n, fallbackIdx + Date.now());
+        fallbackIdx += 1;
+        results.push({ grid: variant, glyphMeta: null });
         if (fallbackIdx % 3 === 0) {
           await deferTick();
         }
