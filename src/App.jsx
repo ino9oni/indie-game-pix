@@ -180,7 +180,8 @@ const COMBO_STAGE_DEFS = [
   { id: "overdrive", threshold: 30 },
 ];
 
-const ENDLESS_BATCH_SIZE = 20;
+const ENDLESS_INITIAL_BATCH = 30;
+const ENDLESS_REFILL_BATCH = 15;
 const ENDLESS_REFILL_RATIO = 0.1;
 
 const HERO_STAGE_SET = [
@@ -582,6 +583,10 @@ function hashGrid(grid) {
   return grid
     .map((row) => (Array.isArray(row) ? row.map((v) => (v ? 1 : 0)).join("") : ""))
     .join("|");
+}
+
+function deferTick() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 function resolveSpellTheme(difficulty) {
@@ -2869,48 +2874,54 @@ export default function App() {
     setEndlessLoading(false);
   }, []);
 
-  const generateEndlessBatch = useCallback((n, count = ENDLESS_BATCH_SIZE) => {
-    const nodeId = n <= 5 ? "elf-easy" : "elf-hard";
-    const seen = endlessSeenRef.current || new Set();
-    const results = [];
-    const maxAttempts = Math.max(count * 8, 20);
-    let attempts = 0;
+  const generateEndlessBatch = useCallback(
+    async (n, count = ENDLESS_REFILL_BATCH) => {
+      const nodeId = n <= 5 ? "elf-easy" : "elf-hard";
+      const seen = endlessSeenRef.current || new Set();
+      const results = [];
+      const maxAttempts = Math.max(count * 10, 30);
+      let attempts = 0;
 
-    const tryPush = (grid, glyphMeta = null) => {
-      const hash = hashGrid(grid);
-      if (seen.has(hash)) return false;
-      seen.add(hash);
-      results.push({ grid: cloneSolution(grid), glyphMeta });
-      return true;
-    };
+      const tryPush = (grid, glyphMeta = null) => {
+        const hash = hashGrid(grid);
+        if (seen.has(hash)) return false;
+        seen.add(hash);
+        results.push({ grid: cloneSolution(grid), glyphMeta });
+        return true;
+      };
 
-    while (results.length < count && attempts < maxAttempts) {
-      attempts += 1;
-      const generation = generateBattlePuzzles(nodeId, n, 1, {
-        requireUniqueSolution: true,
-        enforceAnchorHints: true,
-      });
-      const entry =
-        generation?.heroPuzzles?.[0] ||
-        ({
-          grid: cloneSolution(createFallbackSolution(n)),
-          glyphMeta: null,
+      while (results.length < count && attempts < maxAttempts) {
+        attempts += 1;
+        const generation = generateBattlePuzzles(nodeId, n, 1, {
+          requireUniqueSolution: true,
+          enforceAnchorHints: true,
         });
-      tryPush(entry.grid, entry.glyphMeta);
-    }
-
-    let fallbackIdx = 0;
-    while (results.length < count && fallbackIdx < maxAttempts) {
-      const fallback = createFallbackSolution(n);
-      if (tryPush(fallback, null)) {
-        fallbackIdx += 1;
-      } else {
-        fallbackIdx += 1;
+        const entry =
+          generation?.heroPuzzles?.[0] ||
+          ({
+            grid: cloneSolution(createFallbackSolution(n)),
+            glyphMeta: null,
+          });
+        tryPush(entry.grid, entry.glyphMeta);
+        if (attempts % 3 === 0) {
+          await deferTick();
+        }
       }
-    }
 
-    return results;
-  }, []);
+      let fallbackIdx = 0;
+      while (results.length < count && fallbackIdx < maxAttempts) {
+        const fallback = createFallbackSolution(n);
+        fallbackIdx += 1;
+        tryPush(fallback, null);
+        if (fallbackIdx % 5 === 0) {
+          await deferTick();
+        }
+      }
+
+      return results;
+    },
+    [],
+  );
 
   const startEndlessMode = useCallback(
     async (n) => {
@@ -2928,9 +2939,7 @@ export default function App() {
         await bgm.resume();
       } catch {}
       try {
-        const batch = await Promise.resolve().then(() =>
-          generateEndlessBatch(n, ENDLESS_BATCH_SIZE),
-        );
+        const batch = await generateEndlessBatch(n, ENDLESS_INITIAL_BATCH);
         setEndlessQueue(batch);
         setEndlessError(null);
       } catch (err) {
@@ -2994,13 +3003,13 @@ export default function App() {
     if (!endlessSize) return;
     const remaining = endlessQueue.length;
     if (endlessError && remaining > 0) return;
-    const threshold = Math.max(2, Math.ceil(ENDLESS_BATCH_SIZE * ENDLESS_REFILL_RATIO));
+    const threshold = Math.max(2, Math.ceil(ENDLESS_REFILL_BATCH * ENDLESS_REFILL_RATIO));
     if (remaining > threshold) return;
     let cancelled = false;
     (async () => {
       setEndlessLoading(true);
       try {
-        const batch = await generateEndlessBatch(endlessSize, ENDLESS_BATCH_SIZE);
+        const batch = await generateEndlessBatch(endlessSize, ENDLESS_REFILL_BATCH);
         if (cancelled) return;
         setEndlessQueue((prev) => [...prev, ...batch]);
         setEndlessError(null);
