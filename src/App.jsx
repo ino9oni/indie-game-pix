@@ -726,6 +726,114 @@ function deferTick() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function enumerateLinePlacements(length, clues, lineState) {
+  const placements = [];
+  if (!Array.isArray(clues) || !clues.length) {
+    const empty = Array.from({ length }, () => false);
+    const compatible = lineState.every((cell, idx) => cell !== 1);
+    if (compatible) placements.push(empty);
+    return placements;
+  }
+
+  const backtrack = (clueIndex, pos, acc) => {
+    if (clueIndex >= clues.length) {
+      const remaining = length - pos;
+      if (remaining < 0) return;
+      const tail = Array.from({ length: remaining }, () => false);
+      const candidate = acc.concat(tail);
+      const ok = candidate.every((filled, idx) => {
+        const state = lineState[idx];
+        if (state === 1) return filled;
+        if (state === -1) return !filled;
+        return true;
+      });
+      if (ok) placements.push(candidate);
+      return;
+    }
+    const clue = clues[clueIndex];
+    for (let start = pos; start <= length - clue; start += 1) {
+      const prefix = Array.from({ length: start - pos }, () => false);
+      const block = Array.from({ length: clue }, () => true);
+      const nextAcc = acc.concat(prefix, block);
+      const nextPos = start + clue + 1;
+      if (nextPos > length + 1) continue;
+      backtrack(clueIndex + 1, nextPos, nextAcc.concat(clueIndex === clues.length - 1 ? [] : [false]));
+    }
+  };
+
+  backtrack(0, 0, []);
+  return placements;
+}
+
+function deduceLine(length, clues, lineState) {
+  const placements = enumerateLinePlacements(length, clues, lineState);
+  if (!placements.length) return { fills: [], crosses: [] };
+  const fills = [];
+  const crosses = [];
+  for (let i = 0; i < length; i += 1) {
+    let allFilled = true;
+    let allEmpty = true;
+    for (let p = 0; p < placements.length; p += 1) {
+      const filled = placements[p][i];
+      if (filled) allEmpty = false;
+      else allFilled = false;
+      if (!allFilled && !allEmpty) break;
+    }
+    if (allFilled && lineState[i] !== 1) fills.push(i);
+    else if (allEmpty && lineState[i] !== -1) crosses.push(i);
+  }
+  return { fills, crosses };
+}
+
+function applyDeterministicEnemyStep(grid, solution) {
+  if (!Array.isArray(solution) || !solution.length) return { changed: false, next: grid, filled: [] };
+  const size = solution.length;
+  const clues = computeClues(solution);
+  const next = grid.map((row) => row.slice());
+  const newlyFilled = [];
+  let changed = false;
+
+  // rows
+  for (let r = 0; r < size; r += 1) {
+    const lineState = next[r] || [];
+    const { fills, crosses } = deduceLine(size, clues.rows?.[r] || [], lineState);
+    fills.forEach((c) => {
+      if (next[r][c] !== 1) {
+        next[r][c] = 1;
+        newlyFilled.push({ r, c });
+        changed = true;
+      }
+    });
+    crosses.forEach((c) => {
+      if (next[r][c] === 0) {
+        next[r][c] = -1;
+        changed = true;
+      }
+    });
+  }
+
+  // cols
+  for (let c = 0; c < size; c += 1) {
+    const colState = next.map((row) => row[c] ?? 0);
+    const { fills, crosses } = deduceLine(size, clues.cols?.[c] || [], colState);
+    fills.forEach((r) => {
+      if (next[r][c] !== 1) {
+        next[r][c] = 1;
+        newlyFilled.push({ r, c });
+        changed = true;
+      }
+    });
+    crosses.forEach((r) => {
+      if (next[r][c] === 0) {
+        next[r][c] = -1;
+        changed = true;
+      }
+    });
+  }
+
+  return { changed, next, filled: newlyFilled };
+}
+
 function resolveSpellTheme(difficulty) {
   const key = (difficulty || "").toLowerCase();
   if (key.includes("ultra")) return SPELL_THEME_MAP.ultra;
@@ -2864,6 +2972,30 @@ export default function App() {
         stopEnemySolver();
         return;
       }
+      // deterministic deduction step
+      const { changed, next, filled } = applyDeterministicEnemyStep(
+        enemyGridRef.current,
+        enemySolution,
+      );
+      if (changed) {
+        setEnemyGrid(next);
+        enemyProgressRef.current.filled += filled.length;
+        enemyGridRef.current = next;
+        enemyOrderRef.current = { list: buildEnemyOrder(next, enemySolution), index: 0 };
+        const targetRatio = config.targetCompletionRatio || 1;
+        const progressRatio =
+          enemyProgressRef.current.total > 0
+            ? enemyProgressRef.current.filled / enemyProgressRef.current.total
+            : 1;
+        if (progressRatio >= targetRatio) {
+          stopEnemySolver();
+          handleEnemyPuzzleClear();
+          return;
+        }
+        enemySolverRef.current = setTimeout(tick, nextDelay());
+        return;
+      }
+
       let state = enemyOrderRef.current;
       if (!state.list.length || state.index >= state.list.length) {
         const refreshed = buildEnemyOrder(enemyGridRef.current, enemySolution);
