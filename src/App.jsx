@@ -166,9 +166,9 @@ const ENEMY_AI_CONFIG = {
   "elf-middle": { intervalRange: [5000, 10000], errorRate: 0.16 },
   "elf-hard": {
     intervalRange: [5000, 9000],
-    successRate: 0.75,
+    successRate: 0.9, // effective成功率 ≒0.75 (errorRate込み)
     targetCompletionRatio: 0.75,
-    errorRate: 0.2,
+    errorRate: 0.15,
   },
   "elf-ultra": { interval: 600, errorRate: 0.03 },
 };
@@ -2803,13 +2803,13 @@ export default function App() {
         return;
       }
       const target = state.list[state.index];
-      state.index += 1;
       const successRate = config.successRate ?? 1;
       if (Math.random() > successRate) {
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
       if (Math.random() < (config.errorRate || 0)) {
+        state.index += 1;
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
@@ -2825,6 +2825,7 @@ export default function App() {
       if (placed) {
         incrementCombo("enemy");
       }
+      state.index += 1;
       enemyProgressRef.current.filled += 1;
       const targetRatio = config.targetCompletionRatio || 1;
       const progressRatio =
