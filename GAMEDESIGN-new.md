@@ -99,6 +99,23 @@
   - ENEMY AI：Middle の手数間隔を 5〜10 秒のランダムディレイに引き下げ、誤答率を上げる（手戻りを含む）ことで解答速度を緩和する。
   - 既存の EASY/Practice など他難易度への影響は与えず、Middle 専用の設定として適用する。
 
+### タスク仕様（ENEMY 専用AIのパラメトリック制御）
+
+- 目的：ENEMY をプレイヤーと独立した専用AIで動かし、思考時間・誤答率・スペル発動率などをパラメータで切り替えられる仕組みを定義する。
+- 基本方針：
+  - ENEMY はプレイヤーの手番や進捗に依存せず、専用タイマーで思考を進める。
+  - AI 挙動はパラメータで制御し、個別ロジックを将来拡張できるようにする。
+  - パラメータ例：`intervalRange`（思考間隔の最小/最大ms）、`successRate`（意図したセルを埋められる確率）、`errorRate`（誤答で時間を消費する確率）、`targetCompletionRatio`（盤面充足率で勝利扱いにする下限）、`spellChance`（スペル発動率）。
+- デフォルト値（各難易度ベース、今後個別敵IDで上書き可能）：
+  - Practice: intervalRange 1.2〜1.6s, successRate 0.85, errorRate 0.12, spellChance 0.35
+  - Easy: intervalRange 1.0〜1.4s, successRate 0.88, errorRate 0.1, spellChance 0.35
+  - Middle: intervalRange 5〜10s, successRate 0.82, errorRate 0.16, spellChance 0.4
+  - Hard: intervalRange 5〜9s, successRate 0.8, errorRate 0.25, spellChance 0.45
+  - Ultra: interval 0.6s（固定）、successRate 0.9, errorRate 0.03, spellChance 0.6
+- 拡張性：
+  - 将来的に個別AIロジックを追加するための `behaviorId` などをパラメータに追加し、行動パターンを差し替え可能にする。
+  - パラメータは `ENEMY_AI_CONFIG`（敵ID優先）→ 難易度プリセット → デフォルトベースの優先順位で解決する。
+
 ### タスク仕様（ピクロスお題数と盤面調整）
 
 - 各難易度ごとの対戦お題数を `PRACTICE=2 / EASY=4 / MIDDLE=6 / HARD=2 / ULTRA=4` に固定する。

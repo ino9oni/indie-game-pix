@@ -161,16 +161,13 @@ function persistGlyphCollection(collection, solved) {
 }
 
 const ENEMY_AI_CONFIG = {
-  "elf-practice": { interval: 1400, errorRate: 0.15 },
-  "elf-easy": { interval: 1100, errorRate: 0.1 },
-  "elf-middle": { intervalRange: [5000, 10000], errorRate: 0.16 },
   "elf-hard": {
     intervalRange: [5000, 9000],
     successRate: 0.8,
     targetCompletionRatio: 1,
     errorRate: 0.25,
+    spellChance: 0.45,
   },
-  "elf-ultra": { interval: 600, errorRate: 0.03 },
 };
 
 const SPELL_SPEECH_DURATION = 1200;
@@ -417,7 +414,46 @@ const ENEMY_STAGE_SETS = {
   ],
 };
 
-const DEFAULT_ENEMY_CONFIG = { interval: 1200, errorRate: 0.08 };
+const DEFAULT_ENEMY_CONFIG = {
+  intervalRange: [1200, 1400],
+  successRate: 0.9,
+  errorRate: 0.08,
+  targetCompletionRatio: 1,
+  spellChance: 0.5,
+};
+
+const ENEMY_AI_PRESETS = {
+  practice: {
+    intervalRange: [1200, 1600],
+    successRate: 0.85,
+    errorRate: 0.12,
+    spellChance: 0.35,
+  },
+  easy: {
+    intervalRange: [1000, 1400],
+    successRate: 0.88,
+    errorRate: 0.1,
+    spellChance: 0.35,
+  },
+  middle: {
+    intervalRange: [5000, 10000],
+    successRate: 0.82,
+    errorRate: 0.16,
+    spellChance: 0.4,
+  },
+  hard: {
+    intervalRange: [5000, 9000],
+    successRate: 0.8,
+    errorRate: 0.25,
+    spellChance: 0.45,
+  },
+  ultra: {
+    intervalRange: [600, 600],
+    successRate: 0.9,
+    errorRate: 0.03,
+    spellChance: 0.6,
+  },
+};
 
 function deriveDifficultyFromSize(n) {
   if (n <= 5) return "easy";
@@ -430,6 +466,22 @@ function deriveDifficultyFromSize(n) {
 function normalizeNodeId(id) {
   if (id === LEGACY_FINAL_NODE_ID) return DEFAULT_TRUE_ENDING_NODE;
   return id;
+}
+
+function getEnemyAiConfig(nodeId) {
+  const normalized = normalizeNodeId(nodeId);
+  const meta = CHARACTERS[normalized];
+  const difficulty =
+    meta?.difficulty ||
+    deriveDifficultyFromSize(meta?.size || 0) ||
+    deriveDifficultyFromSize(0);
+  const preset = ENEMY_AI_PRESETS[difficulty] || {};
+  const override = ENEMY_AI_CONFIG[normalized] || {};
+  return {
+    ...DEFAULT_ENEMY_CONFIG,
+    ...preset,
+    ...override,
+  };
 }
 
 function getPuzzleGoalForNode(nodeId) {
@@ -2683,6 +2735,11 @@ export default function App() {
     const stageId = ordered[0];
     if (!stageId) return undefined;
     if (enemyCastingRef.current) return undefined;
+    const enemyConfig = battleNode ? getEnemyAiConfig(battleNode) : DEFAULT_ENEMY_CONFIG;
+    const spellChance = enemyConfig.spellChance ?? 1;
+    if (Math.random() > spellChance) {
+      return undefined;
+    }
     enemyCastingRef.current = true;
     if (enemyStageCooldownRef.current) {
       clearTimeout(enemyStageCooldownRef.current);
@@ -2705,7 +2762,7 @@ export default function App() {
       }
       enemyCastingRef.current = false;
     };
-  }, [enemyReadyStages, screen, triggerComboStage]);
+  }, [battleNode, enemyReadyStages, screen, triggerComboStage]);
 
   const prevScreenRef = useRef(screen);
   useEffect(() => {
@@ -2735,7 +2792,7 @@ export default function App() {
       stopEnemySolver();
       return;
     }
-    const config = ENEMY_AI_CONFIG[battleNode] || DEFAULT_ENEMY_CONFIG;
+    const config = getEnemyAiConfig(battleNode);
     const coords = [];
     enemySolution.forEach((row, r) =>
       row.forEach((cell, c) => {
