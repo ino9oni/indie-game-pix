@@ -3511,11 +3511,13 @@ button:focus-visible {
 }
 .endless-board {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   margin-top: 8px;
 }
 .endless-progress {
-  margin-top: 12px;
+  width: min(520px, 100%);
 }
 .endless-loading {
   text-align: center;
