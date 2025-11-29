@@ -1453,7 +1453,7 @@ export default function App() {
 
   const stopEnemySolver = useCallback(() => {
     if (enemySolverRef.current) {
-      clearInterval(enemySolverRef.current);
+      clearTimeout(enemySolverRef.current);
       enemySolverRef.current = null;
     }
   }, []);
@@ -2831,10 +2831,12 @@ export default function App() {
         if (cell) coords.push({ r, c });
       }),
     );
+    const order = buildEnemyOrder(enemyGrid, enemySolution);
     const alreadyInitialized =
       enemyProgressRef.current.total === coords.length && enemyOrderRef.current.list.length;
-    if (!alreadyInitialized) {
-      enemyOrderRef.current = { list: buildEnemyOrder(enemyGrid, enemySolution), index: 0 };
+    if (!alreadyInitialized || !enemyOrderRef.current.list.length) {
+      const list = order.length ? order : coords;
+      enemyOrderRef.current = { list, index: 0 };
       enemyProgressRef.current = {
         filled: 0,
         total: coords.length,
@@ -2919,7 +2921,7 @@ export default function App() {
     };
 
     enemySolverRef.current = setTimeout(tick, nextDelay());
-    return () => clearTimeout(enemySolverRef.current);
+    return () => stopEnemySolver();
   }, [
     screen,
     battleNode,
