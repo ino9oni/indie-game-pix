@@ -164,7 +164,12 @@ const ENEMY_AI_CONFIG = {
   "elf-practice": { interval: 1400, errorRate: 0.15 },
   "elf-easy": { interval: 1100, errorRate: 0.1 },
   "elf-middle": { intervalRange: [5000, 10000], errorRate: 0.16 },
-  "elf-hard": { interval: 750, errorRate: 0.05 },
+  "elf-hard": {
+    intervalRange: [5000, 9000],
+    successRate: 0.75,
+    targetCompletionRatio: 0.75,
+    errorRate: 0.2,
+  },
   "elf-ultra": { interval: 600, errorRate: 0.03 },
 };
 
@@ -2769,13 +2774,42 @@ export default function App() {
       }
       const state = enemyOrderRef.current;
       if (!state.list.length || state.index >= state.list.length) {
-        stopEnemySolver();
-        handleEnemyPuzzleClear();
+        const remainingCoords = [];
+        const currentGrid = enemyGrid;
+        enemySolution.forEach((row, r) =>
+          row.forEach((cell, c) => {
+            if (cell && currentGrid?.[r]?.[c] !== 1) {
+              remainingCoords.push({ r, c });
+            }
+          }),
+        );
+        if (remainingCoords.length) {
+          enemyOrderRef.current = { list: shuffle(remainingCoords), index: 0 };
+          enemySolverRef.current = setTimeout(tick, nextDelay());
+          return;
+        }
+        // filled enough? allow early finish for lowered difficulty
+        const targetRatio = config.targetCompletionRatio || 1;
+        const progressRatio =
+          enemyProgressRef.current.total > 0
+            ? enemyProgressRef.current.filled / enemyProgressRef.current.total
+            : 1;
+        if (progressRatio >= targetRatio) {
+          stopEnemySolver();
+          handleEnemyPuzzleClear();
+        } else {
+          enemySolverRef.current = setTimeout(tick, nextDelay());
+        }
         return;
       }
       const target = state.list[state.index];
       state.index += 1;
-      if (Math.random() < config.errorRate) {
+      const successRate = config.successRate ?? 1;
+      if (Math.random() > successRate) {
+        enemySolverRef.current = setTimeout(tick, nextDelay());
+        return;
+      }
+      if (Math.random() < (config.errorRate || 0)) {
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
@@ -2792,7 +2826,12 @@ export default function App() {
         incrementCombo("enemy");
       }
       enemyProgressRef.current.filled += 1;
-      if (enemyProgressRef.current.filled >= enemyProgressRef.current.total) {
+      const targetRatio = config.targetCompletionRatio || 1;
+      const progressRatio =
+        enemyProgressRef.current.total > 0
+          ? enemyProgressRef.current.filled / enemyProgressRef.current.total
+          : 1;
+      if (progressRatio >= targetRatio) {
         stopEnemySolver();
         handleEnemyPuzzleClear();
         return;
