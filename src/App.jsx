@@ -166,9 +166,9 @@ const ENEMY_AI_CONFIG = {
   "elf-middle": { intervalRange: [5000, 10000], errorRate: 0.16 },
   "elf-hard": {
     intervalRange: [5000, 9000],
-    successRate: 0.9, // effective成功率 ≒0.75 (errorRate込み)
-    targetCompletionRatio: 0.75,
-    errorRate: 0.15,
+    successRate: 0.8,
+    targetCompletionRatio: 1,
+    errorRate: 0.25,
   },
   "elf-ultra": { interval: 600, errorRate: 0.03 },
 };
@@ -2768,7 +2768,7 @@ export default function App() {
         return;
       }
       const totalNeeded = puzzleSequence.length || getPuzzleGoalForNode(battleNode);
-      if (playerWins >= totalNeeded || enemyWins >= totalNeeded) {
+      if (enemyWins >= totalNeeded) {
         stopEnemySolver();
         return;
       }
