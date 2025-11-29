@@ -424,31 +424,31 @@ const DEFAULT_ENEMY_CONFIG = {
 
 const ENEMY_AI_PRESETS = {
   practice: {
-    intervalRange: [1200, 1600],
+    intervalRange: [200, 600],
     successRate: 0.85,
     errorRate: 0.12,
     spellChance: 0.35,
   },
   easy: {
-    intervalRange: [1000, 1400],
+    intervalRange: [400, 800],
     successRate: 0.88,
     errorRate: 0.1,
     spellChance: 0.35,
   },
   middle: {
-    intervalRange: [5000, 10000],
+    intervalRange: [4000, 9000],
     successRate: 0.82,
     errorRate: 0.16,
     spellChance: 0.4,
   },
   hard: {
-    intervalRange: [1500, 5500],
+    intervalRange: [500, 4500],
     successRate: 0.8,
     errorRate: 0.25,
     spellChance: 0.45,
   },
   ultra: {
-    intervalRange: [500, 4500],
+    intervalRange: [200, 3500],
     successRate: 0.9,
     errorRate: 0.03,
     spellChance: 0.6,
@@ -482,6 +482,42 @@ function getEnemyAiConfig(nodeId) {
     ...preset,
     ...override,
   };
+}
+
+function buildEnemyOrder(grid, solution) {
+  if (!Array.isArray(solution) || !solution.length) return [];
+  const size = solution.length;
+  const clues = computeClues(solution);
+  const rows = clues.rows || [];
+  const cols = clues.cols || [];
+  const rowUnknown = rows.map((_, r) =>
+    solution[r]?.reduce((acc, _, c) => acc + (grid?.[r]?.[c] === 1 ? 0 : 1), 0),
+  );
+  const colUnknown = cols.map((_, c) =>
+    solution.reduce((acc, row, r) => acc + (grid?.[r]?.[c] === 1 ? 0 : 1), 0),
+  );
+  const candidates = [];
+  for (let r = 0; r < size; r += 1) {
+    for (let c = 0; c < size; c += 1) {
+      if (!solution[r]?.[c]) continue;
+      if (grid?.[r]?.[c] === 1) continue;
+      const rowClueSum = (rows[r] || []).reduce((acc, v) => acc + v, 0);
+      const colClueSum = (cols[c] || []).reduce((acc, v) => acc + v, 0);
+      const rowRemaining = rowUnknown[r] || 0;
+      const colRemaining = colUnknown[c] || 0;
+      const weight =
+        rowClueSum +
+        colClueSum +
+        (rowRemaining <= 2 ? 3 : 0) +
+        (colRemaining <= 2 ? 3 : 0) +
+        (rows[r]?.length > 1 ? 0.5 : 0) +
+        (cols[c]?.length > 1 ? 0.5 : 0);
+      candidates.push({ r, c, weight });
+    }
+  }
+  return candidates
+    .sort((a, b) => b.weight - a.weight)
+    .map(({ r, c }) => ({ r, c }));
 }
 
 function getPuzzleGoalForNode(nodeId) {
@@ -2798,7 +2834,7 @@ export default function App() {
     const alreadyInitialized =
       enemyProgressRef.current.total === coords.length && enemyOrderRef.current.list.length;
     if (!alreadyInitialized) {
-      enemyOrderRef.current = { list: shuffle(coords), index: 0 };
+      enemyOrderRef.current = { list: buildEnemyOrder(enemyGrid, enemySolution), index: 0 };
       enemyProgressRef.current = {
         filled: 0,
         total: coords.length,
@@ -2825,35 +2861,25 @@ export default function App() {
         stopEnemySolver();
         return;
       }
-      const state = enemyOrderRef.current;
+      let state = enemyOrderRef.current;
       if (!state.list.length || state.index >= state.list.length) {
-        const remainingCoords = [];
-        const currentGrid = enemyGrid;
-        enemySolution.forEach((row, r) =>
-          row.forEach((cell, c) => {
-            if (cell && currentGrid?.[r]?.[c] !== 1) {
-              remainingCoords.push({ r, c });
-            }
-          }),
-        );
-        if (remainingCoords.length) {
-          enemyOrderRef.current = { list: shuffle(remainingCoords), index: 0 };
-          enemySolverRef.current = setTimeout(tick, nextDelay());
+        const refreshed = buildEnemyOrder(enemyGrid, enemySolution);
+        state = { list: refreshed, index: 0 };
+        enemyOrderRef.current = state;
+        if (!refreshed.length) {
+          const targetRatio = config.targetCompletionRatio || 1;
+          const progressRatio =
+            enemyProgressRef.current.total > 0
+              ? enemyProgressRef.current.filled / enemyProgressRef.current.total
+              : 1;
+          if (progressRatio >= targetRatio) {
+            stopEnemySolver();
+            handleEnemyPuzzleClear();
+          } else {
+            enemySolverRef.current = setTimeout(tick, nextDelay());
+          }
           return;
         }
-        // filled enough? allow early finish for lowered difficulty
-        const targetRatio = config.targetCompletionRatio || 1;
-        const progressRatio =
-          enemyProgressRef.current.total > 0
-            ? enemyProgressRef.current.filled / enemyProgressRef.current.total
-            : 1;
-        if (progressRatio >= targetRatio) {
-          stopEnemySolver();
-          handleEnemyPuzzleClear();
-        } else {
-          enemySolverRef.current = setTimeout(tick, nextDelay());
-        }
-        return;
       }
       const target = state.list[state.index];
       state.index += 1;
