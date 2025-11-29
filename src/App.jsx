@@ -985,6 +985,7 @@ export default function App() {
   const [playerWins, setPlayerWins] = useState(0);
   const [enemyWins, setEnemyWins] = useState(0);
   const [enemyGrid, setEnemyGrid] = useState([]);
+  const enemyGridRef = useRef([]);
   const [activeSpell, setActiveSpell] = useState(null);
   const [spellSpeech, setSpellSpeech] = useState({ hero: null, enemy: null });
   const [spellFreeze, setSpellFreeze] = useState(false);
@@ -2754,6 +2755,10 @@ export default function App() {
     boardLocksRef.current = boardLocks;
   }, [boardLocks]);
 
+  useEffect(() => {
+    enemyGridRef.current = enemyGrid;
+  }, [enemyGrid]);
+
   const enemyReadyStages = comboState.enemy?.readyStages || [];
 
   useEffect(() => {
@@ -2831,18 +2836,14 @@ export default function App() {
         if (cell) coords.push({ r, c });
       }),
     );
-    const order = buildEnemyOrder(enemyGrid, enemySolution);
-    const alreadyInitialized =
-      enemyProgressRef.current.total === coords.length && enemyOrderRef.current.list.length;
-    if (!alreadyInitialized || !enemyOrderRef.current.list.length) {
-      const list = order.length ? order : coords;
-      enemyOrderRef.current = { list, index: 0 };
-      enemyProgressRef.current = {
-        filled: 0,
-        total: coords.length,
-      };
-      setEnemyGrid(emptyGrid(enemySolution.length));
-    }
+    const order = buildEnemyOrder(enemyGridRef.current, enemySolution);
+    const list = order.length ? order : coords;
+    enemyOrderRef.current = { list, index: 0 };
+    enemyProgressRef.current = {
+      filled: 0,
+      total: coords.length,
+    };
+    setEnemyGrid(emptyGrid(enemySolution.length));
     stopEnemySolver();
 
     const nextDelay = () => {
@@ -2865,7 +2866,7 @@ export default function App() {
       }
       let state = enemyOrderRef.current;
       if (!state.list.length || state.index >= state.list.length) {
-        const refreshed = buildEnemyOrder(enemyGrid, enemySolution);
+        const refreshed = buildEnemyOrder(enemyGridRef.current, enemySolution);
         state = { list: refreshed, index: 0 };
         enemyOrderRef.current = state;
         if (!refreshed.length) {
