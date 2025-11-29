@@ -2892,28 +2892,41 @@ export default function App() {
 
       while (results.length < count && attempts < maxAttempts) {
         attempts += 1;
-        const generation = generateBattlePuzzles(nodeId, n, 1, {
+        const batchCount = Math.min(5, Math.max(1, count - results.length));
+        const generation = generateBattlePuzzles(nodeId, n, batchCount, {
           requireUniqueSolution: true,
           enforceAnchorHints: true,
         });
-        const entry =
-          generation?.heroPuzzles?.[0] ||
-          ({
-            grid: cloneSolution(createFallbackSolution(n)),
-            glyphMeta: null,
-          });
-        tryPush(entry.grid, entry.glyphMeta);
-        if (attempts % 3 === 0) {
+        const entries = generation?.heroPuzzles?.length
+          ? generation.heroPuzzles
+          : [
+              {
+                grid: cloneSolution(createFallbackSolution(n)),
+                glyphMeta: null,
+              },
+            ];
+        entries.forEach((entry) => {
+          if (results.length >= count) return;
+          tryPush(entry.grid, entry.glyphMeta);
+        });
+        if (attempts % 2 === 0) {
           await deferTick();
         }
       }
 
       let fallbackIdx = 0;
       while (results.length < count && fallbackIdx < maxAttempts) {
-        const fallback = createFallbackSolution(n);
+        const base = createFallbackSolution(n);
+        // add a simple anchor by filling a diagonal slice based on fallbackIdx
+        const variant = base.map((row) => row.slice());
+        const offset = fallbackIdx % n;
+        for (let c = 0; c < n; c += 1) {
+          const r = (offset + c) % n;
+          variant[r][c] = true;
+        }
         fallbackIdx += 1;
-        tryPush(fallback, null);
-        if (fallbackIdx % 5 === 0) {
+        tryPush(variant, null);
+        if (fallbackIdx % 3 === 0) {
           await deferTick();
         }
       }
