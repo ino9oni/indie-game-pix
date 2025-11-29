@@ -790,48 +790,46 @@ function applyDeterministicEnemyStep(grid, solution) {
   const size = solution.length;
   const clues = computeClues(solution);
   const next = grid.map((row) => row.slice());
-  const newlyFilled = [];
-  let changed = false;
+  const candidates = [];
 
   // rows
   for (let r = 0; r < size; r += 1) {
     const lineState = next[r] || [];
     const { fills, crosses } = deduceLine(size, clues.rows?.[r] || [], lineState);
-    fills.forEach((c) => {
-      if (next[r][c] !== 1) {
-        next[r][c] = 1;
-        newlyFilled.push({ r, c });
-        changed = true;
-      }
-    });
-    crosses.forEach((c) => {
-      if (next[r][c] === 0) {
-        next[r][c] = -1;
-        changed = true;
-      }
-    });
+    fills.forEach((c) => candidates.push({ r, c, type: "fill", source: "row" }));
+    crosses.forEach((c) => candidates.push({ r, c, type: "cross", source: "row" }));
   }
 
   // cols
   for (let c = 0; c < size; c += 1) {
     const colState = next.map((row) => row[c] ?? 0);
     const { fills, crosses } = deduceLine(size, clues.cols?.[c] || [], colState);
-    fills.forEach((r) => {
-      if (next[r][c] !== 1) {
-        next[r][c] = 1;
-        newlyFilled.push({ r, c });
-        changed = true;
-      }
-    });
-    crosses.forEach((r) => {
-      if (next[r][c] === 0) {
-        next[r][c] = -1;
-        changed = true;
-      }
-    });
+    fills.forEach((r) => candidates.push({ r, c, type: "fill", source: "col" }));
+    crosses.forEach((r) => candidates.push({ r, c, type: "cross", source: "col" }));
   }
 
-  return { changed, next, filled: newlyFilled };
+  // 優先度: fill(row) > fill(col) > cross(row) > cross(col)
+  const prioritized = candidates.sort((a, b) => {
+    const score = (entry) => {
+      if (entry.type === "fill") return entry.source === "row" ? 4 : 3;
+      return entry.source === "row" ? 2 : 1;
+    };
+    return score(b) - score(a);
+  });
+
+  const pick = prioritized.find(({ r, c, type }) => {
+    if (type === "fill") return next[r][c] !== 1;
+    return next[r][c] === 0;
+  });
+
+  if (!pick) return { changed: false, next, filled: [] };
+
+  if (pick.type === "fill") {
+    next[pick.r][pick.c] = 1;
+    return { changed: true, next, filled: [{ r: pick.r, c: pick.c }] };
+  }
+  next[pick.r][pick.c] = -1;
+  return { changed: true, next, filled: [] };
 }
 
 function resolveSpellTheme(difficulty) {
