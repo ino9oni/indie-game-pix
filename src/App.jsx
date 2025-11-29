@@ -424,33 +424,33 @@ const DEFAULT_ENEMY_CONFIG = {
 
 const ENEMY_AI_PRESETS = {
   practice: {
-    intervalRange: [200, 600],
-    successRate: 0.85,
-    errorRate: 0.12,
-    spellChance: 0.35,
-  },
-  easy: {
-    intervalRange: [400, 800],
-    successRate: 0.88,
+    intervalRange: [150, 450],
+    successRate: 0.92,
     errorRate: 0.1,
     spellChance: 0.35,
   },
+  easy: {
+    intervalRange: [250, 700],
+    successRate: 0.9,
+    errorRate: 0.08,
+    spellChance: 0.35,
+  },
   middle: {
-    intervalRange: [4000, 9000],
-    successRate: 0.82,
-    errorRate: 0.16,
+    intervalRange: [2000, 4000],
+    successRate: 0.88,
+    errorRate: 0.12,
     spellChance: 0.4,
   },
   hard: {
-    intervalRange: [500, 4500],
-    successRate: 0.8,
-    errorRate: 0.25,
+    intervalRange: [600, 2000],
+    successRate: 0.9,
+    errorRate: 0.15,
     spellChance: 0.45,
   },
   ultra: {
-    intervalRange: [200, 3500],
-    successRate: 0.9,
-    errorRate: 0.03,
+    intervalRange: [200, 800],
+    successRate: 0.94,
+    errorRate: 0.05,
     spellChance: 0.6,
   },
 };
@@ -2921,7 +2921,8 @@ export default function App() {
       enemySolverRef.current = setTimeout(tick, nextDelay());
     };
 
-    enemySolverRef.current = setTimeout(tick, nextDelay());
+    // kick off immediately, then schedule subsequent ticks
+    tick();
     return () => stopEnemySolver();
   }, [
     screen,
