@@ -2788,10 +2788,6 @@ export default function App() {
     if (!battleNode) return;
     const enemySolution = enemySolutionRef.current;
     if (!enemySolution.length) return;
-    if (paused || spellFreeze) {
-      stopEnemySolver();
-      return;
-    }
     const config = getEnemyAiConfig(battleNode);
     const coords = [];
     enemySolution.forEach((row, r) =>
@@ -2905,8 +2901,6 @@ export default function App() {
     playerWins,
     enemyWins,
     puzzleSequence.length,
-    paused,
-    spellFreeze,
     stopEnemySolver,
     handleEnemyPuzzleClear,
     incrementCombo,
