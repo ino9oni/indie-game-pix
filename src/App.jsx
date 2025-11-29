@@ -577,6 +577,13 @@ function countCorrectFilled(grid, solution) {
   return count;
 }
 
+function hashGrid(grid) {
+  if (!Array.isArray(grid)) return "";
+  return grid
+    .map((row) => (Array.isArray(row) ? row.map((v) => (v ? 1 : 0)).join("") : ""))
+    .join("|");
+}
+
 function resolveSpellTheme(difficulty) {
   const key = (difficulty || "").toLowerCase();
   if (key.includes("ultra")) return SPELL_THEME_MAP.ultra;
@@ -873,6 +880,7 @@ export default function App() {
   const comboStateRef = useRef(comboState);
   const endlessSolutionRef = useRef([]);
   const endlessCurrentRef = useRef(null);
+  const endlessSeenRef = useRef(new Set());
   const size = solution.length;
   const clues = useMemo(() => computeClues(solution), [solution]);
 
@@ -2856,26 +2864,52 @@ export default function App() {
     setEndlessSolvedCount(0);
     endlessSolutionRef.current = [];
     endlessCurrentRef.current = null;
+    endlessSeenRef.current = new Set();
     setEndlessError(null);
     setEndlessLoading(false);
   }, []);
 
   const generateEndlessBatch = useCallback((n, count = ENDLESS_BATCH_SIZE) => {
     const nodeId = n <= 5 ? "elf-easy" : "elf-hard";
-    const generation = generateBattlePuzzles(nodeId, n, count, {
-      requireUniqueSolution: true,
-      enforceAnchorHints: true,
-    });
-    const heroEntries = generation?.heroPuzzles?.length
-      ? generation.heroPuzzles
-      : Array.from({ length: count }, () => ({
+    const seen = endlessSeenRef.current || new Set();
+    const results = [];
+    const maxAttempts = Math.max(count * 8, 20);
+    let attempts = 0;
+
+    const tryPush = (grid, glyphMeta = null) => {
+      const hash = hashGrid(grid);
+      if (seen.has(hash)) return false;
+      seen.add(hash);
+      results.push({ grid: cloneSolution(grid), glyphMeta });
+      return true;
+    };
+
+    while (results.length < count && attempts < maxAttempts) {
+      attempts += 1;
+      const generation = generateBattlePuzzles(nodeId, n, 1, {
+        requireUniqueSolution: true,
+        enforceAnchorHints: true,
+      });
+      const entry =
+        generation?.heroPuzzles?.[0] ||
+        ({
           grid: cloneSolution(createFallbackSolution(n)),
           glyphMeta: null,
-        }));
-    return heroEntries.map((entry) => ({
-      grid: cloneSolution(entry.grid),
-      glyphMeta: entry.glyphMeta ? { ...entry.glyphMeta } : null,
-    }));
+        });
+      tryPush(entry.grid, entry.glyphMeta);
+    }
+
+    let fallbackIdx = 0;
+    while (results.length < count && fallbackIdx < maxAttempts) {
+      const fallback = createFallbackSolution(n);
+      if (tryPush(fallback, null)) {
+        fallbackIdx += 1;
+      } else {
+        fallbackIdx += 1;
+      }
+    }
+
+    return results;
   }, []);
 
   const startEndlessMode = useCallback(
