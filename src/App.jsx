@@ -424,21 +424,21 @@ const DEFAULT_ENEMY_CONFIG = {
 
 const ENEMY_AI_PRESETS = {
   practice: {
-    intervalRange: [150, 450],
-    successRate: 0.92,
-    errorRate: 0.1,
+    intervalRange: [1200, 1600],
+    successRate: 0.88,
+    errorRate: 0.12,
     spellChance: 0.35,
   },
   easy: {
-    intervalRange: [250, 700],
+    intervalRange: [1000, 1400],
     successRate: 0.9,
-    errorRate: 0.08,
+    errorRate: 0.1,
     spellChance: 0.35,
   },
   middle: {
-    intervalRange: [2000, 4000],
-    successRate: 0.88,
-    errorRate: 0.12,
+    intervalRange: [4000, 9000],
+    successRate: 0.82,
+    errorRate: 0.16,
     spellChance: 0.4,
   },
   hard: {
