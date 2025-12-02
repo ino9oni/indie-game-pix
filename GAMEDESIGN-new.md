@@ -111,7 +111,7 @@
   - Easy: intervalRange 1.0〜1.4s, successRate 0.9, errorRate 0.1, spellChance 0.35
   - Middle: intervalRange 4〜9s, successRate 0.82, errorRate 0.16, spellChance 0.4
   - Hard: intervalRange 3.5±2s（1.5〜5.5s）, successRate 0.8, errorRate 0.25, spellChance 0.45
-  - Ultra: intervalRange 2.5±2s（0.5〜4.5s）, successRate 0.9, errorRate 0.03, spellChance 0.6
+  - Ultra: intervalRange 1.7±0.5s（1.2〜2.2s）, successRate 0.9, errorRate 0.08, spellChance 0.6
 - 拡張性：
   - 将来的に個別AIロジックを追加するための `behaviorId` などをパラメータに追加し、行動パターンを差し替え可能にする。
   - パラメータは `ENEMY_AI_CONFIG`（敵ID優先）→ 難易度プリセット → デフォルトベースの優先順位で解決する。

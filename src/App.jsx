@@ -448,9 +448,9 @@ const ENEMY_AI_PRESETS = {
     spellChance: 0.45,
   },
   ultra: {
-    intervalRange: [200, 800],
-    successRate: 0.94,
-    errorRate: 0.05,
+    intervalRange: [1200, 2200],
+    successRate: 0.9,
+    errorRate: 0.08,
     spellChance: 0.6,
   },
 };
