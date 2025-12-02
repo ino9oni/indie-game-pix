@@ -2,9 +2,17 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: v9.2.0
+Current release: v9.3.0
 
-## Release Highlights (v9.2.0)
+## Release Highlights (v9.3.0)
+
+前回リリース (v9.2.0) からの主な変更:
+
+- ENEMY AI を難易度/敵ごとのパラメータ制御に再構築し、ヒント優先で一手ずつ進める安定ロジックに変更。Hard/Ultra を含む手番間隔・正誤率を再調整し、プレイヤーと独立したタイマーで動作。
+- エンドレスモードを改良し、アンカーヒント必須・一意解の出題、重複防止のバルク生成、非同期補充、進捗バー表示を追加。開始サイズ選択と大容量バッチでゲーム停止を防止。
+- 敵スペル発動を難易度/敵パラメータで確率制御し、敵盤面の更新は1手1セルに限定して暴走を防止。
+
+## Previous Release Highlights (v9.2.0)
 
 前回リリース (v9.1.0) からの主な変更:
 
