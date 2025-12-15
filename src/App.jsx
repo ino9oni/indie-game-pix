@@ -832,6 +832,57 @@ function applyDeterministicEnemyStep(grid, solution) {
   return { changed: true, next, filled: [] };
 }
 
+function applyLineCompletions(grid, solution) {
+  let changed = false;
+  const size = solution.length;
+  const next = grid.map((row) => row.slice());
+  // rows
+  for (let r = 0; r < size; r += 1) {
+    const rowSolution = solution[r] || [];
+    const rowState = next[r] || [];
+    const allFilled = rowSolution.every((cell, c) => !cell || rowState[c] === 1);
+    if (allFilled) {
+      for (let c = 0; c < size; c += 1) {
+        if (!rowSolution[c] && rowState[c] === 0) {
+          next[r][c] = -1;
+          changed = true;
+        }
+      }
+    }
+  }
+  // cols
+  for (let c = 0; c < size; c += 1) {
+    let allFilled = true;
+    for (let r = 0; r < size; r += 1) {
+      const shouldFill = solution[r]?.[c];
+      if (shouldFill && next[r]?.[c] !== 1) {
+        allFilled = false;
+        break;
+      }
+    }
+    if (!allFilled) continue;
+    for (let r = 0; r < size; r += 1) {
+      if (!solution[r]?.[c] && next[r]?.[c] === 0) {
+        next[r][c] = -1;
+        changed = true;
+      }
+    }
+  }
+  return { changed, next };
+}
+
+function hasContradiction(grid, solution) {
+  for (let r = 0; r < solution.length; r += 1) {
+    for (let c = 0; c < solution.length; c += 1) {
+      const shouldFill = !!solution[r]?.[c];
+      const val = grid?.[r]?.[c];
+      if (val === 1 && !shouldFill) return true;
+      if (val === -1 && shouldFill) return true;
+    }
+  }
+  return false;
+}
+
 function resolveSpellTheme(difficulty) {
   const key = (difficulty || "").toLowerCase();
   if (key.includes("ultra")) return SPELL_THEME_MAP.ultra;
@@ -1525,6 +1576,10 @@ export default function App() {
   const enemyCastingRef = useRef(false);
   const enemyOrderRef = useRef({ list: [], index: 0 });
   const puzzleSolvedRef = useRef(false);
+  const enemyPuzzleSolvedRef = useRef(false);
+  const enemyGuessStackRef = useRef([]);
+  const enemyGuessBlacklistRef = useRef(new Set());
+  const enemyStallCountRef = useRef(0);
   const enemySolutionRef = useRef([]);
   const [enemySolutionVersion, setEnemySolutionVersion] = useState(0);
 
@@ -2110,6 +2165,10 @@ export default function App() {
     clearSpellEffects();
     setActiveSpell(null);
     puzzleSolvedRef.current = false;
+    enemyPuzzleSolvedRef.current = false;
+    enemyGuessStackRef.current = [];
+    enemyGuessBlacklistRef.current = new Set();
+    enemyStallCountRef.current = 0;
     setProjectiles([]);
     resetAllCombos();
     glyphUnlocksRef.current = new Map();
@@ -2239,6 +2298,10 @@ export default function App() {
       const n = nextSolution.length;
       stopEnemySolver();
       enemySolutionRef.current = nextSolution;
+      enemyPuzzleSolvedRef.current = false;
+      enemyGuessStackRef.current = [];
+      enemyGuessBlacklistRef.current = new Set();
+      enemyStallCountRef.current = 0;
       enemyProgressRef.current = {
         filled: 0,
         total: nextSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
@@ -2595,6 +2658,8 @@ export default function App() {
   }
 
   const handleEnemyPuzzleClear = useCallback(() => {
+    if (enemyPuzzleSolvedRef.current) return;
+    enemyPuzzleSolvedRef.current = true;
     const totalNeeded =
       enemyPuzzleSequence.length || puzzleSequence.length || getPuzzleGoalForNode(battleNode);
     const nextWins = enemyWins + 1;
@@ -2816,6 +2881,7 @@ export default function App() {
     setEnemyPuzzleSequence([]);
     setHeroPuzzleIndex(0);
     enemySolutionRef.current = [];
+    enemyPuzzleSolvedRef.current = false;
     setEnemySolutionVersion((v) => v + 1);
     setPendingNode(null);
     setBattleNode(null);
@@ -2960,6 +3026,21 @@ export default function App() {
       return Math.max(120, config.interval || 1000);
     };
 
+    const snapshotEnemyState = () => ({
+      grid: enemyGridRef.current.map((row) => row.slice()),
+      filled: enemyProgressRef.current.filled,
+      order: { ...enemyOrderRef.current },
+      blacklist: new Set(enemyGuessBlacklistRef.current),
+    });
+
+    const restoreEnemySnapshot = (snap) => {
+      setEnemyGrid(snap.grid);
+      enemyGridRef.current = snap.grid;
+      enemyProgressRef.current.filled = snap.filled;
+      enemyOrderRef.current = { ...snap.order };
+      enemyGuessBlacklistRef.current = new Set(snap.blacklist);
+    };
+
     const tick = () => {
       if (boardLocksRef.current.enemy) {
         enemySolverRef.current = setTimeout(tick, nextDelay());
@@ -2970,6 +3051,8 @@ export default function App() {
         stopEnemySolver();
         return;
       }
+      let progressMade = false;
+
       // deterministic deduction step
       const hasProgress =
         enemyGridRef.current &&
@@ -2984,6 +3067,17 @@ export default function App() {
           enemyProgressRef.current.filled += filled.length;
           enemyGridRef.current = next;
           enemyOrderRef.current = { list: buildEnemyOrder(next, enemySolution), index: 0 };
+          const completion = applyLineCompletions(next, enemySolution);
+          if (completion.changed) {
+            setEnemyGrid(completion.next);
+            enemyGridRef.current = completion.next;
+            enemyOrderRef.current = {
+              list: buildEnemyOrder(completion.next, enemySolution),
+              index: 0,
+            };
+          }
+          progressMade = true;
+          enemyStallCountRef.current = 0;
           const targetRatio = config.targetCompletionRatio || 1;
           const progressRatio =
             enemyProgressRef.current.total > 0
@@ -2999,12 +3093,41 @@ export default function App() {
         }
       }
 
+      const completionOnly = applyLineCompletions(enemyGridRef.current, enemySolution);
+      if (completionOnly.changed) {
+        setEnemyGrid(completionOnly.next);
+        enemyGridRef.current = completionOnly.next;
+        enemyOrderRef.current = {
+          list: buildEnemyOrder(completionOnly.next, enemySolution),
+          index: 0,
+        };
+        progressMade = true;
+        enemyStallCountRef.current = 0;
+        const targetRatio = config.targetCompletionRatio || 1;
+        const progressRatio =
+          enemyProgressRef.current.total > 0
+            ? enemyProgressRef.current.filled / enemyProgressRef.current.total
+            : 1;
+        if (progressRatio >= targetRatio) {
+          stopEnemySolver();
+          handleEnemyPuzzleClear();
+          return;
+        }
+        enemySolverRef.current = setTimeout(tick, nextDelay());
+        return;
+      }
+
       let state = enemyOrderRef.current;
       if (!state.list.length || state.index >= state.list.length) {
         const refreshed = buildEnemyOrder(enemyGridRef.current, enemySolution);
-        state = { list: refreshed, index: 0 };
+        state = {
+          list: refreshed.filter(
+            ({ r, c }) => !enemyGuessBlacklistRef.current.has(`${r},${c}`),
+          ),
+          index: 0,
+        };
         enemyOrderRef.current = state;
-        if (!refreshed.length) {
+        if (!state.list.length) {
           const targetRatio = config.targetCompletionRatio || 1;
           const progressRatio =
             enemyProgressRef.current.total > 0
@@ -3019,30 +3142,81 @@ export default function App() {
           return;
         }
       }
-      const target = state.list[state.index];
-      state.index += 1;
-      const successRate = config.successRate ?? 1;
-      if (Math.random() > successRate) {
+      const filteredList = state.list.filter(
+        ({ r, c }) => !enemyGuessBlacklistRef.current.has(`${r},${c}`),
+      );
+      if (!filteredList.length) {
+        enemyStallCountRef.current += 1;
+        if (enemyStallCountRef.current >= 3) {
+          enemyGuessBlacklistRef.current.clear();
+          const rebuilt = buildEnemyOrder(enemyGridRef.current, enemySolution);
+          enemyOrderRef.current = { list: rebuilt, index: 0 };
+        }
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
-      if (Math.random() < (config.errorRate || 0)) {
+      const target = filteredList[state.index % filteredList.length];
+      state.index += 1;
+      const forceAccurate = enemyStallCountRef.current >= 3;
+      const successRate = forceAccurate ? 1 : config.successRate ?? 1;
+      const errorRate = forceAccurate ? 0 : config.errorRate || 0;
+      if (Math.random() > successRate) {
+        enemyStallCountRef.current += 1;
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
       const { r, c } = target;
       let placed = false;
-      setEnemyGrid((prev) => {
-        if (prev[r]?.[c] === 1) return prev;
-        const next = prev.length ? prev.map((row) => row.slice()) : emptyGrid(enemySolution.length);
-        next[r][c] = 1;
+      const snap = snapshotEnemyState();
+      enemyGuessStackRef.current.push(snap);
+      if (enemyGuessStackRef.current.length > 4) {
+        enemyGuessStackRef.current.shift();
+      }
+      const shouldFill = !!enemySolution[r]?.[c];
+      const willErr = Math.random() < errorRate;
+      const intendedValue = willErr ? -1 : 1;
+      const nextGrid =
+        enemyGridRef.current.length > 0
+          ? enemyGridRef.current.map((row) => row.slice())
+          : emptyGrid(enemySolution.length);
+      if (nextGrid[r]?.[c] !== 1) {
+        nextGrid[r][c] = intendedValue;
         placed = true;
-        return next;
-      });
+      }
+      if (!placed) {
+        enemyGuessStackRef.current.pop();
+        enemyStallCountRef.current += 1;
+        enemySolverRef.current = setTimeout(tick, nextDelay());
+        return;
+      }
+      setEnemyGrid(nextGrid);
+      enemyGridRef.current = nextGrid;
+      const contradiction = hasContradiction(nextGrid, enemySolution);
+      if (contradiction || (shouldFill && intendedValue !== 1)) {
+        const key = `${r},${c}`;
+        enemyGuessBlacklistRef.current.add(key);
+        const snapToRestore = enemyGuessStackRef.current.pop();
+        if (snapToRestore) {
+          restoreEnemySnapshot(snapToRestore);
+        }
+        enemyStallCountRef.current += 1;
+        enemySolverRef.current = setTimeout(tick, nextDelay());
+        return;
+      }
       if (placed) {
         incrementCombo("enemy");
+        enemyProgressRef.current.filled += 1;
+        enemyStallCountRef.current = 0;
       }
-      enemyProgressRef.current.filled += 1;
+      const completionAfterGuess = applyLineCompletions(enemyGridRef.current, enemySolution);
+      if (completionAfterGuess.changed) {
+        setEnemyGrid(completionAfterGuess.next);
+        enemyGridRef.current = completionAfterGuess.next;
+        enemyOrderRef.current = {
+          list: buildEnemyOrder(completionAfterGuess.next, enemySolution),
+          index: 0,
+        };
+      }
       const targetRatio = config.targetCompletionRatio || 1;
       const progressRatio =
         enemyProgressRef.current.total > 0
@@ -3053,6 +3227,8 @@ export default function App() {
         handleEnemyPuzzleClear();
         return;
       }
+      enemyGuessStackRef.current = [];
+      progressMade = true;
       enemySolverRef.current = setTimeout(tick, nextDelay());
     };
 
@@ -3070,6 +3246,37 @@ export default function App() {
     handleEnemyPuzzleClear,
     incrementCombo,
   ]);
+
+  useEffect(() => {
+    if (screen !== "picross") return;
+    if (enemyPuzzleSolvedRef.current) return;
+    const solutionSnapshot = enemySolutionRef.current;
+    if (!solutionSnapshot.length) return;
+    const gridSnapshot = enemyGrid;
+    if (!gridSnapshot.length) return;
+    if (equalsSolution(gridSnapshot, solutionSnapshot)) {
+      handleEnemyPuzzleClear();
+      return;
+    }
+    const totalCells = solutionSnapshot.reduce(
+      (acc, row) => acc + row.filter(Boolean).length,
+      0,
+    );
+    if (!totalCells) return;
+    const filledCells = gridSnapshot.reduce((acc, row, r) => {
+      const rowSolution = solutionSnapshot[r] || [];
+      const filledInRow = row.reduce(
+        (rowAcc, cell, c) => rowAcc + (rowSolution[c] && cell === 1 ? 1 : 0),
+        0,
+      );
+      return acc + filledInRow;
+    }, 0);
+    const config = battleNode ? getEnemyAiConfig(battleNode) : DEFAULT_ENEMY_CONFIG;
+    const targetRatio = config.targetCompletionRatio || 1;
+    if (filledCells / totalCells >= targetRatio) {
+      handleEnemyPuzzleClear();
+    }
+  }, [battleNode, enemyGrid, handleEnemyPuzzleClear, screen]);
 
 
   useEffect(() => {
