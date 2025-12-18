@@ -840,7 +840,9 @@ function applyLineCompletions(grid, solution) {
   for (let r = 0; r < size; r += 1) {
     const rowSolution = solution[r] || [];
     const rowState = next[r] || [];
-    const allFilled = rowSolution.every((cell, c) => !cell || rowState[c] === 1);
+    const allFilled = rowSolution.every(
+      (cell, c) => !cell || rowState[c] === 1 || rowState[c] === 2,
+    );
     if (allFilled) {
       for (let c = 0; c < size; c += 1) {
         if (!rowSolution[c] && rowState[c] === 0) {
@@ -855,7 +857,8 @@ function applyLineCompletions(grid, solution) {
     let allFilled = true;
     for (let r = 0; r < size; r += 1) {
       const shouldFill = solution[r]?.[c];
-      if (shouldFill && next[r]?.[c] !== 1) {
+      const val = next[r]?.[c];
+      if (shouldFill && val !== 1 && val !== 2) {
         allFilled = false;
         break;
       }
@@ -881,6 +884,58 @@ function hasContradiction(grid, solution) {
     }
   }
   return false;
+}
+
+function validateEnemyGrid(grid, solution) {
+  if (!Array.isArray(solution) || !solution.length) {
+    return { next: grid, corrections: 0, filledAdd: 0, filledDeduct: 0 };
+  }
+  let corrected = 0;
+  let filledAdd = 0;
+  let filledDeduct = 0;
+  const next = grid.map((row) => row.slice());
+  for (let r = 0; r < solution.length; r += 1) {
+    for (let c = 0; c < solution.length; c += 1) {
+      const val = next?.[r]?.[c];
+      const shouldFill = !!solution[r]?.[c];
+      if (val === 2) {
+        if (shouldFill) {
+          next[r][c] = 1;
+          corrected += 1;
+          filledAdd += 1;
+        } else {
+          next[r][c] = 0;
+          corrected += 1;
+        }
+        continue;
+      }
+      if (val === 1 && !shouldFill) {
+        next[r][c] = 0;
+        corrected += 1;
+        filledDeduct += 1;
+      } else if (val === -1 && shouldFill) {
+        next[r][c] = 0;
+        corrected += 1;
+      }
+    }
+  }
+  return { next, corrections: corrected, filledAdd, filledDeduct };
+}
+
+function normalizeEnemyGrid(grid, solution) {
+  const size = Array.isArray(solution) ? solution.length : 0;
+  if (!size) return grid;
+  if (!Array.isArray(grid) || !grid.length) return emptyGrid(size);
+  const next = grid.map((row) => {
+    if (!Array.isArray(row) || row.length !== size) {
+      return Array.from({ length: size }, () => 0);
+    }
+    return row.slice(0, size);
+  });
+  while (next.length < size) {
+    next.push(Array.from({ length: size }, () => 0));
+  }
+  return next;
 }
 
 function resolveSpellTheme(difficulty) {
@@ -1580,8 +1635,12 @@ export default function App() {
   const enemyGuessStackRef = useRef([]);
   const enemyGuessBlacklistRef = useRef(new Set());
   const enemyStallCountRef = useRef(0);
+  const enemyRetryRef = useRef(0);
+  const enemyNoProgressRef = useRef(0);
+  const enemyFailSafeRef = useRef(0);
   const enemySolutionRef = useRef([]);
   const [enemySolutionVersion, setEnemySolutionVersion] = useState(0);
+  const [enemyClues, setEnemyClues] = useState({ rows: [], cols: [] });
 
   useEffect(() => {
     gamepadCursorRef.current = gamepadCursor;
@@ -2232,6 +2291,7 @@ export default function App() {
     };
     const enemySolution = enemyFirstSolution.map((row) => row.slice());
     enemySolutionRef.current = enemySolution;
+    setEnemyClues(computeClues(enemySolution));
     enemyProgressRef.current = {
       filled: 0,
       total: enemySolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
@@ -2241,6 +2301,10 @@ export default function App() {
     setEnemySolutionVersion((v) => v + 1);
     setPlayerWins(0);
     setEnemyWins(0);
+    enemyGuessStackRef.current = [];
+    enemyGuessBlacklistRef.current = new Set();
+    enemyStallCountRef.current = 0;
+    enemyRetryRef.current = 0;
 
     setEndingNode(null);
     setStartedAt(Date.now());
@@ -2299,9 +2363,13 @@ export default function App() {
       stopEnemySolver();
       enemySolutionRef.current = nextSolution;
       enemyPuzzleSolvedRef.current = false;
+      setEnemyClues(computeClues(nextSolution));
       enemyGuessStackRef.current = [];
       enemyGuessBlacklistRef.current = new Set();
       enemyStallCountRef.current = 0;
+      enemyRetryRef.current = 0;
+      enemyNoProgressRef.current = 0;
+      enemyFailSafeRef.current = 0;
       enemyProgressRef.current = {
         filled: 0,
         total: nextSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
@@ -2658,6 +2726,15 @@ export default function App() {
   }
 
   const handleEnemyPuzzleClear = useCallback(() => {
+    const enemyGridSnapshot = enemyGridRef.current;
+    const enemySolutionSnapshot = enemySolutionRef.current;
+    if (
+      !Array.isArray(enemySolutionSnapshot) ||
+      !enemySolutionSnapshot.length ||
+      !equalsSolution(enemyGridSnapshot || [], enemySolutionSnapshot)
+    ) {
+      return;
+    }
     if (enemyPuzzleSolvedRef.current) return;
     enemyPuzzleSolvedRef.current = true;
     const totalNeeded =
@@ -2882,6 +2959,13 @@ export default function App() {
     setHeroPuzzleIndex(0);
     enemySolutionRef.current = [];
     enemyPuzzleSolvedRef.current = false;
+    enemyGuessStackRef.current = [];
+    enemyGuessBlacklistRef.current = new Set();
+    enemyStallCountRef.current = 0;
+    enemyRetryRef.current = 0;
+    enemyNoProgressRef.current = 0;
+    enemyFailSafeRef.current = 0;
+    setEnemyClues({ rows: [], cols: [] });
     setEnemySolutionVersion((v) => v + 1);
     setPendingNode(null);
     setBattleNode(null);
@@ -2989,6 +3073,7 @@ export default function App() {
       setEnemyPuzzleSequence([]);
       setHeroPuzzleIndex(0);
       enemySolutionRef.current = [];
+      setEnemyClues({ rows: [], cols: [] });
       setEnemySolutionVersion((v) => v + 1);
       setPlayerWins(0);
       setEnemyWins(0);
@@ -3015,7 +3100,9 @@ export default function App() {
       filled: 0,
       total: coords.length,
     };
-    setEnemyGrid(emptyGrid(enemySolution.length));
+    if (enemySolution.length > 0) {
+      setEnemyGrid(emptyGrid(enemySolution.length));
+    }
     stopEnemySolver();
 
     const nextDelay = () => {
@@ -3042,6 +3129,18 @@ export default function App() {
     };
 
     const tick = () => {
+      const size = enemySolution.length;
+      if (!size) {
+        enemyFailSafeRef.current += 1;
+        if (enemyFailSafeRef.current >= 2) {
+          stopEnemySolver();
+          loadEnemyPuzzle(enemyWins);
+          enemyFailSafeRef.current = 0;
+          return;
+        }
+        enemySolverRef.current = setTimeout(tick, nextDelay());
+        return;
+      }
       if (boardLocksRef.current.enemy) {
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
@@ -3058,10 +3157,9 @@ export default function App() {
         enemyGridRef.current &&
         enemyGridRef.current.some((row) => row && row.some((cell) => cell !== 0));
       if (hasProgress) {
-        const { changed, next, filled } = applyDeterministicEnemyStep(
-          enemyGridRef.current,
-          enemySolution,
-        );
+        const safeGrid = normalizeEnemyGrid(enemyGridRef.current, enemySolution);
+        enemyGridRef.current = safeGrid;
+        const { changed, next, filled } = applyDeterministicEnemyStep(safeGrid, enemySolution);
         if (changed) {
           setEnemyGrid(next);
           enemyProgressRef.current.filled += filled.length;
@@ -3076,6 +3174,20 @@ export default function App() {
               index: 0,
             };
           }
+          const validation = validateEnemyGrid(enemyGridRef.current, enemySolution);
+          if (validation.corrections > 0) {
+            const adjusted = validation.next;
+            setEnemyGrid(adjusted);
+            enemyGridRef.current = adjusted;
+            enemyProgressRef.current.filled = Math.max(
+              0,
+              enemyProgressRef.current.filled - validation.filledDeduct + validation.filledAdd,
+            );
+            enemyOrderRef.current = { list: buildEnemyOrder(adjusted, enemySolution), index: 0 };
+            enemyRetryRef.current += 1;
+          } else {
+            enemyRetryRef.current = 0;
+          }
           progressMade = true;
           enemyStallCountRef.current = 0;
           const targetRatio = config.targetCompletionRatio || 1;
@@ -3083,7 +3195,7 @@ export default function App() {
             enemyProgressRef.current.total > 0
               ? enemyProgressRef.current.filled / enemyProgressRef.current.total
               : 1;
-          if (progressRatio >= targetRatio) {
+          if (progressRatio >= targetRatio && equalsSolution(enemyGridRef.current, enemySolution)) {
             stopEnemySolver();
             handleEnemyPuzzleClear();
             return;
@@ -3101,6 +3213,20 @@ export default function App() {
           list: buildEnemyOrder(completionOnly.next, enemySolution),
           index: 0,
         };
+        const validation = validateEnemyGrid(enemyGridRef.current, enemySolution);
+        if (validation.corrections > 0) {
+          const adjusted = validation.next;
+          setEnemyGrid(adjusted);
+          enemyGridRef.current = adjusted;
+          enemyProgressRef.current.filled = Math.max(
+            0,
+            enemyProgressRef.current.filled - validation.filledDeduct + validation.filledAdd,
+          );
+          enemyOrderRef.current = { list: buildEnemyOrder(adjusted, enemySolution), index: 0 };
+          enemyRetryRef.current += 1;
+        } else {
+          enemyRetryRef.current = 0;
+        }
         progressMade = true;
         enemyStallCountRef.current = 0;
         const targetRatio = config.targetCompletionRatio || 1;
@@ -3108,7 +3234,7 @@ export default function App() {
           enemyProgressRef.current.total > 0
             ? enemyProgressRef.current.filled / enemyProgressRef.current.total
             : 1;
-        if (progressRatio >= targetRatio) {
+        if (progressRatio >= targetRatio && equalsSolution(enemyGridRef.current, enemySolution)) {
           stopEnemySolver();
           handleEnemyPuzzleClear();
           return;
@@ -3133,7 +3259,7 @@ export default function App() {
             enemyProgressRef.current.total > 0
               ? enemyProgressRef.current.filled / enemyProgressRef.current.total
               : 1;
-          if (progressRatio >= targetRatio) {
+          if (progressRatio >= targetRatio && equalsSolution(enemyGridRef.current, enemySolution)) {
             stopEnemySolver();
             handleEnemyPuzzleClear();
           } else {
@@ -3145,12 +3271,53 @@ export default function App() {
       const filteredList = state.list.filter(
         ({ r, c }) => !enemyGuessBlacklistRef.current.has(`${r},${c}`),
       );
-      if (!filteredList.length) {
+      const hasMaybe = enemyGridRef.current.some((row) => row?.some((cell) => cell === 2));
+      if (!filteredList.length || hasMaybe) {
         enemyStallCountRef.current += 1;
-        if (enemyStallCountRef.current >= 3) {
+        const validation = validateEnemyGrid(enemyGridRef.current, enemySolution);
+        if (validation.corrections > 0) {
+          const adjusted = validation.next;
+          const normalized = normalizeEnemyGrid(adjusted, enemySolution);
+          setEnemyGrid(normalized);
+          enemyGridRef.current = normalized;
+          enemyProgressRef.current.filled = Math.max(
+            0,
+            enemyProgressRef.current.filled - validation.filledDeduct + validation.filledAdd,
+          );
+          enemyOrderRef.current = { list: buildEnemyOrder(normalized, enemySolution), index: 0 };
+          enemyRetryRef.current += 1;
+          enemyStallCountRef.current = 0;
+          enemySolverRef.current = setTimeout(tick, nextDelay());
+          return;
+        }
+        if (enemyStallCountRef.current >= 3 || hasMaybe) {
           enemyGuessBlacklistRef.current.clear();
-          const rebuilt = buildEnemyOrder(enemyGridRef.current, enemySolution);
+          const cleaned = normalizeEnemyGrid(
+            enemyGridRef.current.map((row) => row.map((cell) => (cell === 2 ? 0 : cell))),
+            enemySolution,
+          );
+          setEnemyGrid(cleaned);
+          enemyGridRef.current = cleaned;
+          const rebuilt = buildEnemyOrder(cleaned, enemySolution);
           enemyOrderRef.current = { list: rebuilt, index: 0 };
+          enemyGuessStackRef.current = [];
+          enemyStallCountRef.current = 0;
+          enemyRetryRef.current = 0;
+          // 強制埋め（ヒントに合う真のセルをランダムに1つ埋める）
+          const trueCells = shuffle(
+            enemySolution.flatMap((row, r) =>
+              row.map((cell, c) => ({ r, c, cell })).filter(({ cell }) => cell),
+            ),
+          ).filter(({ r, c }) => enemyGridRef.current?.[r]?.[c] !== 1);
+          const pick = trueCells[0];
+          if (pick) {
+            const forced = enemyGridRef.current.map((row) => row.slice());
+            forced[pick.r][pick.c] = 1;
+            setEnemyGrid(forced);
+            enemyGridRef.current = forced;
+            enemyProgressRef.current.filled += 1;
+            enemyOrderRef.current = { list: buildEnemyOrder(forced, enemySolution), index: 0 };
+          }
         }
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
@@ -3174,7 +3341,12 @@ export default function App() {
       }
       const shouldFill = !!enemySolution[r]?.[c];
       const willErr = Math.random() < errorRate;
-      const intendedValue = willErr ? -1 : 1;
+      let intendedValue = 1;
+      if (shouldFill) {
+        intendedValue = willErr ? 2 : 1; // 2 = maybe as暫定メモ
+      } else {
+        intendedValue = willErr ? 1 : -1; // 誤答なら誤って埋める、正なら×
+      }
       const nextGrid =
         enemyGridRef.current.length > 0
           ? enemyGridRef.current.map((row) => row.slice())
@@ -3195,15 +3367,23 @@ export default function App() {
       if (contradiction || (shouldFill && intendedValue !== 1)) {
         const key = `${r},${c}`;
         enemyGuessBlacklistRef.current.add(key);
-        const snapToRestore = enemyGuessStackRef.current.pop();
-        if (snapToRestore) {
-          restoreEnemySnapshot(snapToRestore);
+        if (intendedValue === 1 && enemyProgressRef.current.filled > 0) {
+          enemyProgressRef.current.filled -= 1;
         }
+        const reverted = enemyGridRef.current.map((row, rowIndex) =>
+          row.map((cell, colIndex) => {
+            if (rowIndex === r && colIndex === c) return 0;
+            return cell;
+          }),
+        );
+        setEnemyGrid(reverted);
+        enemyGridRef.current = reverted;
+        enemyOrderRef.current = { list: buildEnemyOrder(reverted, enemySolution), index: 0 };
         enemyStallCountRef.current += 1;
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
-      if (placed) {
+      if (placed && intendedValue === 1) {
         incrementCombo("enemy");
         enemyProgressRef.current.filled += 1;
         enemyStallCountRef.current = 0;
@@ -3222,7 +3402,7 @@ export default function App() {
         enemyProgressRef.current.total > 0
           ? enemyProgressRef.current.filled / enemyProgressRef.current.total
           : 1;
-      if (progressRatio >= targetRatio) {
+      if (progressRatio >= targetRatio && equalsSolution(enemyGridRef.current, enemySolution)) {
         stopEnemySolver();
         handleEnemyPuzzleClear();
         return;
@@ -3230,10 +3410,48 @@ export default function App() {
       enemyGuessStackRef.current = [];
       progressMade = true;
       enemySolverRef.current = setTimeout(tick, nextDelay());
+      return;
+    };
+
+    const wrapTick = () => {
+      const beforeFilled = enemyProgressRef.current.filled;
+      tick();
+      const afterFilled = enemyProgressRef.current.filled;
+      if (afterFilled > beforeFilled) {
+        enemyNoProgressRef.current = 0;
+      } else {
+        enemyNoProgressRef.current += 1;
+      }
+      if (enemyNoProgressRef.current >= 5 && screen === "picross") {
+        // 強制脱出: すべての?をクリアし、ブラックリストをリセットして真セルを1つ埋める
+        enemyGuessBlacklistRef.current.clear();
+        const cleaned = enemyGridRef.current.map((row) =>
+          row.map((cell) => (cell === 2 ? 0 : cell)),
+        );
+        setEnemyGrid(cleaned);
+        enemyGridRef.current = cleaned;
+        const remaining = shuffle(
+          enemySolution.flatMap((row, r) =>
+            row.map((cell, c) => ({ r, c, cell })).filter(({ cell }) => cell),
+          ),
+        ).filter(({ r, c }) => enemyGridRef.current?.[r]?.[c] !== 1);
+        const pick = remaining[0];
+        if (pick) {
+          const forced = enemyGridRef.current.map((row) => row.slice());
+          forced[pick.r][pick.c] = 1;
+          setEnemyGrid(forced);
+          enemyGridRef.current = forced;
+          enemyProgressRef.current.filled += 1;
+          enemyOrderRef.current = { list: buildEnemyOrder(forced, enemySolution), index: 0 };
+        } else {
+          enemyOrderRef.current = { list: buildEnemyOrder(enemyGridRef.current, enemySolution), index: 0 };
+        }
+        enemyNoProgressRef.current = 0;
+      }
     };
 
     // kick off immediately, then schedule subsequent ticks
-    tick();
+    wrapTick();
     return () => stopEnemySolver();
   }, [
     screen,
@@ -3245,6 +3463,7 @@ export default function App() {
     stopEnemySolver,
     handleEnemyPuzzleClear,
     incrementCombo,
+    loadEnemyPuzzle,
   ]);
 
   useEffect(() => {
@@ -3257,24 +3476,6 @@ export default function App() {
     if (equalsSolution(gridSnapshot, solutionSnapshot)) {
       handleEnemyPuzzleClear();
       return;
-    }
-    const totalCells = solutionSnapshot.reduce(
-      (acc, row) => acc + row.filter(Boolean).length,
-      0,
-    );
-    if (!totalCells) return;
-    const filledCells = gridSnapshot.reduce((acc, row, r) => {
-      const rowSolution = solutionSnapshot[r] || [];
-      const filledInRow = row.reduce(
-        (rowAcc, cell, c) => rowAcc + (rowSolution[c] && cell === 1 ? 1 : 0),
-        0,
-      );
-      return acc + filledInRow;
-    }, 0);
-    const config = battleNode ? getEnemyAiConfig(battleNode) : DEFAULT_ENEMY_CONFIG;
-    const targetRatio = config.targetCompletionRatio || 1;
-    if (filledCells / totalCells >= targetRatio) {
-      handleEnemyPuzzleClear();
     }
   }, [battleNode, enemyGrid, handleEnemyPuzzleClear, screen]);
 
@@ -4347,8 +4548,8 @@ export default function App() {
                     <EnemyBoard
                       size={size}
                       grid={enemyGrid}
-                      hintData={clues}
-                      clues={clues}
+                      hintData={enemyClues}
+                      clues={enemyClues}
                       fadedCells={enemyFadedCells}
                     />
                   </div>
