@@ -3998,9 +3998,12 @@ export default function App() {
   const totalCells = totalCellsRef.current || 1;
   const playerProgressCount = countCorrectFilled(grid, solution);
   const playerProgressRatio = totalCells ? playerProgressCount / totalCells : 0;
-  const enemyProgressRatio = totalCells
-    ? Math.min(1, enemyProgressRef.current.filled / totalCells)
-    : 0;
+  const enemyProgressRatio = useMemo(() => {
+    const total = enemyProgressRef.current.total || totalCells || 0;
+    const filled = enemyProgressRef.current.filled || 0;
+    if (total <= 0) return 0;
+    return Math.min(1, filled / total);
+  }, [enemyGrid, totalCells]);
   const endlessTotalCells = endlessSolution?.length
     ? endlessSolution.reduce(
         (acc, row) => acc + row.filter((cell) => !!cell).length,
