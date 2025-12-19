@@ -105,6 +105,19 @@ const SPELL_THEME_MAP = {
   ultra: "inferno",
 };
 
+const createEffectDataUri = (from, to) => {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 900'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='${from}' stop-opacity='0.95'/><stop offset='100%' stop-color='${to}' stop-opacity='0.75'/></linearGradient></defs><rect width='1400' height='900' fill='url(%23g)'/><circle cx='320' cy='220' r='180' fill='${from}' fill-opacity='0.35'/><circle cx='1080' cy='640' r='220' fill='${to}' fill-opacity='0.28'/><path d='M160 520 Q420 360 720 440 T1280 360' stroke='${from}' stroke-width='48' stroke-opacity='0.32' fill='none' stroke-linecap='round'/><path d='M160 600 Q420 740 720 660 T1280 740' stroke='${to}' stroke-width='38' stroke-opacity='0.28' fill='none' stroke-linecap='round'/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
+const SPELL_EFFECT_IMAGES = {
+  radiant: createEffectDataUri("#3fe7ff", "#19e5c2"),
+  tide: createEffectDataUri("#4cc4ff", "#6f8dff"),
+  quake: createEffectDataUri("#cda37a", "#8c6239"),
+  venom: createEffectDataUri("#7d5cff", "#e75378"),
+  inferno: createEffectDataUri("#ff9c3f", "#ff3f6c"),
+};
+
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const normalizeHeroName = (value) => {
@@ -1343,6 +1356,7 @@ export default function App() {
           : CHARACTERS[battleNode]?.images?.angry || HERO_IMAGES.angry);
       const nodeDifficulty = CHARACTERS[battleNode]?.difficulty || level;
       const theme = resolveSpellTheme(nodeDifficulty);
+      const effectImage = payload?.effectImage || SPELL_EFFECT_IMAGES[theme] || null;
       const impactCells = Array.isArray(payload?.impactCells) ? payload.impactCells : [];
       const boardSize = payload?.boardSize || 10;
       // Expand impact cells to a small halo so近傍セルも光る
@@ -1370,6 +1384,7 @@ export default function App() {
         name: payload?.name || "Spell",
         description: payload?.description || "",
         speech: speechText || "",
+        effectImage,
         impact: impactCells,
         impactHalo: haloCells,
         boardSize,
@@ -4092,6 +4107,11 @@ export default function App() {
         <div className={`spell-cinematic-overlay ${spellCinematic.theme}`}>
           <div className="spell-cinematic-backdrop" />
           <div className="spell-cinematic-content">
+            {spellCinematic.effectImage ? (
+              <div className={`spell-cinematic-effect ${spellCinematic.caster || "hero"}`} aria-hidden="true">
+                <img src={spellCinematic.effectImage} alt={`${spellCinematic.name} effect`} />
+              </div>
+            ) : null}
             <div className={`spell-cinematic-actor ${spellCinematic.caster || "hero"}`}>
                   {spellCinematic.image ? (
                 <img src={spellCinematic.image} alt={`${spellCinematic.name} caster`} />

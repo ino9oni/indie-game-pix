@@ -1762,6 +1762,29 @@ button.combo-stage:focus-visible {
   width: 100%;
 }
 
+.spell-cinematic-effect {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  pointer-events: none;
+  opacity: 0.9;
+  mix-blend-mode: screen;
+}
+
+.spell-cinematic-effect.hero {
+  justify-content: flex-start;
+}
+
+.spell-cinematic-effect img {
+  max-height: 82vh;
+  max-width: 72vw;
+  object-fit: contain;
+  filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.55));
+  animation: spellOverlayFade 900ms ease both;
+}
+
 .spell-cinematic-actor {
   flex: 1 1 auto;
   display: flex;
@@ -2273,6 +2296,29 @@ button.combo-stage:focus-visible {
   gap: clamp(20px, 4vw, 48px);
   padding: clamp(20px, 5vw, 60px);
   width: 100%;
+}
+
+.spell-cinematic-effect {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  pointer-events: none;
+  opacity: 0.9;
+  mix-blend-mode: screen;
+}
+
+.spell-cinematic-effect.hero {
+  justify-content: flex-start;
+}
+
+.spell-cinematic-effect img {
+  max-height: 82vh;
+  max-width: 72vw;
+  object-fit: contain;
+  filter: drop-shadow(0 22px 44px rgba(0, 0, 0, 0.55));
+  animation: spellOverlayFade 900ms ease both;
 }
 
 .spell-cinematic-actor {
