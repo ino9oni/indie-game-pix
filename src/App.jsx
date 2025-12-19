@@ -1446,6 +1446,8 @@ export default function App() {
       const effect = resolveStageEffect(stageId, size);
       const affected = new Set();
       const coords = [];
+      let nextEnemyGrid = null;
+
       const register = (r, c) => {
         if (r < 0 || r >= size || c < 0 || c >= size) return;
         const key = `${r}-${c}`;
@@ -1492,8 +1494,19 @@ export default function App() {
               next[r][c] = 0;
             }
           });
+          nextEnemyGrid = next;
           return next;
         });
+        if (nextEnemyGrid) {
+          enemyGridRef.current = nextEnemyGrid;
+          const total =
+            enemySolutionRef.current?.reduce(
+              (acc, row) => acc + row.filter(Boolean).length,
+              0,
+            ) || 0;
+          const filled = countCorrectFilled(nextEnemyGrid, enemySolutionRef.current || []);
+          enemyProgressRef.current = { filled, total };
+        }
         if (removalQueue.length) {
           enemyProgressRef.current.filled = Math.max(
             0,
