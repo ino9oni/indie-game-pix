@@ -355,6 +355,89 @@ function randomIndex(list, rng = Math.random) {
   return Math.floor(rng() * list.length);
 }
 
+
+function applyDecisiveHints(grid, rng = Math.random) {
+  const size = grid.length;
+  if (size !== 10) return grid;
+  const patterns = [
+    [1, 1, 1, 1, 1],
+    [5, 4],
+    [4, 5],
+    [3, 3, 1],
+    [1, 3, 3],
+    [3, 1, 3],
+    [2, 2, 4],
+    [4, 2, 2],
+    [2, 4, 2],
+    [6, 3],
+    [3, 6],
+    [7, 2],
+    [2, 7],
+    [8, 1],
+    [1, 8],
+  ];
+
+  const targetLines = Math.max(2, Math.floor(size * 0.2));
+  const gridCopy = grid.map((row) => row.slice());
+
+  const placePattern = (line, pattern) => {
+    const filled = [];
+    let cursor = 0;
+    pattern.forEach((len, idx) => {
+      for (let i = 0; i < len; i += 1) {
+        filled.push(cursor + i);
+      }
+      cursor += len;
+      if (idx < pattern.length - 1) cursor += 1;
+    });
+    if (cursor > size) return null;
+    const offset = Math.floor(rng() * Math.max(1, size - cursor + 1));
+    const row = Array.from({ length: size }, () => false);
+    filled.forEach((c) => {
+      const pos = Math.min(size - 1, offset + c);
+      row[pos] = true;
+    });
+    return row;
+  };
+
+  const applyToLine = (lineIndex, pattern) => {
+    const row = placePattern(gridCopy[lineIndex], pattern);
+    if (!row) return false;
+    gridCopy[lineIndex] = row;
+    return true;
+  };
+
+  const pickedRows = new Set();
+  const candidates = patterns.slice();
+  while (pickedRows.size < targetLines && candidates.length) {
+    const line = Math.floor(rng() * size);
+    if (pickedRows.has(line)) continue;
+    const pattern = candidates[Math.floor(rng() * candidates.length)];
+    if (applyToLine(line, pattern)) {
+      pickedRows.add(line);
+      candidates.splice(Math.floor(rng() * candidates.length), 1);
+    }
+  }
+
+  // columns
+  const pickedCols = new Set();
+  const candidatesCols = patterns.slice();
+  while (pickedCols.size < targetLines && candidatesCols.length) {
+    const col = Math.floor(rng() * size);
+    if (pickedCols.has(col)) continue;
+    const pattern = candidatesCols[Math.floor(rng() * candidatesCols.length)];
+    const colRow = placePattern(Array.from({ length: size }, () => false), pattern);
+    if (!colRow) continue;
+    for (let r = 0; r < size; r += 1) {
+      gridCopy[r][col] = colRow[r];
+    }
+    pickedCols.add(col);
+    candidatesCols.splice(Math.floor(rng() * candidatesCols.length), 1);
+  }
+
+  return gridCopy;
+}
+
 function enforceDensity(grid, { minDensity, maxDensity }, rng = Math.random) {
   const totalCells = grid.length * grid.length;
   const flatIndices = [];
@@ -428,6 +511,7 @@ function normalizeGridForDifficulty(grid, difficulty, rng = Math.random) {
   }
   normalized = enforceDensity(normalized, limits, rng);
   if (useAdvancedHintBalancing && size === 10) {
+    normalized = applyDecisiveHints(normalized, rng);
     normalized = enforceUltraHintDistribution(normalized, rng);
     normalized = rebalanceUltraHints(normalized, rng, 20000);
     normalized = enforceDensity(normalized, limits, rng);
