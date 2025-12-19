@@ -1260,6 +1260,11 @@ body {
   align-self: center;
 }
 
+.battle-panels > .player-panel,
+.battle-panels > .enemy-panel {
+  min-height: 640px;
+}
+
 @keyframes projectileHero {
   0% { transform: translate(-220%, -40%) scale(0.35) rotate(-10deg); opacity: 0; }
   15% { opacity: 1; }
@@ -1416,7 +1421,7 @@ body {
     "progress progress progress";
   gap: 12px 16px;
   align-items: start;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(120px, auto) minmax(120px, auto) minmax(420px, 1fr) minmax(90px, auto);
   height: 100%;
 }
 
@@ -1469,11 +1474,12 @@ body {
   align-items: stretch;
   justify-content: space-between;
   gap: 12px;
+  min-height: 120px;
 }
 
 .spell-slot {
   width: 100%;
-  min-height: 96px;
+  min-height: 112px;
   border-radius: 14px;
   border: 1px solid #2b2f55;
   background: rgba(17, 22, 58, 0.68);
@@ -2110,10 +2116,10 @@ button.combo-stage:focus-visible {
   background: rgba(15, 23, 42, 0.78);
   border: 1px solid #2b2f55;
   border-radius: 14px;
-  padding: 8px 14px;
-  min-width: 120px;
-  min-height: 76px;
-  gap: 2px;
+  padding: 12px 16px;
+  min-width: 140px;
+  min-height: 120px;
+  gap: 6px;
 }
 
 .panel-score.hero {
