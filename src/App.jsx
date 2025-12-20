@@ -82,6 +82,7 @@ const HERO_FULLBODY = assetPath("assets/img/character/hero/hero_fullbody.png");
 const ENDING_BACKGROUND_IMAGE = assetPath("assets/img/background/ending.png");
 const MAP_BACKGROUND_IMAGE = assetPath("assets/img/background/map.png");
 
+
 const GAMEPAD_BUTTON = {
   A: 0,
   B: 1,
@@ -184,6 +185,183 @@ const ENEMY_AI_CONFIG = {
     spellMaxDelay: 2500,
   },
 };
+
+const ROUTE_STORY_LOG_KEY = "routeStoryLog";
+
+const ROUTE_STORY_BASE_IDS = ["opening", "prologue", "gamestart"];
+
+const ROUTE_STORY_SCENES = [
+  {
+    id: "opening",
+    subtitle: "― 旅のはじまり ―",
+    paragraphs: ["エルフ達と心を通わせるピクロスの旅"],
+    portraits: () => [
+      {
+        side: "left",
+        src: HERO_IMAGES.smile,
+        alt: "セリア",
+      },
+    ],
+  },
+  {
+    id: "prologue",
+    subtitle: "― プロローグ ―",
+    paragraphs: [
+      "森深くに隠されたエルフの集落には、",
+      "古から伝わる知恵遊び「elfpix」が存在した。",
+      "",
+      "これは、森に宿る精霊の力を象った図形を浮かび上がらせる、",
+      "まるでピクロスのような試練。",
+      "",
+      "エルフは、森に迷い込んだ者にこの「elfpix」を課し、",
+      "正しく解き明かした者だけが先へ進むことが許された。",
+    ],
+    portraits: () => [
+      {
+        side: "left",
+        src: HERO_IMAGES.normal,
+        alt: "セリア",
+      },
+    ],
+  },
+  {
+    id: "gamestart",
+    subtitle: "― 森への旅立ち ―",
+    paragraphs: ({ heroName }) => [
+      "ここに一人の人間の若き旅人がいた。",
+      "その名を…",
+      `その名を「${heroName || DEFAULT_HERO_NAME}」といった。`,
+      "森の奥に眠る「古代の泉」にたどり着くために、エルフの森へ足を踏み入れようとしていた。",
+      "しかし、エルフの守り人たちから「elfpix」の挑戦を突きつけられてしまう。",
+      "主人公の知恵と洞察力が、森を抜ける唯一の鍵となる…。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.fullbody,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+    ],
+  },
+  {
+    id: "practice",
+    nodes: ["elf-practice"],
+    subtitle: "― 森の入口、知恵への第一歩 ―",
+    paragraphs: [
+      "森の入口で、セリアは初めて elfpix に触れる。",
+      "それは単なる遊戯ではなく、「形を読む力」「迷いを切り分ける思考」を映し出す古の知恵だった。",
+      "焦らず、急がず、答えを埋めるのではない。“なぜ、そこが空白であるのか”を考えること。",
+      "森の精霊たちは語る。elfpixとは、勝つための道具ではなく、自分の思考と向き合うための鏡なのだと。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.normal,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+      {
+        side: "right",
+        src: CHARACTERS["elf-practice"]?.images?.normal || null,
+        alt: CHARACTERS["elf-practice"]?.name || "敵",
+      },
+    ],
+  },
+  {
+    id: "easy",
+    nodes: ["elf-easy"],
+    subtitle: "― 慣れと油断、最初のつまずき ―",
+    paragraphs: [
+      "手つきは少しずつ慣れ、セリアは elfpix の“コツ”を掴み始める。",
+      "だが、森はやさしいだけではなかった。思い込みで線を引いた瞬間、盤面は静かに彼女を拒む。",
+      "「わかったつもり」になった時こそ、 elfpixは最も牙を剥く。",
+      "小さな失敗と立ち止まり。それでも、セリアは歩みを止めない。この森に進む意味を、まだ知らないまま。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.normal,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+      {
+        side: "right",
+        src: CHARACTERS["elf-easy"]?.images?.normal || null,
+        alt: CHARACTERS["elf-easy"]?.name || "敵",
+      },
+    ],
+  },
+  {
+    id: "middle",
+    nodes: ["elf-middle"],
+    subtitle: "― なぜ、私はここにいるのか ―",
+    paragraphs: [
+      "elfpixは問いかける。「なぜ、あなたはここまで来たのか？」",
+      "刻印の広間で待つ強敵との対峙は、単なる勝負ではなく、セリア自身の内面を映し出す試練だった。",
+      "正解を探す指が、いつしか自分自身を探していることに気づく。",
+      "elfpixは知恵比べであり、同時に “生き方の選択” でもあった。彼女は初めて理解する。これは避けられない旅なのだ、と。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.normal,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+      {
+        side: "right",
+        src: CHARACTERS["elf-middle"]?.images?.normal || null,
+        alt: CHARACTERS["elf-middle"]?.name || "敵",
+      },
+    ],
+  },
+  {
+    id: "hard",
+    nodes: ["elf-hard"],
+    subtitle: "― 強大さと慢心の境界 ―",
+    paragraphs: [
+      "解ける。進める。勝てる。",
+      "そんな感覚が芽生えた時、森はさらに深い影を落とす。相手は強大で、elfpixは一切の妥協を許さない。",
+      "焦りと慢心は、同じ罠の両側に口を開けている。",
+      "セリアは一度、深く息を吸う。ここまで来られた理由を思い出すために。勝ち続けるためではない。誠実に考え続けるために。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.angry,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+      {
+        side: "right",
+        src: CHARACTERS["elf-hard"]?.images?.angry || CHARACTERS["elf-hard"]?.images?.normal || null,
+        alt: CHARACTERS["elf-hard"]?.name || "敵",
+      },
+    ],
+  },
+  {
+    id: "ultra",
+    nodes: ["elf-ultra"],
+    subtitle: "― 知恵の集大成、最後の一手 ―",
+    paragraphs: [
+      "森の最奥。そこにある elfpix は、もはや盤面ではなく、世界そのものだった。",
+      "圧倒的な複雑さ。一手の重み。失敗すれば、すべてが崩れる。",
+      "それでも、セリアは目を逸らさない。これまで積み重ねてきた迷い、失敗、理解、沈黙――すべてが、今ここに繋がっている。",
+      "逃げ場はない。だが、答えは必ずある。elfpixが試すのは、知識ではない。諦めず、考え続ける意志そのものなのだから。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.angry,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+      {
+        side: "right",
+        src: CHARACTERS["elf-ultra"]?.images?.angry || CHARACTERS["elf-ultra"]?.images?.normal || null,
+        alt: CHARACTERS["elf-ultra"]?.name || "敵",
+      },
+    ],
+  },
+];
+const ROUTE_STORY_SCENE_BY_ID = new Map(
+  ROUTE_STORY_SCENES.map((scene) => [scene.id, scene]),
+);
 const STORY_PAUSE_MS = 900;
 
 const SPELL_SPEECH_DURATION = 1200;
@@ -580,6 +758,21 @@ function readStoredClearedSet() {
     return new Set(normalized);
   } catch {
     return new Set();
+  }
+}
+
+function readStoredRouteStoryLog() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(ROUTE_STORY_LOG_KEY) || "null");
+    if (!Array.isArray(raw)) return null;
+    const cleaned = raw.filter((id) => typeof id === "string" && id.trim());
+    if (!cleaned.length) return null;
+    if (cleaned.length !== raw.length) {
+      localStorage.setItem(ROUTE_STORY_LOG_KEY, JSON.stringify(cleaned));
+    }
+    return cleaned;
+  } catch {
+    return null;
   }
 }
 
@@ -1236,6 +1429,13 @@ export default function App() {
     } catch {
       return true;
     }
+  });
+  const [routeStoryLog, setRouteStoryLog] = useState(() => {
+    const stored = readStoredRouteStoryLog();
+    return stored || [];
+  });
+  const [routeStoryAnimateIds, setRouteStoryAnimateIds] = useState(() => {
+    return new Set();
   });
   const [glyphCollection, setGlyphCollection] = useState(
     () => glyphStorageRef.current.collectionSet,
@@ -3072,40 +3272,110 @@ export default function App() {
     } catch {}
   }, [showRouteStory]);
 
-  const storyEntries = useMemo(() => {
-    const depthCache = new Map();
-    const parents = ROUTE.parents || {};
-    const nodes = ROUTE.nodes || {};
-    const getDepth = (id) => {
-      if (depthCache.has(id)) return depthCache.get(id);
-      let d = 0;
-      let cursor = id;
-      const guard = new Set();
-      while (parents[cursor] && !guard.has(cursor)) {
-        guard.add(cursor);
-        cursor = parents[cursor];
-        d += 1;
-        if (d > 50) break;
+  const previousScreenRef = useRef(screen);
+  useEffect(() => {
+    const previous = previousScreenRef.current;
+    previousScreenRef.current = screen;
+    if (previous === "route" && screen !== "route") {
+      setRouteStoryAnimateIds(new Set());
+    }
+  }, [screen]);
+
+  const previousRouteStoryVisibleRef = useRef(showRouteStory);
+  useEffect(() => {
+    const previous = previousRouteStoryVisibleRef.current;
+    previousRouteStoryVisibleRef.current = showRouteStory;
+    if (previous && !showRouteStory) {
+      setRouteStoryAnimateIds(new Set());
+    }
+  }, [showRouteStory]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ROUTE_STORY_LOG_KEY, JSON.stringify(routeStoryLog));
+    } catch {}
+  }, [routeStoryLog]);
+
+  const routeStoryListRef = useRef(null);
+
+  const eligibleStorySceneIds = useMemo(() => {
+    const eligibleNodes = new Set();
+    (cleared || new Set()).forEach((id) => eligibleNodes.add(normalizeNodeId(id)));
+    if (!eligibleNodes.size) return [];
+
+    const ids = [];
+    ROUTE_STORY_SCENES.forEach((scene) => {
+      if (!scene?.nodes?.length) return;
+      if (scene.nodes.some((nodeId) => eligibleNodes.has(nodeId))) {
+        ids.push(scene.id);
       }
-      depthCache.set(id, d);
-      return d;
+    });
+    return ids;
+  }, [cleared]);
+
+  useEffect(() => {
+    if (screen !== "route") return;
+    const hasProgress = eligibleStorySceneIds.length > 0;
+    const baseIds = hasProgress
+      ? ROUTE_STORY_BASE_IDS.filter((id) => ROUTE_STORY_SCENE_BY_ID.has(id))
+      : [];
+    const next = [...baseIds, ...eligibleStorySceneIds.filter((id) => ROUTE_STORY_SCENE_BY_ID.has(id))];
+    const previous = routeStoryLog || [];
+    const previousSet = new Set(previous);
+    const newlyAdded = next.filter((id) => !previousSet.has(id));
+
+    const isSame =
+      next.length === routeStoryLog.length && next.every((id, idx) => id === routeStoryLog[idx]);
+    if (!isSame) {
+      setRouteStoryLog(next);
+    }
+    if (newlyAdded.length) {
+      setRouteStoryAnimateIds((prev) => {
+        const updated = new Set(prev);
+        newlyAdded.forEach((id) => updated.add(id));
+        return updated;
+      });
+    }
+  }, [cleared, eligibleStorySceneIds, routeStoryLog, screen]);
+
+  useEffect(() => {
+    if (screen !== "route") return;
+    if (!showRouteStory) return;
+    const el = routeStoryListRef.current;
+    if (!el) return;
+    let raf1 = null;
+    let raf2 = null;
+    raf1 = requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+      raf2 = requestAnimationFrame(() => {
+        el.scrollTop = el.scrollHeight;
+      });
+    });
+    return () => {
+      if (raf1) cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
     };
-    const ids = new Set(Array.from(cleared || []));
-    if (currentNode) ids.add(currentNode);
-    return Array.from(ids)
-      .filter((id) => nodes[id])
+  }, [routeStoryLog.length, screen, showRouteStory]);
+
+  const storyEntries = useMemo(() => {
+    const context = { heroName };
+    return routeStoryLog
       .map((id) => {
-        const depth = getDepth(id);
-        const label = nodes[id]?.label || id;
+        const scene = ROUTE_STORY_SCENE_BY_ID.get(id);
+        if (!scene) return null;
+        const paragraphs =
+          typeof scene.paragraphs === "function" ? scene.paragraphs(context) : scene.paragraphs;
+        const portraitsRaw =
+          typeof scene.portraits === "function" ? scene.portraits(context) : scene.portraits;
+        const portraitList = Array.isArray(portraitsRaw) ? portraitsRaw.filter(Boolean) : [];
         return {
-          id,
-          depth,
-          title: label,
-          summary: `${label} の出来事が、旅の記憶に刻まれた。`,
+          ...scene,
+          paragraphs: Array.isArray(paragraphs) ? paragraphs : [],
+          portraits: portraitList.filter((p) => p?.src),
         };
       })
-      .sort((a, b) => b.depth - a.depth);
-  }, [cleared, currentNode]);
+      .filter(Boolean);
+  }, [heroName, routeStoryLog]);
 
   useEffect(() => {
     if (screen !== "picross") {
@@ -3638,6 +3908,9 @@ export default function App() {
     updateHeroName(DEFAULT_HERO_NAME);
     localStorage.removeItem("routeNode");
     localStorage.removeItem("clearedNodes");
+    localStorage.removeItem(ROUTE_STORY_LOG_KEY);
+    setRouteStoryLog([]);
+    setRouteStoryAnimateIds(new Set());
     setCurrentNode("start");
     setLastNode("");
     setPendingNode(null);
@@ -4181,7 +4454,7 @@ export default function App() {
   };
 
   return (
-    <div className="app">
+    <div className={`app${screen === "route" ? " app-route" : ""}`}>
       {screen === "picross" && spellCinematic && (
         <div className={`spell-cinematic-overlay ${spellCinematic.theme}`}>
           <div className="spell-cinematic-backdrop" />
@@ -4506,23 +4779,71 @@ export default function App() {
               </button>
             </div>
             {showRouteStory ? (
-              <div className="route-story-list">
-                {storyEntries.length ? (
-                  storyEntries.map((entry, idx) => (
+              <div className="route-story-list" ref={routeStoryListRef}>
+                {storyEntries.map((entry, idx) => {
+                  const isLatest = idx === storyEntries.length - 1;
+                  const shouldAnimate = routeStoryAnimateIds.has(entry.id);
+                  return (
                     <div
                       key={entry.id}
-                      className={`route-story-item ${idx === 0 ? "latest" : ""}`}
+                      className={`route-story-item${isLatest ? " latest" : ""}${
+                        shouldAnimate ? " animate" : ""
+                      }`}
                     >
-                      <div className="route-story-meta">
-                        <span className="route-story-chapter">{entry.title}</span>
-                        <span className="route-story-node">{entry.id}</span>
+                      {entry.subtitle ? (
+                        <div className="route-story-subtitle">{entry.subtitle}</div>
+                      ) : null}
+                      {entry.portraits?.length ? (
+                        <div className="route-story-portraits">
+                          {entry.portraits.map((portrait, portraitIdx) => (
+                            <div
+                              key={`${entry.id}-portrait-${portraitIdx}`}
+                              className={`route-story-portrait${
+                                portrait.side ? ` ${portrait.side}` : ""
+                              }`}
+                            >
+                              <img
+                                src={portrait.src}
+                                alt={portrait.alt || ""}
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div className="route-story-body">
+                        {(() => {
+                          const charDelayMs = 28;
+                          const paragraphGapChars = 16;
+                          let charCursor = 0;
+                          return entry.paragraphs.map((para, pIdx) => {
+                            const content = para === "" ? "\u00a0" : para;
+                            const chars = Array.from(content);
+                            const startOffset = charCursor;
+                            charCursor += chars.length + paragraphGapChars;
+                            return (
+                              <p className="route-story-paragraph" key={`${entry.id}-p-${pIdx}`}>
+                                {chars.map((ch, cIdx) => {
+                                  const delay = (startOffset + cIdx) * charDelayMs;
+                                  return (
+                                    <span
+                                      key={`${entry.id}-c-${pIdx}-${cIdx}`}
+                                      className="story-char"
+                                      style={{ animationDelay: `${delay}ms` }}
+                                    >
+                                      {ch}
+                                    </span>
+                                  );
+                                })}
+                              </p>
+                            );
+                          });
+                        })()}
                       </div>
-                      <div className="route-story-summary">{entry.summary}</div>
                     </div>
-                  ))
-                ) : (
-                  <div className="route-story-empty">まだ記録がありません</div>
-                )}
+                  );
+                })}
               </div>
             ) : null}
           </aside>
