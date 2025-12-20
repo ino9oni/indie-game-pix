@@ -45,7 +45,7 @@ const ENDING_OPTIONS = [
   { id: "elf-true-ending", label: ROUTE.nodes["elf-true-ending"]?.label || "True Ending" },
   { id: "elf-bad-ending", label: ROUTE.nodes["elf-bad-ending"]?.label || "Bad Ending" },
 ];
-const DEBUG_MENU_BOUNDS = { width: 320, height: 360 };
+const DEBUG_MENU_BOUNDS = { width: 320, height: 520 };
 const DEFAULT_PUZZLES_PER_BATTLE = 2;
 const PUZZLES_PER_BATTLE_BY_NODE = {
   "elf-practice": 2,
@@ -82,6 +82,7 @@ const HERO_FULLBODY = assetPath("assets/img/character/hero/hero_fullbody.png");
 const ENDING_BACKGROUND_IMAGE = assetPath("assets/img/background/ending.png");
 const MAP_BACKGROUND_IMAGE = assetPath("assets/img/background/map.png");
 
+
 const GAMEPAD_BUTTON = {
   A: 0,
   B: 1,
@@ -103,6 +104,19 @@ const SPELL_THEME_MAP = {
   middle: "quake",
   hard: "venom",
   ultra: "inferno",
+};
+
+const createEffectDataUri = (from, to) => {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 900'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='${from}' stop-opacity='0.95'/><stop offset='100%' stop-color='${to}' stop-opacity='0.75'/></linearGradient></defs><rect width='1400' height='900' fill='url(%23g)'/><circle cx='320' cy='220' r='180' fill='${from}' fill-opacity='0.35'/><circle cx='1080' cy='640' r='220' fill='${to}' fill-opacity='0.28'/><path d='M160 520 Q420 360 720 440 T1280 360' stroke='${from}' stroke-width='48' stroke-opacity='0.32' fill='none' stroke-linecap='round'/><path d='M160 600 Q420 740 720 660 T1280 740' stroke='${to}' stroke-width='38' stroke-opacity='0.28' fill='none' stroke-linecap='round'/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
+const SPELL_EFFECT_IMAGES = {
+  radiant: createEffectDataUri("#3fe7ff", "#19e5c2"),
+  tide: createEffectDataUri("#4cc4ff", "#6f8dff"),
+  quake: createEffectDataUri("#cda37a", "#8c6239"),
+  venom: createEffectDataUri("#7d5cff", "#e75378"),
+  inferno: createEffectDataUri("#ff9c3f", "#ff3f6c"),
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -167,8 +181,188 @@ const ENEMY_AI_CONFIG = {
     targetCompletionRatio: 1,
     errorRate: 0.25,
     spellChance: 0.45,
+    spellMinDelay: 1500,
+    spellMaxDelay: 2500,
   },
 };
+
+const ROUTE_STORY_LOG_KEY = "routeStoryLog";
+
+const ROUTE_STORY_BASE_IDS = ["opening", "prologue", "gamestart"];
+
+const ROUTE_STORY_SCENES = [
+  {
+    id: "opening",
+    subtitle: "― 旅のはじまり ―",
+    paragraphs: ["エルフ達と心を通わせるピクロスの旅"],
+    portraits: () => [
+      {
+        side: "left",
+        src: HERO_IMAGES.smile,
+        alt: "セリア",
+      },
+    ],
+  },
+  {
+    id: "prologue",
+    subtitle: "― プロローグ ―",
+    paragraphs: [
+      "森深くに隠されたエルフの集落には、",
+      "古から伝わる知恵遊び「elfpix」が存在した。",
+      "",
+      "これは、森に宿る精霊の力を象った図形を浮かび上がらせる、",
+      "まるでピクロスのような試練。",
+      "",
+      "エルフは、森に迷い込んだ者にこの「elfpix」を課し、",
+      "正しく解き明かした者だけが先へ進むことが許された。",
+    ],
+    portraits: () => [
+      {
+        side: "left",
+        src: HERO_IMAGES.normal,
+        alt: "セリア",
+      },
+    ],
+  },
+  {
+    id: "gamestart",
+    subtitle: "― 森への旅立ち ―",
+    paragraphs: ({ heroName }) => [
+      "ここに一人の人間の若き旅人がいた。",
+      "その名を…",
+      `その名を「${heroName || DEFAULT_HERO_NAME}」といった。`,
+      "森の奥に眠る「古代の泉」にたどり着くために、エルフの森へ足を踏み入れようとしていた。",
+      "しかし、エルフの守り人たちから「elfpix」の挑戦を突きつけられてしまう。",
+      "主人公の知恵と洞察力が、森を抜ける唯一の鍵となる…。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.fullbody,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+    ],
+  },
+  {
+    id: "practice",
+    nodes: ["elf-practice"],
+    subtitle: "― 森の入口、知恵への第一歩 ―",
+    paragraphs: [
+      "森の入口で、セリアは初めて elfpix に触れる。",
+      "それは単なる遊戯ではなく、「形を読む力」「迷いを切り分ける思考」を映し出す古の知恵だった。",
+      "焦らず、急がず、答えを埋めるのではない。“なぜ、そこが空白であるのか”を考えること。",
+      "森の精霊たちは語る。elfpixとは、勝つための道具ではなく、自分の思考と向き合うための鏡なのだと。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.normal,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+      {
+        side: "right",
+        src: CHARACTERS["elf-practice"]?.images?.normal || null,
+        alt: CHARACTERS["elf-practice"]?.name || "敵",
+      },
+    ],
+  },
+  {
+    id: "easy",
+    nodes: ["elf-easy"],
+    subtitle: "― 慣れと油断、最初のつまずき ―",
+    paragraphs: [
+      "手つきは少しずつ慣れ、セリアは elfpix の“コツ”を掴み始める。",
+      "だが、森はやさしいだけではなかった。思い込みで線を引いた瞬間、盤面は静かに彼女を拒む。",
+      "「わかったつもり」になった時こそ、 elfpixは最も牙を剥く。",
+      "小さな失敗と立ち止まり。それでも、セリアは歩みを止めない。この森に進む意味を、まだ知らないまま。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.normal,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+      {
+        side: "right",
+        src: CHARACTERS["elf-easy"]?.images?.normal || null,
+        alt: CHARACTERS["elf-easy"]?.name || "敵",
+      },
+    ],
+  },
+  {
+    id: "middle",
+    nodes: ["elf-middle"],
+    subtitle: "― なぜ、私はここにいるのか ―",
+    paragraphs: [
+      "elfpixは問いかける。「なぜ、あなたはここまで来たのか？」",
+      "刻印の広間で待つ強敵との対峙は、単なる勝負ではなく、セリア自身の内面を映し出す試練だった。",
+      "正解を探す指が、いつしか自分自身を探していることに気づく。",
+      "elfpixは知恵比べであり、同時に “生き方の選択” でもあった。彼女は初めて理解する。これは避けられない旅なのだ、と。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.normal,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+      {
+        side: "right",
+        src: CHARACTERS["elf-middle"]?.images?.normal || null,
+        alt: CHARACTERS["elf-middle"]?.name || "敵",
+      },
+    ],
+  },
+  {
+    id: "hard",
+    nodes: ["elf-hard"],
+    subtitle: "― 強大さと慢心の境界 ―",
+    paragraphs: [
+      "解ける。進める。勝てる。",
+      "そんな感覚が芽生えた時、森はさらに深い影を落とす。相手は強大で、elfpixは一切の妥協を許さない。",
+      "焦りと慢心は、同じ罠の両側に口を開けている。",
+      "セリアは一度、深く息を吸う。ここまで来られた理由を思い出すために。勝ち続けるためではない。誠実に考え続けるために。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.angry,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+      {
+        side: "right",
+        src: CHARACTERS["elf-hard"]?.images?.angry || CHARACTERS["elf-hard"]?.images?.normal || null,
+        alt: CHARACTERS["elf-hard"]?.name || "敵",
+      },
+    ],
+  },
+  {
+    id: "ultra",
+    nodes: ["elf-ultra"],
+    subtitle: "― 知恵の集大成、最後の一手 ―",
+    paragraphs: [
+      "森の最奥。そこにある elfpix は、もはや盤面ではなく、世界そのものだった。",
+      "圧倒的な複雑さ。一手の重み。失敗すれば、すべてが崩れる。",
+      "それでも、セリアは目を逸らさない。これまで積み重ねてきた迷い、失敗、理解、沈黙――すべてが、今ここに繋がっている。",
+      "逃げ場はない。だが、答えは必ずある。elfpixが試すのは、知識ではない。諦めず、考え続ける意志そのものなのだから。",
+    ],
+    portraits: ({ heroName }) => [
+      {
+        side: "left",
+        src: HERO_IMAGES.angry,
+        alt: heroName || DEFAULT_HERO_NAME,
+      },
+      {
+        side: "right",
+        src: CHARACTERS["elf-ultra"]?.images?.angry || CHARACTERS["elf-ultra"]?.images?.normal || null,
+        alt: CHARACTERS["elf-ultra"]?.name || "敵",
+      },
+    ],
+  },
+];
+const ROUTE_STORY_SCENE_BY_ID = new Map(
+  ROUTE_STORY_SCENES.map((scene) => [scene.id, scene]),
+);
+const STORY_PAUSE_MS = 900;
 
 const SPELL_SPEECH_DURATION = 1200;
 const SPELL_BOARD_FOCUS_DELAY = 1100;
@@ -420,6 +614,8 @@ const DEFAULT_ENEMY_CONFIG = {
   errorRate: 0.08,
   targetCompletionRatio: 1,
   spellChance: 0.5,
+  spellMinDelay: 1500,
+  spellMaxDelay: 2500,
 };
 
 const ENEMY_AI_PRESETS = {
@@ -434,24 +630,32 @@ const ENEMY_AI_PRESETS = {
     successRate: 0.9,
     errorRate: 0.1,
     spellChance: 0.35,
+    spellMinDelay: 1500,
+    spellMaxDelay: 2500,
   },
   middle: {
     intervalRange: [4000, 9000],
     successRate: 0.82,
     errorRate: 0.16,
     spellChance: 0.4,
+    spellMinDelay: 1800,
+    spellMaxDelay: 2600,
   },
   hard: {
     intervalRange: [600, 2000],
     successRate: 0.9,
     errorRate: 0.15,
     spellChance: 0.45,
+    spellMinDelay: 1400,
+    spellMaxDelay: 2200,
   },
   ultra: {
     intervalRange: [1200, 2200],
     successRate: 0.9,
     errorRate: 0.08,
     spellChance: 0.6,
+    spellMinDelay: 1200,
+    spellMaxDelay: 2000,
   },
 };
 
@@ -554,6 +758,21 @@ function readStoredClearedSet() {
     return new Set(normalized);
   } catch {
     return new Set();
+  }
+}
+
+function readStoredRouteStoryLog() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(ROUTE_STORY_LOG_KEY) || "null");
+    if (!Array.isArray(raw)) return null;
+    const cleaned = raw.filter((id) => typeof id === "string" && id.trim());
+    if (!cleaned.length) return null;
+    if (cleaned.length !== raw.length) {
+      localStorage.setItem(ROUTE_STORY_LOG_KEY, JSON.stringify(cleaned));
+    }
+    return cleaned;
+  } catch {
+    return null;
   }
 }
 
@@ -715,6 +934,29 @@ function countCorrectFilled(grid, solution) {
   return count;
 }
 
+function buildProgressGrid(solution, ratio) {
+  if (!Array.isArray(solution) || !solution.length) return [];
+  const size = solution.length;
+  const targets = [];
+  for (let r = 0; r < solution.length; r += 1) {
+    for (let c = 0; c < solution[r].length; c += 1) {
+      if (solution[r][c]) {
+        targets.push({ r, c });
+      }
+    }
+  }
+  const total = targets.length;
+  if (!total) return emptyGrid(size);
+  const clamped = Math.max(0, Math.min(1, ratio));
+  const targetCount = Math.max(0, Math.floor(total * clamped));
+  const picks = shuffle(targets).slice(0, targetCount);
+  const next = emptyGrid(size);
+  picks.forEach(({ r, c }) => {
+    next[r][c] = 1;
+  });
+  return next;
+}
+
 function hashGrid(grid) {
   if (!Array.isArray(grid)) return "";
   return grid
@@ -830,6 +1072,112 @@ function applyDeterministicEnemyStep(grid, solution) {
   }
   next[pick.r][pick.c] = -1;
   return { changed: true, next, filled: [] };
+}
+
+function applyLineCompletions(grid, solution) {
+  let changed = false;
+  const size = solution.length;
+  const next = grid.map((row) => row.slice());
+  // rows
+  for (let r = 0; r < size; r += 1) {
+    const rowSolution = solution[r] || [];
+    const rowState = next[r] || [];
+    const allFilled = rowSolution.every(
+      (cell, c) => !cell || rowState[c] === 1 || rowState[c] === 2,
+    );
+    if (allFilled) {
+      for (let c = 0; c < size; c += 1) {
+        if (!rowSolution[c] && rowState[c] === 0) {
+          next[r][c] = -1;
+          changed = true;
+        }
+      }
+    }
+  }
+  // cols
+  for (let c = 0; c < size; c += 1) {
+    let allFilled = true;
+    for (let r = 0; r < size; r += 1) {
+      const shouldFill = solution[r]?.[c];
+      const val = next[r]?.[c];
+      if (shouldFill && val !== 1 && val !== 2) {
+        allFilled = false;
+        break;
+      }
+    }
+    if (!allFilled) continue;
+    for (let r = 0; r < size; r += 1) {
+      if (!solution[r]?.[c] && next[r]?.[c] === 0) {
+        next[r][c] = -1;
+        changed = true;
+      }
+    }
+  }
+  return { changed, next };
+}
+
+function hasContradiction(grid, solution) {
+  for (let r = 0; r < solution.length; r += 1) {
+    for (let c = 0; c < solution.length; c += 1) {
+      const shouldFill = !!solution[r]?.[c];
+      const val = grid?.[r]?.[c];
+      if (val === 1 && !shouldFill) return true;
+      if (val === -1 && shouldFill) return true;
+    }
+  }
+  return false;
+}
+
+function validateEnemyGrid(grid, solution) {
+  if (!Array.isArray(solution) || !solution.length) {
+    return { next: grid, corrections: 0, filledAdd: 0, filledDeduct: 0 };
+  }
+  let corrected = 0;
+  let filledAdd = 0;
+  let filledDeduct = 0;
+  const next = grid.map((row) => row.slice());
+  for (let r = 0; r < solution.length; r += 1) {
+    for (let c = 0; c < solution.length; c += 1) {
+      const val = next?.[r]?.[c];
+      const shouldFill = !!solution[r]?.[c];
+      if (val === 2) {
+        if (shouldFill) {
+          next[r][c] = 1;
+          corrected += 1;
+          filledAdd += 1;
+        } else {
+          next[r][c] = 0;
+          corrected += 1;
+        }
+        continue;
+      }
+      if (val === 1 && !shouldFill) {
+        next[r][c] = 0;
+        corrected += 1;
+        filledDeduct += 1;
+      } else if (val === -1 && shouldFill) {
+        next[r][c] = 0;
+        corrected += 1;
+      }
+    }
+  }
+  return { next, corrections: corrected, filledAdd, filledDeduct };
+}
+
+function normalizeEnemyGrid(grid, solution) {
+  const size = Array.isArray(solution) ? solution.length : 0;
+  if (!size) return grid;
+  if (!Array.isArray(grid) || !grid.length) return emptyGrid(size);
+  const next = grid.map((row) => {
+    if (!Array.isArray(row) || row.length !== size) {
+      return Array.from({ length: size }, () => 0);
+    }
+    return row.slice(0, size);
+  });
+  while (next.length < size) {
+    next.push(Array.from({ length: size }, () => 0));
+  }
+  return next;
 }
 
 function resolveSpellTheme(difficulty) {
@@ -1098,6 +1446,20 @@ export default function App() {
   const [spellCinematic, setSpellCinematic] = useState(null);
   const [conversationTransition, setConversationTransition] = useState("none");
   const [postClearAction, setPostClearAction] = useState(null);
+  const [showRouteStory, setShowRouteStory] = useState(() => {
+    try {
+      return localStorage.getItem("routeStoryVisible") !== "0";
+    } catch {
+      return true;
+    }
+  });
+  const [routeStoryLog, setRouteStoryLog] = useState(() => {
+    const stored = readStoredRouteStoryLog();
+    return stored || [];
+  });
+  const [routeStoryAnimateIds, setRouteStoryAnimateIds] = useState(() => {
+    return new Set();
+  });
   const [glyphCollection, setGlyphCollection] = useState(
     () => glyphStorageRef.current.collectionSet,
   );
@@ -1175,6 +1537,35 @@ export default function App() {
     });
   }, []);
 
+  const setComboCount = useCallback((side, nextCount) => {
+    setComboState((prev) => {
+      const current = prev[side] || createComboTrack();
+      const sanitized = Math.max(0, nextCount);
+      const shouldShow = sanitized >= 2;
+      const readyStages = computeReadyStages(sanitized, current.readyStages);
+      return {
+        ...prev,
+        [side]: {
+          count: sanitized,
+          show: shouldShow || readyStages.length > 0,
+          label: sanitized,
+          pulse: shouldShow ? current.pulse + 1 : current.pulse,
+          readyStages,
+        },
+      };
+    });
+  }, []);
+
+  const setComboToMax = useCallback(
+    (side) => {
+      const stages = getStageSet(side, battleNode);
+      const thresholds = stages.map((stage) => getStageThreshold(stage.id)).filter(Number.isFinite);
+      const maxThreshold = thresholds.length ? Math.max(...thresholds) : 0;
+      setComboCount(side, maxThreshold);
+    },
+    [battleNode, setComboCount],
+  );
+
   const lockBoard = useCallback((side, duration = 1200) => {
     boardLocksRef.current = { ...boardLocksRef.current, [side]: true };
     setBoardLocks((prev) => {
@@ -1237,6 +1628,7 @@ export default function App() {
           : CHARACTERS[battleNode]?.images?.angry || HERO_IMAGES.angry);
       const nodeDifficulty = CHARACTERS[battleNode]?.difficulty || level;
       const theme = resolveSpellTheme(nodeDifficulty);
+      const effectImage = payload?.effectImage || SPELL_EFFECT_IMAGES[theme] || null;
       const impactCells = Array.isArray(payload?.impactCells) ? payload.impactCells : [];
       const boardSize = payload?.boardSize || 10;
       // Expand impact cells to a small halo so近傍セルも光る
@@ -1264,6 +1656,7 @@ export default function App() {
         name: payload?.name || "Spell",
         description: payload?.description || "",
         speech: speechText || "",
+        effectImage,
         impact: impactCells,
         impactHalo: haloCells,
         boardSize,
@@ -1325,6 +1718,8 @@ export default function App() {
       const effect = resolveStageEffect(stageId, size);
       const affected = new Set();
       const coords = [];
+      let nextEnemyGrid = null;
+
       const register = (r, c) => {
         if (r < 0 || r >= size || c < 0 || c >= size) return;
         const key = `${r}-${c}`;
@@ -1371,8 +1766,19 @@ export default function App() {
               next[r][c] = 0;
             }
           });
+          nextEnemyGrid = next;
           return next;
         });
+        if (nextEnemyGrid) {
+          enemyGridRef.current = nextEnemyGrid;
+          const total =
+            enemySolutionRef.current?.reduce(
+              (acc, row) => acc + row.filter(Boolean).length,
+              0,
+            ) || 0;
+          const filled = countCorrectFilled(nextEnemyGrid, enemySolutionRef.current || []);
+          enemyProgressRef.current = { filled, total };
+        }
         if (removalQueue.length) {
           enemyProgressRef.current.filled = Math.max(
             0,
@@ -1525,8 +1931,16 @@ export default function App() {
   const enemyCastingRef = useRef(false);
   const enemyOrderRef = useRef({ list: [], index: 0 });
   const puzzleSolvedRef = useRef(false);
+  const enemyPuzzleSolvedRef = useRef(false);
+  const enemyGuessStackRef = useRef([]);
+  const enemyGuessBlacklistRef = useRef(new Set());
+  const enemyStallCountRef = useRef(0);
+  const enemyRetryRef = useRef(0);
+  const enemyNoProgressRef = useRef(0);
+  const enemyFailSafeRef = useRef(0);
   const enemySolutionRef = useRef([]);
   const [enemySolutionVersion, setEnemySolutionVersion] = useState(0);
+  const [enemyClues, setEnemyClues] = useState({ rows: [], cols: [] });
 
   useEffect(() => {
     gamepadCursorRef.current = gamepadCursor;
@@ -2110,6 +2524,10 @@ export default function App() {
     clearSpellEffects();
     setActiveSpell(null);
     puzzleSolvedRef.current = false;
+    enemyPuzzleSolvedRef.current = false;
+    enemyGuessStackRef.current = [];
+    enemyGuessBlacklistRef.current = new Set();
+    enemyStallCountRef.current = 0;
     setProjectiles([]);
     resetAllCombos();
     glyphUnlocksRef.current = new Map();
@@ -2173,6 +2591,7 @@ export default function App() {
     };
     const enemySolution = enemyFirstSolution.map((row) => row.slice());
     enemySolutionRef.current = enemySolution;
+    setEnemyClues(computeClues(enemySolution));
     enemyProgressRef.current = {
       filled: 0,
       total: enemySolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
@@ -2182,6 +2601,10 @@ export default function App() {
     setEnemySolutionVersion((v) => v + 1);
     setPlayerWins(0);
     setEnemyWins(0);
+    enemyGuessStackRef.current = [];
+    enemyGuessBlacklistRef.current = new Set();
+    enemyStallCountRef.current = 0;
+    enemyRetryRef.current = 0;
 
     setEndingNode(null);
     setStartedAt(Date.now());
@@ -2239,6 +2662,14 @@ export default function App() {
       const n = nextSolution.length;
       stopEnemySolver();
       enemySolutionRef.current = nextSolution;
+      enemyPuzzleSolvedRef.current = false;
+      setEnemyClues(computeClues(nextSolution));
+      enemyGuessStackRef.current = [];
+      enemyGuessBlacklistRef.current = new Set();
+      enemyStallCountRef.current = 0;
+      enemyRetryRef.current = 0;
+      enemyNoProgressRef.current = 0;
+      enemyFailSafeRef.current = 0;
       enemyProgressRef.current = {
         filled: 0,
         total: nextSolution.reduce((acc, row) => acc + row.filter(Boolean).length, 0),
@@ -2383,6 +2814,80 @@ export default function App() {
     closeDebugMenu();
     enterEnding(nodeId);
   };
+
+  const handleDebugComboIncrement = useCallback(
+    (side) => {
+      closeDebugMenu();
+      incrementCombo(side);
+    },
+    [closeDebugMenu, incrementCombo],
+  );
+
+  const handleDebugComboMax = useCallback(
+    (side) => {
+      closeDebugMenu();
+      setComboToMax(side);
+    },
+    [closeDebugMenu, setComboToMax],
+  );
+
+  const handleDebugFillBoard = useCallback(
+    (side) => {
+      closeDebugMenu();
+      const targetSolution = side === "hero" ? solution : enemySolutionRef.current;
+      if (!Array.isArray(targetSolution) || !targetSolution.length) return;
+      const nextGrid = buildProgressGrid(targetSolution, 0.9);
+      if (side === "hero") {
+        setGrid(nextGrid);
+        return;
+      }
+      setEnemyGrid(nextGrid);
+      enemyGridRef.current = nextGrid;
+      enemyProgressRef.current.filled = countCorrectFilled(nextGrid, targetSolution);
+      enemyOrderRef.current = { list: buildEnemyOrder(nextGrid, targetSolution), index: 0 };
+      enemyGuessBlacklistRef.current = new Set();
+      enemyGuessStackRef.current = [];
+      enemyStallCountRef.current = 0;
+      enemyRetryRef.current = 0;
+      enemyNoProgressRef.current = 0;
+      enemyFailSafeRef.current = 0;
+    },
+    [closeDebugMenu, solution],
+  );
+
+  const handleDebugAdvancePuzzle = useCallback(
+    (side) => {
+      closeDebugMenu();
+      if (screen !== "picross") return;
+      const total =
+        puzzleSequence.length || enemyPuzzleSequence.length || getPuzzleGoalForNode(battleNode);
+      if (!total) return;
+      if (side === "hero") {
+        const nextWins = Math.min(playerWins + 1, total);
+        if (nextWins === playerWins) return;
+        setPlayerWins(nextWins);
+        if (nextWins >= total) return;
+        loadHeroPuzzle(nextWins);
+        return;
+      }
+      const nextWins = Math.min(enemyWins + 1, total);
+      if (nextWins === enemyWins) return;
+      setEnemyWins(nextWins);
+      if (nextWins >= total) return;
+      loadEnemyPuzzle(nextWins);
+    },
+    [
+      battleNode,
+      closeDebugMenu,
+      enemyPuzzleSequence.length,
+      enemyWins,
+      loadEnemyPuzzle,
+      loadHeroPuzzle,
+      playerWins,
+      puzzleSequence.length,
+      screen,
+    ],
+  );
 
   function handleEndingComplete() {
     cancelCelebration();
@@ -2595,6 +3100,17 @@ export default function App() {
   }
 
   const handleEnemyPuzzleClear = useCallback(() => {
+    const enemyGridSnapshot = enemyGridRef.current;
+    const enemySolutionSnapshot = enemySolutionRef.current;
+    if (
+      !Array.isArray(enemySolutionSnapshot) ||
+      !enemySolutionSnapshot.length ||
+      !equalsSolution(enemyGridSnapshot || [], enemySolutionSnapshot)
+    ) {
+      return;
+    }
+    if (enemyPuzzleSolvedRef.current) return;
+    enemyPuzzleSolvedRef.current = true;
     const totalNeeded =
       enemyPuzzleSequence.length || puzzleSequence.length || getPuzzleGoalForNode(battleNode);
     const nextWins = enemyWins + 1;
@@ -2816,6 +3332,14 @@ export default function App() {
     setEnemyPuzzleSequence([]);
     setHeroPuzzleIndex(0);
     enemySolutionRef.current = [];
+    enemyPuzzleSolvedRef.current = false;
+    enemyGuessStackRef.current = [];
+    enemyGuessBlacklistRef.current = new Set();
+    enemyStallCountRef.current = 0;
+    enemyRetryRef.current = 0;
+    enemyNoProgressRef.current = 0;
+    enemyFailSafeRef.current = 0;
+    setEnemyClues({ rows: [], cols: [] });
     setEnemySolutionVersion((v) => v + 1);
     setPendingNode(null);
     setBattleNode(null);
@@ -2866,6 +3390,118 @@ export default function App() {
   }, [enemyGrid]);
 
   const enemyReadyStages = comboState.enemy?.readyStages || [];
+  const enemyReadyCount = comboState.enemy?.count || 0;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("routeStoryVisible", showRouteStory ? "1" : "0");
+    } catch {}
+  }, [showRouteStory]);
+
+  const previousScreenRef = useRef(screen);
+  useEffect(() => {
+    const previous = previousScreenRef.current;
+    previousScreenRef.current = screen;
+    if (previous === "route" && screen !== "route") {
+      setRouteStoryAnimateIds(new Set());
+    }
+  }, [screen]);
+
+  const previousRouteStoryVisibleRef = useRef(showRouteStory);
+  useEffect(() => {
+    const previous = previousRouteStoryVisibleRef.current;
+    previousRouteStoryVisibleRef.current = showRouteStory;
+    if (previous && !showRouteStory) {
+      setRouteStoryAnimateIds(new Set());
+    }
+  }, [showRouteStory]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ROUTE_STORY_LOG_KEY, JSON.stringify(routeStoryLog));
+    } catch {}
+  }, [routeStoryLog]);
+
+  const routeStoryListRef = useRef(null);
+
+  const eligibleStorySceneIds = useMemo(() => {
+    const eligibleNodes = new Set();
+    (cleared || new Set()).forEach((id) => eligibleNodes.add(normalizeNodeId(id)));
+    if (!eligibleNodes.size) return [];
+
+    const ids = [];
+    ROUTE_STORY_SCENES.forEach((scene) => {
+      if (!scene?.nodes?.length) return;
+      if (scene.nodes.some((nodeId) => eligibleNodes.has(nodeId))) {
+        ids.push(scene.id);
+      }
+    });
+    return ids;
+  }, [cleared]);
+
+  useEffect(() => {
+    if (screen !== "route") return;
+    const hasProgress = eligibleStorySceneIds.length > 0;
+    const baseIds = hasProgress
+      ? ROUTE_STORY_BASE_IDS.filter((id) => ROUTE_STORY_SCENE_BY_ID.has(id))
+      : [];
+    const next = [...baseIds, ...eligibleStorySceneIds.filter((id) => ROUTE_STORY_SCENE_BY_ID.has(id))];
+    const previous = routeStoryLog || [];
+    const previousSet = new Set(previous);
+    const newlyAdded = next.filter((id) => !previousSet.has(id));
+
+    const isSame =
+      next.length === routeStoryLog.length && next.every((id, idx) => id === routeStoryLog[idx]);
+    if (!isSame) {
+      setRouteStoryLog(next);
+    }
+    if (newlyAdded.length) {
+      setRouteStoryAnimateIds((prev) => {
+        const updated = new Set(prev);
+        newlyAdded.forEach((id) => updated.add(id));
+        return updated;
+      });
+    }
+  }, [cleared, eligibleStorySceneIds, routeStoryLog, screen]);
+
+  useEffect(() => {
+    if (screen !== "route") return;
+    if (!showRouteStory) return;
+    const el = routeStoryListRef.current;
+    if (!el) return;
+    let raf1 = null;
+    let raf2 = null;
+    raf1 = requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+      raf2 = requestAnimationFrame(() => {
+        el.scrollTop = el.scrollHeight;
+      });
+    });
+    return () => {
+      if (raf1) cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [routeStoryLog.length, screen, showRouteStory]);
+
+  const storyEntries = useMemo(() => {
+    const context = { heroName };
+    return routeStoryLog
+      .map((id) => {
+        const scene = ROUTE_STORY_SCENE_BY_ID.get(id);
+        if (!scene) return null;
+        const paragraphs =
+          typeof scene.paragraphs === "function" ? scene.paragraphs(context) : scene.paragraphs;
+        const portraitsRaw =
+          typeof scene.portraits === "function" ? scene.portraits(context) : scene.portraits;
+        const portraitList = Array.isArray(portraitsRaw) ? portraitsRaw.filter(Boolean) : [];
+        return {
+          ...scene,
+          paragraphs: Array.isArray(paragraphs) ? paragraphs : [],
+          portraits: portraitList.filter((p) => p?.src),
+        };
+      })
+      .filter(Boolean);
+  }, [heroName, routeStoryLog]);
 
   useEffect(() => {
     if (screen !== "picross") {
@@ -2884,7 +3520,11 @@ export default function App() {
     if (enemyCastingRef.current) return undefined;
     const enemyConfig = battleNode ? getEnemyAiConfig(battleNode) : DEFAULT_ENEMY_CONFIG;
     const spellChance = enemyConfig.spellChance ?? 1;
-    if (Math.random() > spellChance) {
+    const maxDelay = enemyConfig.spellMaxDelay ?? 2500;
+    const minDelay = enemyConfig.spellMinDelay ?? 1500;
+    const delay = Math.max(minDelay, Math.min(maxDelay, minDelay + Math.random() * (maxDelay - minDelay)));
+    const roll = Math.random();
+    if (roll > spellChance) {
       return undefined;
     }
     enemyCastingRef.current = true;
@@ -2901,7 +3541,7 @@ export default function App() {
       triggerComboStage("enemy", stageId);
       enemyCastingRef.current = false;
       enemyStageCooldownRef.current = null;
-    }, 600);
+    }, delay);
     return () => {
       if (enemyStageCooldownRef.current) {
         clearTimeout(enemyStageCooldownRef.current);
@@ -2923,6 +3563,7 @@ export default function App() {
       setEnemyPuzzleSequence([]);
       setHeroPuzzleIndex(0);
       enemySolutionRef.current = [];
+      setEnemyClues({ rows: [], cols: [] });
       setEnemySolutionVersion((v) => v + 1);
       setPlayerWins(0);
       setEnemyWins(0);
@@ -2949,7 +3590,9 @@ export default function App() {
       filled: 0,
       total: coords.length,
     };
-    setEnemyGrid(emptyGrid(enemySolution.length));
+    if (enemySolution.length > 0) {
+      setEnemyGrid(emptyGrid(enemySolution.length));
+    }
     stopEnemySolver();
 
     const nextDelay = () => {
@@ -2960,7 +3603,34 @@ export default function App() {
       return Math.max(120, config.interval || 1000);
     };
 
+    const snapshotEnemyState = () => ({
+      grid: enemyGridRef.current.map((row) => row.slice()),
+      filled: enemyProgressRef.current.filled,
+      order: { ...enemyOrderRef.current },
+      blacklist: new Set(enemyGuessBlacklistRef.current),
+    });
+
+    const restoreEnemySnapshot = (snap) => {
+      setEnemyGrid(snap.grid);
+      enemyGridRef.current = snap.grid;
+      enemyProgressRef.current.filled = snap.filled;
+      enemyOrderRef.current = { ...snap.order };
+      enemyGuessBlacklistRef.current = new Set(snap.blacklist);
+    };
+
     const tick = () => {
+      const size = enemySolution.length;
+      if (!size) {
+        enemyFailSafeRef.current += 1;
+        if (enemyFailSafeRef.current >= 2) {
+          stopEnemySolver();
+          loadEnemyPuzzle(enemyWins);
+          enemyFailSafeRef.current = 0;
+          return;
+        }
+        enemySolverRef.current = setTimeout(tick, nextDelay());
+        return;
+      }
       if (boardLocksRef.current.enemy) {
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
@@ -2970,26 +3640,52 @@ export default function App() {
         stopEnemySolver();
         return;
       }
+      let progressMade = false;
+
       // deterministic deduction step
       const hasProgress =
         enemyGridRef.current &&
         enemyGridRef.current.some((row) => row && row.some((cell) => cell !== 0));
       if (hasProgress) {
-        const { changed, next, filled } = applyDeterministicEnemyStep(
-          enemyGridRef.current,
-          enemySolution,
-        );
+        const safeGrid = normalizeEnemyGrid(enemyGridRef.current, enemySolution);
+        enemyGridRef.current = safeGrid;
+        const { changed, next, filled } = applyDeterministicEnemyStep(safeGrid, enemySolution);
         if (changed) {
           setEnemyGrid(next);
           enemyProgressRef.current.filled += filled.length;
           enemyGridRef.current = next;
           enemyOrderRef.current = { list: buildEnemyOrder(next, enemySolution), index: 0 };
+          const completion = applyLineCompletions(next, enemySolution);
+          if (completion.changed) {
+            setEnemyGrid(completion.next);
+            enemyGridRef.current = completion.next;
+            enemyOrderRef.current = {
+              list: buildEnemyOrder(completion.next, enemySolution),
+              index: 0,
+            };
+          }
+          const validation = validateEnemyGrid(enemyGridRef.current, enemySolution);
+          if (validation.corrections > 0) {
+            const adjusted = validation.next;
+            setEnemyGrid(adjusted);
+            enemyGridRef.current = adjusted;
+            enemyProgressRef.current.filled = Math.max(
+              0,
+              enemyProgressRef.current.filled - validation.filledDeduct + validation.filledAdd,
+            );
+            enemyOrderRef.current = { list: buildEnemyOrder(adjusted, enemySolution), index: 0 };
+            enemyRetryRef.current += 1;
+          } else {
+            enemyRetryRef.current = 0;
+          }
+          progressMade = true;
+          enemyStallCountRef.current = 0;
           const targetRatio = config.targetCompletionRatio || 1;
           const progressRatio =
             enemyProgressRef.current.total > 0
               ? enemyProgressRef.current.filled / enemyProgressRef.current.total
               : 1;
-          if (progressRatio >= targetRatio) {
+          if (progressRatio >= targetRatio && equalsSolution(enemyGridRef.current, enemySolution)) {
             stopEnemySolver();
             handleEnemyPuzzleClear();
             return;
@@ -2999,18 +3695,61 @@ export default function App() {
         }
       }
 
+      const completionOnly = applyLineCompletions(enemyGridRef.current, enemySolution);
+      if (completionOnly.changed) {
+        setEnemyGrid(completionOnly.next);
+        enemyGridRef.current = completionOnly.next;
+        enemyOrderRef.current = {
+          list: buildEnemyOrder(completionOnly.next, enemySolution),
+          index: 0,
+        };
+        const validation = validateEnemyGrid(enemyGridRef.current, enemySolution);
+        if (validation.corrections > 0) {
+          const adjusted = validation.next;
+          setEnemyGrid(adjusted);
+          enemyGridRef.current = adjusted;
+          enemyProgressRef.current.filled = Math.max(
+            0,
+            enemyProgressRef.current.filled - validation.filledDeduct + validation.filledAdd,
+          );
+          enemyOrderRef.current = { list: buildEnemyOrder(adjusted, enemySolution), index: 0 };
+          enemyRetryRef.current += 1;
+        } else {
+          enemyRetryRef.current = 0;
+        }
+        progressMade = true;
+        enemyStallCountRef.current = 0;
+        const targetRatio = config.targetCompletionRatio || 1;
+        const progressRatio =
+          enemyProgressRef.current.total > 0
+            ? enemyProgressRef.current.filled / enemyProgressRef.current.total
+            : 1;
+        if (progressRatio >= targetRatio && equalsSolution(enemyGridRef.current, enemySolution)) {
+          stopEnemySolver();
+          handleEnemyPuzzleClear();
+          return;
+        }
+        enemySolverRef.current = setTimeout(tick, nextDelay());
+        return;
+      }
+
       let state = enemyOrderRef.current;
       if (!state.list.length || state.index >= state.list.length) {
         const refreshed = buildEnemyOrder(enemyGridRef.current, enemySolution);
-        state = { list: refreshed, index: 0 };
+        state = {
+          list: refreshed.filter(
+            ({ r, c }) => !enemyGuessBlacklistRef.current.has(`${r},${c}`),
+          ),
+          index: 0,
+        };
         enemyOrderRef.current = state;
-        if (!refreshed.length) {
+        if (!state.list.length) {
           const targetRatio = config.targetCompletionRatio || 1;
           const progressRatio =
             enemyProgressRef.current.total > 0
               ? enemyProgressRef.current.filled / enemyProgressRef.current.total
               : 1;
-          if (progressRatio >= targetRatio) {
+          if (progressRatio >= targetRatio && equalsSolution(enemyGridRef.current, enemySolution)) {
             stopEnemySolver();
             handleEnemyPuzzleClear();
           } else {
@@ -3019,45 +3758,190 @@ export default function App() {
           return;
         }
       }
-      const target = state.list[state.index];
-      state.index += 1;
-      const successRate = config.successRate ?? 1;
-      if (Math.random() > successRate) {
+      const filteredList = state.list.filter(
+        ({ r, c }) => !enemyGuessBlacklistRef.current.has(`${r},${c}`),
+      );
+      const hasMaybe = enemyGridRef.current.some((row) => row?.some((cell) => cell === 2));
+      if (!filteredList.length || hasMaybe) {
+        enemyStallCountRef.current += 1;
+        const validation = validateEnemyGrid(enemyGridRef.current, enemySolution);
+        if (validation.corrections > 0) {
+          const adjusted = validation.next;
+          const normalized = normalizeEnemyGrid(adjusted, enemySolution);
+          setEnemyGrid(normalized);
+          enemyGridRef.current = normalized;
+          enemyProgressRef.current.filled = Math.max(
+            0,
+            enemyProgressRef.current.filled - validation.filledDeduct + validation.filledAdd,
+          );
+          enemyOrderRef.current = { list: buildEnemyOrder(normalized, enemySolution), index: 0 };
+          enemyRetryRef.current += 1;
+          enemyStallCountRef.current = 0;
+          enemySolverRef.current = setTimeout(tick, nextDelay());
+          return;
+        }
+        if (enemyStallCountRef.current >= 3 || hasMaybe) {
+          enemyGuessBlacklistRef.current.clear();
+          const cleaned = normalizeEnemyGrid(
+            enemyGridRef.current.map((row) => row.map((cell) => (cell === 2 ? 0 : cell))),
+            enemySolution,
+          );
+          setEnemyGrid(cleaned);
+          enemyGridRef.current = cleaned;
+          const rebuilt = buildEnemyOrder(cleaned, enemySolution);
+          enemyOrderRef.current = { list: rebuilt, index: 0 };
+          enemyGuessStackRef.current = [];
+          enemyStallCountRef.current = 0;
+          enemyRetryRef.current = 0;
+          // 強制埋め（ヒントに合う真のセルをランダムに1つ埋める）
+          const trueCells = shuffle(
+            enemySolution.flatMap((row, r) =>
+              row.map((cell, c) => ({ r, c, cell })).filter(({ cell }) => cell),
+            ),
+          ).filter(({ r, c }) => enemyGridRef.current?.[r]?.[c] !== 1);
+          const pick = trueCells[0];
+          if (pick) {
+            const forced = enemyGridRef.current.map((row) => row.slice());
+            forced[pick.r][pick.c] = 1;
+            setEnemyGrid(forced);
+            enemyGridRef.current = forced;
+            enemyProgressRef.current.filled += 1;
+            enemyOrderRef.current = { list: buildEnemyOrder(forced, enemySolution), index: 0 };
+          }
+        }
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
-      if (Math.random() < (config.errorRate || 0)) {
+      const target = filteredList[state.index % filteredList.length];
+      state.index += 1;
+      const forceAccurate = enemyStallCountRef.current >= 3;
+      const successRate = forceAccurate ? 1 : config.successRate ?? 1;
+      const errorRate = forceAccurate ? 0 : config.errorRate || 0;
+      if (Math.random() > successRate) {
+        enemyStallCountRef.current += 1;
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
       const { r, c } = target;
       let placed = false;
-      setEnemyGrid((prev) => {
-        if (prev[r]?.[c] === 1) return prev;
-        const next = prev.length ? prev.map((row) => row.slice()) : emptyGrid(enemySolution.length);
-        next[r][c] = 1;
-        placed = true;
-        return next;
-      });
-      if (placed) {
-        incrementCombo("enemy");
+      const snap = snapshotEnemyState();
+      enemyGuessStackRef.current.push(snap);
+      if (enemyGuessStackRef.current.length > 4) {
+        enemyGuessStackRef.current.shift();
       }
-      enemyProgressRef.current.filled += 1;
+      const shouldFill = !!enemySolution[r]?.[c];
+      const willErr = Math.random() < errorRate;
+      let intendedValue = 1;
+      if (shouldFill) {
+        intendedValue = willErr ? 2 : 1; // 2 = maybe as暫定メモ
+      } else {
+        intendedValue = willErr ? 1 : -1; // 誤答なら誤って埋める、正なら×
+      }
+      const nextGrid =
+        enemyGridRef.current.length > 0
+          ? enemyGridRef.current.map((row) => row.slice())
+          : emptyGrid(enemySolution.length);
+      if (nextGrid[r]?.[c] !== 1) {
+        nextGrid[r][c] = intendedValue;
+        placed = true;
+      }
+      if (!placed) {
+        enemyGuessStackRef.current.pop();
+        enemyStallCountRef.current += 1;
+        enemySolverRef.current = setTimeout(tick, nextDelay());
+        return;
+      }
+      setEnemyGrid(nextGrid);
+      enemyGridRef.current = nextGrid;
+      const contradiction = hasContradiction(nextGrid, enemySolution);
+      if (contradiction || (shouldFill && intendedValue !== 1)) {
+        const key = `${r},${c}`;
+        enemyGuessBlacklistRef.current.add(key);
+        if (intendedValue === 1 && enemyProgressRef.current.filled > 0) {
+          enemyProgressRef.current.filled -= 1;
+        }
+        const reverted = enemyGridRef.current.map((row, rowIndex) =>
+          row.map((cell, colIndex) => {
+            if (rowIndex === r && colIndex === c) return 0;
+            return cell;
+          }),
+        );
+        setEnemyGrid(reverted);
+        enemyGridRef.current = reverted;
+        enemyOrderRef.current = { list: buildEnemyOrder(reverted, enemySolution), index: 0 };
+        enemyStallCountRef.current += 1;
+        enemySolverRef.current = setTimeout(tick, nextDelay());
+        return;
+      }
+      if (placed && intendedValue === 1) {
+        incrementCombo("enemy");
+        enemyProgressRef.current.filled += 1;
+        enemyStallCountRef.current = 0;
+      }
+      const completionAfterGuess = applyLineCompletions(enemyGridRef.current, enemySolution);
+      if (completionAfterGuess.changed) {
+        setEnemyGrid(completionAfterGuess.next);
+        enemyGridRef.current = completionAfterGuess.next;
+        enemyOrderRef.current = {
+          list: buildEnemyOrder(completionAfterGuess.next, enemySolution),
+          index: 0,
+        };
+      }
       const targetRatio = config.targetCompletionRatio || 1;
       const progressRatio =
         enemyProgressRef.current.total > 0
           ? enemyProgressRef.current.filled / enemyProgressRef.current.total
           : 1;
-      if (progressRatio >= targetRatio) {
+      if (progressRatio >= targetRatio && equalsSolution(enemyGridRef.current, enemySolution)) {
         stopEnemySolver();
         handleEnemyPuzzleClear();
         return;
       }
+      enemyGuessStackRef.current = [];
+      progressMade = true;
       enemySolverRef.current = setTimeout(tick, nextDelay());
+      return;
+    };
+
+    const wrapTick = () => {
+      const beforeFilled = enemyProgressRef.current.filled;
+      tick();
+      const afterFilled = enemyProgressRef.current.filled;
+      if (afterFilled > beforeFilled) {
+        enemyNoProgressRef.current = 0;
+      } else {
+        enemyNoProgressRef.current += 1;
+      }
+      if (enemyNoProgressRef.current >= 5 && screen === "picross") {
+        // 強制脱出: すべての?をクリアし、ブラックリストをリセットして真セルを1つ埋める
+        enemyGuessBlacklistRef.current.clear();
+        const cleaned = enemyGridRef.current.map((row) =>
+          row.map((cell) => (cell === 2 ? 0 : cell)),
+        );
+        setEnemyGrid(cleaned);
+        enemyGridRef.current = cleaned;
+        const remaining = shuffle(
+          enemySolution.flatMap((row, r) =>
+            row.map((cell, c) => ({ r, c, cell })).filter(({ cell }) => cell),
+          ),
+        ).filter(({ r, c }) => enemyGridRef.current?.[r]?.[c] !== 1);
+        const pick = remaining[0];
+        if (pick) {
+          const forced = enemyGridRef.current.map((row) => row.slice());
+          forced[pick.r][pick.c] = 1;
+          setEnemyGrid(forced);
+          enemyGridRef.current = forced;
+          enemyProgressRef.current.filled += 1;
+          enemyOrderRef.current = { list: buildEnemyOrder(forced, enemySolution), index: 0 };
+        } else {
+          enemyOrderRef.current = { list: buildEnemyOrder(enemyGridRef.current, enemySolution), index: 0 };
+        }
+        enemyNoProgressRef.current = 0;
+      }
     };
 
     // kick off immediately, then schedule subsequent ticks
-    tick();
+    wrapTick();
     return () => stopEnemySolver();
   }, [
     screen,
@@ -3069,7 +3953,21 @@ export default function App() {
     stopEnemySolver,
     handleEnemyPuzzleClear,
     incrementCombo,
+    loadEnemyPuzzle,
   ]);
+
+  useEffect(() => {
+    if (screen !== "picross") return;
+    if (enemyPuzzleSolvedRef.current) return;
+    const solutionSnapshot = enemySolutionRef.current;
+    if (!solutionSnapshot.length) return;
+    const gridSnapshot = enemyGrid;
+    if (!gridSnapshot.length) return;
+    if (equalsSolution(gridSnapshot, solutionSnapshot)) {
+      handleEnemyPuzzleClear();
+      return;
+    }
+  }, [battleNode, enemyGrid, handleEnemyPuzzleClear, screen]);
 
 
   useEffect(() => {
@@ -3136,6 +4034,9 @@ export default function App() {
     updateHeroName(DEFAULT_HERO_NAME);
     localStorage.removeItem("routeNode");
     localStorage.removeItem("clearedNodes");
+    localStorage.removeItem(ROUTE_STORY_LOG_KEY);
+    setRouteStoryLog([]);
+    setRouteStoryAnimateIds(new Set());
     setCurrentNode("start");
     setLastNode("");
     setPendingNode(null);
@@ -3590,9 +4491,12 @@ export default function App() {
   const totalCells = totalCellsRef.current || 1;
   const playerProgressCount = countCorrectFilled(grid, solution);
   const playerProgressRatio = totalCells ? playerProgressCount / totalCells : 0;
-  const enemyProgressRatio = totalCells
-    ? Math.min(1, enemyProgressRef.current.filled / totalCells)
-    : 0;
+  const enemyProgressRatio = useMemo(() => {
+    const total = enemyProgressRef.current.total || totalCells || 0;
+    const filled = enemyProgressRef.current.filled || 0;
+    if (total <= 0) return 0;
+    return Math.min(1, filled / total);
+  }, [enemyGrid, totalCells]);
   const endlessTotalCells = endlessSolution?.length
     ? endlessSolution.reduce(
         (acc, row) => acc + row.filter((cell) => !!cell).length,
@@ -3676,11 +4580,16 @@ export default function App() {
   };
 
   return (
-    <div className="app">
+    <div className={`app${screen === "route" ? " app-route" : ""}`}>
       {screen === "picross" && spellCinematic && (
         <div className={`spell-cinematic-overlay ${spellCinematic.theme}`}>
           <div className="spell-cinematic-backdrop" />
           <div className="spell-cinematic-content">
+            {spellCinematic.effectImage ? (
+              <div className={`spell-cinematic-effect ${spellCinematic.caster || "hero"}`} aria-hidden="true">
+                <img src={spellCinematic.effectImage} alt={`${spellCinematic.name} effect`} />
+              </div>
+            ) : null}
             <div className={`spell-cinematic-actor ${spellCinematic.caster || "hero"}`}>
                   {spellCinematic.image ? (
                 <img src={spellCinematic.image} alt={`${spellCinematic.name} caster`} />
@@ -3950,35 +4859,121 @@ export default function App() {
       )}
 
       {screen === "route" && (
-        <RouteMap
-          graph={ROUTE}
-          current={currentNode}
-          last={lastNode}
-          cleared={cleared}
-          debugMode={debugMode}
-          showAllNodes={debugRevealMap}
-          onMoveStart={async () => {
-            if (!soundOn) return;
-            try {
-              await audio.playFootstep();
-            } catch {}
-          }}
+        <div className="route-layout">
+          <div className="route-main">
+            <RouteMap
+              graph={ROUTE}
+              current={currentNode}
+              last={lastNode}
+              cleared={cleared}
+              debugMode={debugMode}
+              showAllNodes={debugRevealMap}
+              onMoveStart={async () => {
+                if (!soundOn) return;
+                try {
+                  await audio.playFootstep();
+                } catch {}
+              }}
           onArrive={async (id) => {
             const normalized = normalizeNodeId(id);
             if (CHARACTERS[normalized]) {
               if (soundOn) {
                 try {
-                  await audio.playEnemyEncounter();
+                      await audio.playEnemyEncounter();
                 } catch {}
               }
               setPendingNode(normalized);
               setConversationTransition("encounter");
-              setScreen("conversation");
+              setTimeout(() => {
+                setScreen("conversation");
+              }, STORY_PAUSE_MS);
             } else {
               enterEnding(normalized);
             }
           }}
         />
+          </div>
+          <aside className={`route-story-panel ${showRouteStory ? "" : "collapsed"}`}>
+            <div className="route-story-header">
+              <div className="route-story-title">ここまでのストーリー</div>
+              <button
+                type="button"
+                className="route-story-toggle"
+                onClick={() => setShowRouteStory((v) => !v)}
+              >
+                {showRouteStory ? "非表示" : "表示"}
+              </button>
+            </div>
+            {showRouteStory ? (
+              <div className="route-story-list" ref={routeStoryListRef}>
+                {storyEntries.map((entry, idx) => {
+                  const isLatest = idx === storyEntries.length - 1;
+                  const shouldAnimate = routeStoryAnimateIds.has(entry.id);
+                  return (
+                    <div
+                      key={entry.id}
+                      className={`route-story-item${isLatest ? " latest" : ""}${
+                        shouldAnimate ? " animate" : ""
+                      }`}
+                    >
+                      {entry.subtitle ? (
+                        <div className="route-story-subtitle">{entry.subtitle}</div>
+                      ) : null}
+                      {entry.portraits?.length ? (
+                        <div className="route-story-portraits">
+                          {entry.portraits.map((portrait, portraitIdx) => (
+                            <div
+                              key={`${entry.id}-portrait-${portraitIdx}`}
+                              className={`route-story-portrait${
+                                portrait.side ? ` ${portrait.side}` : ""
+                              }`}
+                            >
+                              <img
+                                src={portrait.src}
+                                alt={portrait.alt || ""}
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div className="route-story-body">
+                        {(() => {
+                          const charDelayMs = 28;
+                          const paragraphGapChars = 16;
+                          let charCursor = 0;
+                          return entry.paragraphs.map((para, pIdx) => {
+                            const content = para === "" ? "\u00a0" : para;
+                            const chars = Array.from(content);
+                            const startOffset = charCursor;
+                            charCursor += chars.length + paragraphGapChars;
+                            return (
+                              <p className="route-story-paragraph" key={`${entry.id}-p-${pIdx}`}>
+                                {chars.map((ch, cIdx) => {
+                                  const delay = (startOffset + cIdx) * charDelayMs;
+                                  return (
+                                    <span
+                                      key={`${entry.id}-c-${pIdx}-${cIdx}`}
+                                      className="story-char"
+                                      style={{ animationDelay: `${delay}ms` }}
+                                    >
+                                      {ch}
+                                    </span>
+                                  );
+                                })}
+                              </p>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </aside>
+        </div>
       )}
 
       {screen === "conversation" && pendingNode && (
@@ -4140,8 +5135,8 @@ export default function App() {
                     <EnemyBoard
                       size={size}
                       grid={enemyGrid}
-                      hintData={clues}
-                      clues={clues}
+                      hintData={enemyClues}
+                      clues={enemyClues}
                       fadedCells={enemyFadedCells}
                     />
                   </div>
@@ -4341,6 +5336,80 @@ export default function App() {
                     {option.label}
                   </button>
                 ))}
+              </div>
+            </div>
+            <div className="debug-menu-section">
+              <p className="debug-menu-title">ENEMY操作</p>
+              <div className="debug-menu-grid">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugComboIncrement("enemy")}
+                  className="debug-menu-button"
+                >
+                  ENEMYコンボ +1
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugComboMax("enemy")}
+                  className="debug-menu-button"
+                >
+                  ENEMYコンボ MAX
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugFillBoard("enemy")}
+                  className="debug-menu-button"
+                >
+                  ENEMY盤面 90%
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugAdvancePuzzle("enemy")}
+                  className="debug-menu-button"
+                >
+                  ENEMY次のお題へ
+                </button>
+              </div>
+            </div>
+            <div className="debug-menu-section">
+              <p className="debug-menu-title">HERO操作</p>
+              <div className="debug-menu-grid">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugComboIncrement("hero")}
+                  className="debug-menu-button"
+                >
+                  HEROコンボ +1
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugComboMax("hero")}
+                  className="debug-menu-button"
+                >
+                  HEROコンボ MAX
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugFillBoard("hero")}
+                  className="debug-menu-button"
+                >
+                  HERO盤面 90%
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugAdvancePuzzle("hero")}
+                  className="debug-menu-button"
+                >
+                  HERO次のお題へ
+                </button>
               </div>
             </div>
           </div>
