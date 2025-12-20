@@ -3043,7 +3043,8 @@ export default function App() {
     enemyGridRef.current = enemyGrid;
   }, [enemyGrid]);
 
-  const enemyReadyStages = comboState.enemy?.readyStages || [];
+  const enemyReadyStages = comboState.enemy?.readyStages || []
+  const enemyReadyCount = comboState.enemy?.count || 0;
 
   useEffect(() => {
     if (screen !== "picross") {
@@ -3062,7 +3063,11 @@ export default function App() {
     if (enemyCastingRef.current) return undefined;
     const enemyConfig = battleNode ? getEnemyAiConfig(battleNode) : DEFAULT_ENEMY_CONFIG;
     const spellChance = enemyConfig.spellChance ?? 1;
-    if (Math.random() > spellChance) {
+    const maxDelay = enemyConfig.spellMaxDelay ?? 2500;
+    const minDelay = enemyConfig.spellMinDelay ?? 1500;
+    const delay = Math.max(minDelay, Math.min(maxDelay, minDelay + Math.random() * (maxDelay - minDelay)));
+    const roll = Math.random();
+    if (roll > spellChance) {
       return undefined;
     }
     enemyCastingRef.current = true;
@@ -3079,7 +3084,7 @@ export default function App() {
       triggerComboStage("enemy", stageId);
       enemyCastingRef.current = false;
       enemyStageCooldownRef.current = null;
-    }, 600);
+    }, delay);
     return () => {
       if (enemyStageCooldownRef.current) {
         clearTimeout(enemyStageCooldownRef.current);
