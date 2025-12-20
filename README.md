@@ -2,9 +2,20 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: v9.4.0
+Current release: v9.5.0
 
-## Release Highlights (v9.4.0)
+## Release Highlights (v9.5.0)
+
+前回リリース (v9.4.0) からの主な変更:
+
+- マップモード右側に「ここまでのストーリー」パネルを追加し、本風UI・章カードの文字フェード・枠内スクロール・自動最下部スクロールに対応。
+- ストーリーはクリア済みルートのみを蓄積表示し、未踏分岐は表示しないようにして進行の整合性を担保。
+- HERO スペル発動時の効果イメージ表示を追加し、シネマ演出の見栄えを改善。
+- HERO/ENEMY ピクロス画面の高さズレを解消し、HUDの揃いを安定化。
+- HERO ジャマー適用後の ENEMY 進捗バー再計算を修正し、進捗表示の不整合を解消。
+- HARD/ULTRA(10x10) の決定的ヒントを強化し、解法の足がかりを増やす難易度調整を反映。
+
+## Previous Release Highlights (v9.4.0)
 
 前回リリース (v9.3.0) からの主な変更:
 
