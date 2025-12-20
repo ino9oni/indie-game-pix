@@ -45,7 +45,7 @@ const ENDING_OPTIONS = [
   { id: "elf-true-ending", label: ROUTE.nodes["elf-true-ending"]?.label || "True Ending" },
   { id: "elf-bad-ending", label: ROUTE.nodes["elf-bad-ending"]?.label || "Bad Ending" },
 ];
-const DEBUG_MENU_BOUNDS = { width: 320, height: 360 };
+const DEBUG_MENU_BOUNDS = { width: 320, height: 520 };
 const DEFAULT_PUZZLES_PER_BATTLE = 2;
 const PUZZLES_PER_BATTLE_BY_NODE = {
   "elf-practice": 2,
@@ -934,6 +934,29 @@ function countCorrectFilled(grid, solution) {
   return count;
 }
 
+function buildProgressGrid(solution, ratio) {
+  if (!Array.isArray(solution) || !solution.length) return [];
+  const size = solution.length;
+  const targets = [];
+  for (let r = 0; r < solution.length; r += 1) {
+    for (let c = 0; c < solution[r].length; c += 1) {
+      if (solution[r][c]) {
+        targets.push({ r, c });
+      }
+    }
+  }
+  const total = targets.length;
+  if (!total) return emptyGrid(size);
+  const clamped = Math.max(0, Math.min(1, ratio));
+  const targetCount = Math.max(0, Math.floor(total * clamped));
+  const picks = shuffle(targets).slice(0, targetCount);
+  const next = emptyGrid(size);
+  picks.forEach(({ r, c }) => {
+    next[r][c] = 1;
+  });
+  return next;
+}
+
 function hashGrid(grid) {
   if (!Array.isArray(grid)) return "";
   return grid
@@ -1513,6 +1536,35 @@ export default function App() {
       return { ...prev, [side]: nextTrack };
     });
   }, []);
+
+  const setComboCount = useCallback((side, nextCount) => {
+    setComboState((prev) => {
+      const current = prev[side] || createComboTrack();
+      const sanitized = Math.max(0, nextCount);
+      const shouldShow = sanitized >= 2;
+      const readyStages = computeReadyStages(sanitized, current.readyStages);
+      return {
+        ...prev,
+        [side]: {
+          count: sanitized,
+          show: shouldShow || readyStages.length > 0,
+          label: sanitized,
+          pulse: shouldShow ? current.pulse + 1 : current.pulse,
+          readyStages,
+        },
+      };
+    });
+  }, []);
+
+  const setComboToMax = useCallback(
+    (side) => {
+      const stages = getStageSet(side, battleNode);
+      const thresholds = stages.map((stage) => getStageThreshold(stage.id)).filter(Number.isFinite);
+      const maxThreshold = thresholds.length ? Math.max(...thresholds) : 0;
+      setComboCount(side, maxThreshold);
+    },
+    [battleNode, setComboCount],
+  );
 
   const lockBoard = useCallback((side, duration = 1200) => {
     boardLocksRef.current = { ...boardLocksRef.current, [side]: true };
@@ -2762,6 +2814,80 @@ export default function App() {
     closeDebugMenu();
     enterEnding(nodeId);
   };
+
+  const handleDebugComboIncrement = useCallback(
+    (side) => {
+      closeDebugMenu();
+      incrementCombo(side);
+    },
+    [closeDebugMenu, incrementCombo],
+  );
+
+  const handleDebugComboMax = useCallback(
+    (side) => {
+      closeDebugMenu();
+      setComboToMax(side);
+    },
+    [closeDebugMenu, setComboToMax],
+  );
+
+  const handleDebugFillBoard = useCallback(
+    (side) => {
+      closeDebugMenu();
+      const targetSolution = side === "hero" ? solution : enemySolutionRef.current;
+      if (!Array.isArray(targetSolution) || !targetSolution.length) return;
+      const nextGrid = buildProgressGrid(targetSolution, 0.9);
+      if (side === "hero") {
+        setGrid(nextGrid);
+        return;
+      }
+      setEnemyGrid(nextGrid);
+      enemyGridRef.current = nextGrid;
+      enemyProgressRef.current.filled = countCorrectFilled(nextGrid, targetSolution);
+      enemyOrderRef.current = { list: buildEnemyOrder(nextGrid, targetSolution), index: 0 };
+      enemyGuessBlacklistRef.current = new Set();
+      enemyGuessStackRef.current = [];
+      enemyStallCountRef.current = 0;
+      enemyRetryRef.current = 0;
+      enemyNoProgressRef.current = 0;
+      enemyFailSafeRef.current = 0;
+    },
+    [closeDebugMenu, solution],
+  );
+
+  const handleDebugAdvancePuzzle = useCallback(
+    (side) => {
+      closeDebugMenu();
+      if (screen !== "picross") return;
+      const total =
+        puzzleSequence.length || enemyPuzzleSequence.length || getPuzzleGoalForNode(battleNode);
+      if (!total) return;
+      if (side === "hero") {
+        const nextWins = Math.min(playerWins + 1, total);
+        if (nextWins === playerWins) return;
+        setPlayerWins(nextWins);
+        if (nextWins >= total) return;
+        loadHeroPuzzle(nextWins);
+        return;
+      }
+      const nextWins = Math.min(enemyWins + 1, total);
+      if (nextWins === enemyWins) return;
+      setEnemyWins(nextWins);
+      if (nextWins >= total) return;
+      loadEnemyPuzzle(nextWins);
+    },
+    [
+      battleNode,
+      closeDebugMenu,
+      enemyPuzzleSequence.length,
+      enemyWins,
+      loadEnemyPuzzle,
+      loadHeroPuzzle,
+      playerWins,
+      puzzleSequence.length,
+      screen,
+    ],
+  );
 
   function handleEndingComplete() {
     cancelCelebration();
@@ -5210,6 +5336,80 @@ export default function App() {
                     {option.label}
                   </button>
                 ))}
+              </div>
+            </div>
+            <div className="debug-menu-section">
+              <p className="debug-menu-title">ENEMY操作</p>
+              <div className="debug-menu-grid">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugComboIncrement("enemy")}
+                  className="debug-menu-button"
+                >
+                  ENEMYコンボ +1
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugComboMax("enemy")}
+                  className="debug-menu-button"
+                >
+                  ENEMYコンボ MAX
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugFillBoard("enemy")}
+                  className="debug-menu-button"
+                >
+                  ENEMY盤面 90%
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugAdvancePuzzle("enemy")}
+                  className="debug-menu-button"
+                >
+                  ENEMY次のお題へ
+                </button>
+              </div>
+            </div>
+            <div className="debug-menu-section">
+              <p className="debug-menu-title">HERO操作</p>
+              <div className="debug-menu-grid">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugComboIncrement("hero")}
+                  className="debug-menu-button"
+                >
+                  HEROコンボ +1
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugComboMax("hero")}
+                  className="debug-menu-button"
+                >
+                  HEROコンボ MAX
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugFillBoard("hero")}
+                  className="debug-menu-button"
+                >
+                  HERO盤面 90%
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleDebugAdvancePuzzle("hero")}
+                  className="debug-menu-button"
+                >
+                  HERO次のお題へ
+                </button>
               </div>
             </div>
           </div>
