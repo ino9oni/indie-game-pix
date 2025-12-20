@@ -180,8 +180,11 @@ const ENEMY_AI_CONFIG = {
     targetCompletionRatio: 1,
     errorRate: 0.25,
     spellChance: 0.45,
+    spellMinDelay: 1500,
+    spellMaxDelay: 2500,
   },
 };
+const STORY_PAUSE_MS = 900;
 
 const SPELL_SPEECH_DURATION = 1200;
 const SPELL_BOARD_FOCUS_DELAY = 1100;
@@ -433,6 +436,8 @@ const DEFAULT_ENEMY_CONFIG = {
   errorRate: 0.08,
   targetCompletionRatio: 1,
   spellChance: 0.5,
+  spellMinDelay: 1500,
+  spellMaxDelay: 2500,
 };
 
 const ENEMY_AI_PRESETS = {
@@ -447,24 +452,32 @@ const ENEMY_AI_PRESETS = {
     successRate: 0.9,
     errorRate: 0.1,
     spellChance: 0.35,
+    spellMinDelay: 1500,
+    spellMaxDelay: 2500,
   },
   middle: {
     intervalRange: [4000, 9000],
     successRate: 0.82,
     errorRate: 0.16,
     spellChance: 0.4,
+    spellMinDelay: 1800,
+    spellMaxDelay: 2600,
   },
   hard: {
     intervalRange: [600, 2000],
     successRate: 0.9,
     errorRate: 0.15,
     spellChance: 0.45,
+    spellMinDelay: 1400,
+    spellMaxDelay: 2200,
   },
   ultra: {
     intervalRange: [1200, 2200],
     successRate: 0.9,
     errorRate: 0.08,
     spellChance: 0.6,
+    spellMinDelay: 1200,
+    spellMaxDelay: 2000,
   },
 };
 
@@ -1217,6 +1230,13 @@ export default function App() {
   const [spellCinematic, setSpellCinematic] = useState(null);
   const [conversationTransition, setConversationTransition] = useState("none");
   const [postClearAction, setPostClearAction] = useState(null);
+  const [showRouteStory, setShowRouteStory] = useState(() => {
+    try {
+      return localStorage.getItem("routeStoryVisible") !== "0";
+    } catch {
+      return true;
+    }
+  });
   const [glyphCollection, setGlyphCollection] = useState(
     () => glyphStorageRef.current.collectionSet,
   );
@@ -3043,8 +3063,49 @@ export default function App() {
     enemyGridRef.current = enemyGrid;
   }, [enemyGrid]);
 
-  const enemyReadyStages = comboState.enemy?.readyStages || []
+  const enemyReadyStages = comboState.enemy?.readyStages || [];
   const enemyReadyCount = comboState.enemy?.count || 0;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("routeStoryVisible", showRouteStory ? "1" : "0");
+    } catch {}
+  }, [showRouteStory]);
+
+  const storyEntries = useMemo(() => {
+    const depthCache = new Map();
+    const parents = ROUTE.parents || {};
+    const nodes = ROUTE.nodes || {};
+    const getDepth = (id) => {
+      if (depthCache.has(id)) return depthCache.get(id);
+      let d = 0;
+      let cursor = id;
+      const guard = new Set();
+      while (parents[cursor] && !guard.has(cursor)) {
+        guard.add(cursor);
+        cursor = parents[cursor];
+        d += 1;
+        if (d > 50) break;
+      }
+      depthCache.set(id, d);
+      return d;
+    };
+    const ids = new Set(Array.from(cleared || []));
+    if (currentNode) ids.add(currentNode);
+    return Array.from(ids)
+      .filter((id) => nodes[id])
+      .map((id) => {
+        const depth = getDepth(id);
+        const label = nodes[id]?.label || id;
+        return {
+          id,
+          depth,
+          title: label,
+          summary: `${label} の出来事が、旅の記憶に刻まれた。`,
+        };
+      })
+      .sort((a, b) => b.depth - a.depth);
+  }, [cleared, currentNode]);
 
   useEffect(() => {
     if (screen !== "picross") {
@@ -4399,35 +4460,73 @@ export default function App() {
       )}
 
       {screen === "route" && (
-        <RouteMap
-          graph={ROUTE}
-          current={currentNode}
-          last={lastNode}
-          cleared={cleared}
-          debugMode={debugMode}
-          showAllNodes={debugRevealMap}
-          onMoveStart={async () => {
-            if (!soundOn) return;
-            try {
-              await audio.playFootstep();
-            } catch {}
-          }}
+        <div className="route-layout">
+          <div className="route-main">
+            <RouteMap
+              graph={ROUTE}
+              current={currentNode}
+              last={lastNode}
+              cleared={cleared}
+              debugMode={debugMode}
+              showAllNodes={debugRevealMap}
+              onMoveStart={async () => {
+                if (!soundOn) return;
+                try {
+                  await audio.playFootstep();
+                } catch {}
+              }}
           onArrive={async (id) => {
             const normalized = normalizeNodeId(id);
             if (CHARACTERS[normalized]) {
               if (soundOn) {
                 try {
-                  await audio.playEnemyEncounter();
+                      await audio.playEnemyEncounter();
                 } catch {}
               }
               setPendingNode(normalized);
               setConversationTransition("encounter");
-              setScreen("conversation");
+              setTimeout(() => {
+                setScreen("conversation");
+              }, STORY_PAUSE_MS);
             } else {
               enterEnding(normalized);
             }
           }}
         />
+          </div>
+          <aside className={`route-story-panel ${showRouteStory ? "" : "collapsed"}`}>
+            <div className="route-story-header">
+              <div className="route-story-title">ここまでのストーリー</div>
+              <button
+                type="button"
+                className="route-story-toggle"
+                onClick={() => setShowRouteStory((v) => !v)}
+              >
+                {showRouteStory ? "非表示" : "表示"}
+              </button>
+            </div>
+            {showRouteStory ? (
+              <div className="route-story-list">
+                {storyEntries.length ? (
+                  storyEntries.map((entry, idx) => (
+                    <div
+                      key={entry.id}
+                      className={`route-story-item ${idx === 0 ? "latest" : ""}`}
+                    >
+                      <div className="route-story-meta">
+                        <span className="route-story-chapter">{entry.title}</span>
+                        <span className="route-story-node">{entry.id}</span>
+                      </div>
+                      <div className="route-story-summary">{entry.summary}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="route-story-empty">まだ記録がありません</div>
+                )}
+              </div>
+            ) : null}
+          </aside>
+        </div>
       )}
 
       {screen === "conversation" && pendingNode && (
