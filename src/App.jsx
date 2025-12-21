@@ -4673,7 +4673,8 @@ export default function App() {
           }
         />
       )}
-      <header className="app-header">
+      {screen !== "prologue" && (
+        <header className="app-header">
         <div className="brand-stack">
           <div className="brand">
             <span className="logo">▦</span>
@@ -4729,7 +4730,8 @@ export default function App() {
           </button>
           <ScoreDisplay value={displayScore} animating={scoreAnimating} />
         </nav>
-      </header>
+        </header>
+      )}
 
       {screen === "prologue" && (
         <Prologue onNext={() => setScreen("opening")} />
