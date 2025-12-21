@@ -22,13 +22,14 @@ const ENCOUNTER_SHARDS = [
   { key: "shard-5", rotate: 4, tx: "-6%", ty: "-2%", delay: "0ms" },
 ];
 
-const NODE_HALF_WIDTH = 18;
-const NODE_HALF_HEIGHT = 12;
-const NODE_SIDE_DEPTH = 6;
-const NODE_SIDE_RISE = 6;
-const NODE_SHADOW_OFFSET_X = 6;
-const NODE_SHADOW_OFFSET_Y = 6;
-const NODE_SHADOW_RX = NODE_HALF_WIDTH + 6;
+const NODE_SCALE = 2;
+const NODE_HALF_WIDTH = 18 * NODE_SCALE;
+const NODE_HALF_HEIGHT = 12 * NODE_SCALE;
+const NODE_SIDE_DEPTH = 6 * NODE_SCALE;
+const NODE_SIDE_RISE = 6 * NODE_SCALE;
+const NODE_SHADOW_OFFSET_X = 6 * NODE_SCALE;
+const NODE_SHADOW_OFFSET_Y = 6 * NODE_SCALE;
+const NODE_SHADOW_RX = NODE_HALF_WIDTH + 6 * NODE_SCALE;
 const NODE_SHADOW_RY = NODE_HALF_HEIGHT * 0.8;
 
 const NODE_VARIANTS = {
@@ -595,7 +596,7 @@ export default function RouteMap({
             const bubbleHeight = 24;
             const cornerRadius = 8;
             const bubbleX = n.x - bubbleWidth / 2;
-            const bubbleY = n.y + 28;
+            const bubbleY = n.y + NODE_HALF_HEIGHT + 16;
             const pointerHeight = 10;
             const pointerHalf = 12;
             const pointerTop = bubbleY - pointerHeight;
@@ -698,7 +699,7 @@ export default function RouteMap({
                   points={topPoints}
                   fill={`url(#${variantStyle.topGradient})`}
                   stroke="#ffffff"
-                  strokeWidth={2}
+                  strokeWidth={3}
                   strokeLinejoin="round"
                 />
                 <line
