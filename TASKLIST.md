@@ -612,7 +612,7 @@
     - ロールは「TestPlayer」
     - 名前は「sideofall」
 
-- Reset,Submit,Quitボタンを非表示にする
+- [done] Reset,Submit,Quitボタンを非表示にする
   - 背景・目的
     - 特に利用しなくなったため
   - 変更前の仕様：
