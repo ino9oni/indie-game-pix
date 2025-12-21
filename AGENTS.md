@@ -1,106 +1,255 @@
-co# Repository Guidelines
+# AGENT.md — Repository Guidelines + Game Build Process + Parallel Worktrees
 
-This guide keeps contributions consistent and predictable. Prefer small, focused pull requests and update this document when commands or structure change.
+This document is the single source of truth for how Codex operates in this repo.
+It merges:
+- Repository engineering guidelines
+- GAMEDESIGN/TASKLIST driven build workflow
+- Parallel development using git worktree
 
-## Project Structure & Module Organization
+If any instruction conflicts, **AGENT.md wins**.
 
-- Code: `src/` (packages and modules). CLIs/scripts in `scripts/` or `bin/`.
-- Tests: `tests/` mirrors `src/` (e.g., `tests/pkg/test_utils.py`).
-- Config: `config/` and `.env.example` (never commit real secrets). Runtime env lives in `.env` (gitignored).
-- Assets & docs: `public/assets/`, `public/`, `docs/`, and root `README.md`.
+---
 
-## Build, Test, and Development Commands
+## 0. Core Principles (Non-Negotiable)
 
-- Install deps: `make install` (wraps language-specific install). If absent, use the stack tool (e.g., `npm ci`, `pip install -e .[dev]`).
-- Run locally: `make dev` for hot-reload; otherwise `make run` or a domain-specific entry (e.g., `python -m src.app`, `npm start`).
-- Lint & format: `make lint` and `make fmt` (expect ESLint/Prettier or Ruff/Black under the hood).
-- Tests: `make test` runs unit tests; `make test-watch` for TDD; `make coverage` for a report.
+1. **User approval is mandatory** before any commit/push or deploy.
+2. **One task = one worktree = one branch**. Do not mix unrelated changes.
+3. **Design-first**: update/validate design artifacts before regenerating code/assets.
+4. **Show DIFFs** (design diff + code/assets diff) and provide human-readable summaries.
+5. **No destructive operations** without explicit instruction:
+   - No `rm -rf` worktree directories
+   - No `git reset --hard`, `git clean -fdx`, `git push --force`
+6. **Never block** waiting on other worktrees:
+   - If shared changes are needed, raise an explicit proposal and continue with adapters/stubs.
 
-## Coding Style & Naming Conventions
+---
 
-- Indentation: spaces only; formatter decides width.
-- Names: modules/files `snake_case`; classes `PascalCase`; functions/vars `snake_case`; constants `UPPER_SNAKE_CASE`.
-- Imports: prefer absolute within `src/`; keep top-level initialization side-effect free.
+## 1. Context Governance (Layer Model)
+
+To balance consistency and parallelism, context is split into layers.
+
+### Layer 0 — Immutable Governance
+- This file: `AGENT.md`
+- Global safety/approval rules
+- Worktree rules
+
+### Layer 1 — Shared Contracts (Consistency Anchor)
+- `GAMEDESIGN.md` (design source of truth)
+- Public API / schema / shared interface expectations
+- Versioning rules (x.y)
+
+Changes to Layer 1 must be explicitly diffed and approved.
+
+### Layer 2 — Local Implementation (Parallel Friendly)
+- Source code, configs, assets generated from approved design
+- Refactors and optimizations that do not break Layer 0/1
+
+---
+
+## 2. Repository Structure & Engineering Standards
+
+### Project Structure
+- Code: `src/` (packages/modules). CLIs/scripts in `scripts/` or `bin/`.
+- Tests: `tests/` mirrors `src/`.
+- Config: `config/` and `.env.example` (never commit real secrets). Runtime `.env` is gitignored.
+- Assets & docs: `public/assets/`, `public/`, `docs/`, root `README.md`.
+
+### Build / Test / Dev Commands
+- Install deps: `make install` (fallback to stack tool: `npm ci`, `pip install -e .[dev]`, etc.)
+- Run locally: `make dev` for hot-reload (else `make run` or stack entry).
+- Lint & format: `make lint`, `make fmt`
+- Tests: `make test`, `make test-watch`, `make coverage`
+
+### Coding Style & Naming
+- Spaces only; formatter decides width.
+- Files/modules: `snake_case`
+- Classes: `PascalCase`
+- Functions/vars: `snake_case`
+- Constants: `UPPER_SNAKE_CASE`
+- Prefer absolute imports within `src/`; avoid side-effectful top-level init.
 - Keep public APIs stable; document breaking changes in `CHANGELOG.md`.
 
-## Testing Guidelines
+### Testing
+- Unit tests in `tests/`, name `test_*` or `*.spec.*` / `*.test.*`
+- Target ≥ 90% coverage for touched code
+- Arrange-Act-Assert; avoid network/real services (use mocks/fakes)
 
-- Frameworks: unit tests live in `tests/`; name files `test_*.py` or `*.spec.*`/`*.test.*` (JS/TS).
-- Coverage: target ≥ 90% for touched code; add regression tests with bug fixes.
-- Arrange-Act-Assert; avoid relying on network or real services—use fakes/mocks.
+### Commits / PRs
+- Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `perf:`
+- Branches: `feature/...`, `fix/...`, `chore/...` (worktree branches may also use `task/...`, see below)
+- PR: concise title/description, linked issues (`Closes #123`), screenshots for UI, risks/rollout, CI passing
 
-## Commit & Pull Request Guidelines
+### Security
+- Never commit secrets; keep `.env.example` in sync.
+- Validate inputs; treat external data as untrusted.
+- Run `make security-scan` if provided.
 
-- Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `perf:`. Scope optional (e.g., `feat(api): add pagination`).
-- Branches: `feature/…`, `fix/…`, `chore/…`.
-- PRs: concise title/description, linked issues (`Closes #123`), screenshots for UI, notes on risks/rollout, and check passing CI.
+---
 
-## Security & Configuration Tips
+## 3. Worktree & Parallel Development Rules
 
-- Do not commit secrets; sync example defaults in `.env.example`.
-- Validate inputs; treat all external data as untrusted; run `make security-scan` if provided.
+### Why worktrees
+We use `git worktree` to run tasks in parallel while maintaining consistency via Layer 1.
 
-# Build Process
+### Worktree invariants
+- Each worktree has exactly one checked-out branch.
+- Each task runs only inside its worktree.
+- Avoid editing multiple worktrees in one “implementation pass”.
 
-## BUILD ALL
+### Recommended naming
+Worktree dirs (examples):
+- `../repo-wt-task-<TASK>`
+- `../repo-wt-design`
+- `../repo-wt-release`
 
-- 以下を行う
-  - TASKLIST
-  - QA
-  - CICD
-  - CROSSPLATFORM
-  - VERSIONING
+Branch naming (choose one style consistently):
+- Option A (aligned with existing): `feature/<TASK>`, `fix/<TASK>`, `chore/<TASK>`
+- Option B (explicit parallel): `task/<TASK>`, `design/<TOPIC>`, `release/<VERSION>`
 
-## BUILD GAMEDESIGN
+### Required checks before doing any work
+At the start of any command execution:
+- `git status`
+- `git branch --show-current`
+- `git worktree list`
+If not in the intended worktree, stop and `cd` to the correct directory.
 
-- 以下を行う
-  - GAMEDESIGN.md に基づきアプリ実行に必要なソースファイル・アプリ設定、アセットを再生成する
-    - ソース・設定・変更点、変更内容についてDIFFを取る
-    - 上記DIFFの内容をユーザに確認する
-  - ユーザからの承認が得られたら、ローカルリポジトリとリモートリポジトリにコミット・Pushを行う
-    - 承認が得られなかった場合は、修正案を受け取り、GAMEDESIGN.mdに再度取り込み同様のプロセスを行う
+### Worktree lifecycle
+- Create: `git worktree add <path> -b <branch> <start-point>`
+- Remove safely: `git worktree remove <path>` then `git worktree prune`
+Never delete worktree folders manually.
 
-## TASKLIST
+---
 
-- 以下を行う
-  - TASKLIST.mdを読み込む
-  - TASKLIST毎に以下を行う
-    - TASKの変更を行う前に、仕様を整理する（"タスク仕様"とする）
-    - GAMEDESIGN.md を GAMEDESIGN-new.md にコピーする
-    - GAMEDESIGN-new.md に、"タスク仕様"をマージする
-    - GAMEDESIGN-new.md が "タスク仕様"を満たしているかを確認する
-      - 満たせている場合は、GAMEDESIGN-new.md に基づいてアプリ実行に必要なソースファイル・アプリ設定、アセットを再生成する
-      - ソース・設定・変更点、変更内容についてDIFFを取る
-      - 上記DIFFの内容をユーザに確認する
-    - ユーザからの承認が得られたら、ローカルリポジトリとリモートリポジトリにコミット・Pushを行う
-      - 承認が得られなかった場合は、修正案を受け取り、GAMEDESIGN-new.mdに再度取り込み同様のプロセスを行う。
-    - TASK完了後タスクにTASKLIST.md内の当該タスクのラベルに、[done]ラベルを付与する
-  - GAMEDESIGN-new.md と GAMEDESIGN.mdの差分を、GAMEDESIGN.mdに取り込む
+## 4. Build Process (GAMEDESIGN/TASKLIST Driven)
 
-## QA
+### BUILD ALL
+Execute in order:
+- TASKLIST
+- QA (TBD)
+- CICD (TBD)
+- CROSSPLATFORM (Android conversion)
+- VERSIONING
 
-- 未定義
+### BUILD GAMEDESIGN
+- Regenerate required source/config/assets based on `GAMEDESIGN.md`
+- Produce DIFF (files + summaries)
+- Ask user approval
+- On approval: commit/push
+- If not approved: incorporate feedback into `GAMEDESIGN.md`, repeat
 
-## CICD
+---
 
-- 未定義
+## 5. TASKLIST Protocol (Global) + tasklist.md (Custom Command)
 
-## CROSSPLATFORM
+TASKLIST protocol is the canonical development flow.
+The custom command `tasklist.md` is the main entrypoint and MUST follow:
 
-- WebアプリをAndoroidアプリに変換する
-- mobile/androidフォルダ配下に生成する
+For each TASK in `TASKLIST.md` (or the selected `$1` task):
+1. **Create a task worktree** for this task if not already present.
+2. Read the task and extract a clear “タスク仕様”.
+3. Copy `GAMEDESIGN.md` → `GAMEDESIGN-new.md`
+4. Merge “タスク仕様” into `GAMEDESIGN-new.md`
+5. Run “タスク仕様確認処理”:
+   - No conflicts/batting with existing specs
+   - No contradictions
+   - No excessive ambiguity that cannot be resolved
+6. Show `GAMEDESIGN.md` vs `GAMEDESIGN-new.md` DIFF and **require approval**
+7. On approval:
+   - Create a GitHub issue for the task spec using `gh` (include “タスク仕様”)
+   - Regenerate app sources/config/assets from `GAMEDESIGN-new.md`
+   - Leave human-readable 1-line intent comments where possible
+8. Show code/config/assets DIFF:
+   - Provide file list + diff summary
+   - **Require approval**
+9. On approval:
+   - Reload dev server (`make dev` running state) so changes are reflected
+   - Commit/push
+   - Update the GitHub issue with commit SHA + log
+   - Close the issue
+   - Mark `[done]` in `TASKLIST.md`
+10. If not approved at any approval gate:
+   - Incorporate user feedback into `GAMEDESIGN-new.md`
+   - Re-run from the appropriate validation step
 
-## VERSIONING
+### Merging back to GAMEDESIGN.md
+After tasks complete:
+- Apply the diff between `GAMEDESIGN-new.md` and `GAMEDESIGN.md` into `GAMEDESIGN.md`
+- Show diff and request approval before committing
 
-- メジャーバージョン
-  - 機能の追加や廃止、モードの追加や廃止の場合、それをメジャーバージョンとする
-  - バージョニング
-    - x.y の xの部分をインクリメントする
-  - タグ付け
-    - タグも同様に付与
-- マイナーバージョン
-  - 表示文言、UIスタイル、文言修正、バグの修正の場合、それをマイナーバージョンとする
-  - バージョニング
-    - x.y の yの部分をインクリメントする
-  - タグ付け
-    - タグも同様に付与
+---
+
+## 6. Release Protocol + release.md (Custom Command)
+
+`release.md` is the main deploy entrypoint and MUST follow:
+
+### Deploy preparation
+- Edit `README.md` and add release notes:
+  - Include release version
+  - List diffs since last release (1 line per change)
+- Create a tag with the same name as the release version
+- Show README diff and require approval
+- On approval:
+  - Commit/push README
+  - Push tag
+  - Deploy (`make deploy`, based on `vite.config.js`)
+- If not approved:
+  - Abort or incorporate additional requested changes, then re-request approval
+
+### Main merge rule
+Before/after release:
+- Confirm commit diffs between the feature branch (e.g. `feature/rewrite-from-gamedesign`) and `main`
+- Create PR, get approval, merge to `main`
+- Release must not run from random task worktrees.
+
+---
+
+## 7. CROSSPLATFORM / VERSIONING
+
+### CROSSPLATFORM
+- Convert web app to Android app
+- Generate under `mobile/android`
+
+### VERSIONING
+- Major: feature add/remove, mode add/remove → increment x in `x.y` and tag
+- Minor: text/UI changes, bug fixes → increment y in `x.y` and tag
+
+Any version/tag operation requires user approval.
+
+---
+
+## 8. Reporting Format (What Codex Must Output)
+
+When presenting for approval, output:
+
+### Design DIFF approval request
+- Task:
+- Worktree + branch:
+- Design changes summary:
+- `GAMEDESIGN.md` ↔ `GAMEDESIGN-new.md` diff
+
+### Implementation DIFF approval request
+- Changed files list:
+- 1-line summary per change:
+- How to test (`make dev`, `make test`, etc.)
+- Risks / rollback notes
+
+---
+
+## 9. QA / CICD (TBD placeholders)
+
+### QA (TBD)
+At minimum:
+- `make lint`
+- `make test`
+- (Optional) `make coverage`
+
+### CICD (TBD)
+At minimum:
+- Ensure CI passes on PR
+- Ensure deploy pipeline prerequisites are met
+
+---
+
+## 10. If Unclear
+Do not guess and do not modify shared state.
+Default to read-only inspection, then ask for user direction.
