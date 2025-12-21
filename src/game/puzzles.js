@@ -1314,9 +1314,29 @@ const GLYPH_TEMPLATE_DEFS = [
   }),
 ];
 
-const ALL_GLYPH_TEMPLATES = GLYPH_TEMPLATE_DEFS.slice().sort(
-  (a, b) => a.glyphMeta.collectionIndex - b.glyphMeta.collectionIndex,
-);
+const ACTIVE_GLYPH_INDICES = new Set([
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  20,
+  21,
+  22,
+]);
+// Align collection slots with actual counts (PRACTICE 2 / EASY 4 / MIDDLE 6 / HARD 2 / ULTRA 3).
+const ALL_GLYPH_TEMPLATES = GLYPH_TEMPLATE_DEFS.filter((tpl) =>
+  ACTIVE_GLYPH_INDICES.has(tpl.glyphMeta.collectionIndex),
+).sort((a, b) => a.glyphMeta.collectionIndex - b.glyphMeta.collectionIndex);
 
 const PRACTICE_TEMPLATES = ALL_GLYPH_TEMPLATES.filter(
   (tpl) => tpl.glyphMeta.difficulty === "practice",

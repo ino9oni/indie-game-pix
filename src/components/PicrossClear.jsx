@@ -41,7 +41,17 @@ export default function PicrossClear({
     return () => window.removeEventListener("keydown", handler);
   }, [onContinue]);
 
-  const unlockedCount = unlockedSet.size;
+  const boardIndexSet = useMemo(
+    () => new Set(boardEntries.map((entry) => entry.collectionIndex)),
+    [boardEntries],
+  );
+  const unlockedCount = useMemo(() => {
+    let count = 0;
+    unlockedSet.forEach((index) => {
+      if (boardIndexSet.has(index)) count += 1;
+    });
+    return count;
+  }, [boardIndexSet, unlockedSet]);
   const totalSlots = boardEntries.length;
   const isComplete = totalSlots > 0 && unlockedCount >= totalSlots;
   const unlockedNames = useMemo(
@@ -125,10 +135,18 @@ export default function PicrossClear({
                 ]
                   .filter(Boolean)
                   .join(" ");
-                const meaningClass = ["slot-meaning", `slot-meaning-size-${shapeSize}`]
+                const meaningClass = [
+                  "slot-meaning",
+                  `slot-meaning-size-${shapeSize}`,
+                  !isUnlocked ? "slot-meaning--hidden" : "",
+                ]
                   .filter(Boolean)
                   .join(" ");
-                const shapeClass = ["slot-shape", `slot-shape-${shapeSize}`]
+                const shapeClass = [
+                  "slot-shape",
+                  `slot-shape-${shapeSize}`,
+                  !isUnlocked ? "slot-shape--hidden" : "",
+                ]
                   .filter(Boolean)
                   .join(" ");
                 return (
@@ -136,7 +154,7 @@ export default function PicrossClear({
                     key={entry.collectionIndex}
                     className={className}
                     data-difficulty={entry.difficulty}
-                    title={entry.meaningText || undefined}
+                    title={isUnlocked ? entry.meaningText || undefined : undefined}
                     role="gridcell"
                     aria-live={isNew ? "polite" : undefined}
                   >
