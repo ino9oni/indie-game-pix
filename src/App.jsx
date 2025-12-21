@@ -4697,7 +4697,7 @@ export default function App() {
             onClick={togglePaused}
             disabled={screen !== "picross"}
           >
-            {paused ? "Resume" : "Pause"}
+            {paused ? "Resume" : "Pause/Quit"}
           </button>
           <button
             className={`ghost bgm ${soundOn ? "on" : "off"}`}
@@ -5005,20 +5005,7 @@ export default function App() {
                 Puzzle {displayPuzzleStep} / {puzzleGoal}
               </div>
             </div>
-            <div className="top-right hud-actions">
-              <button
-                className="ghost"
-                onClick={() => setGrid(emptyGrid(size))}
-              >
-                Reset
-              </button>
-              <button className="ghost" onClick={handleQuitPicross}>
-                Quit
-              </button>
-              <button className="primary" onClick={handleSubmit}>
-                Submit
-              </button>
-            </div>
+            <div className="top-right hud-actions" />
           </div>
           <div className="game-center">
             <div className="battle-panels">
@@ -5163,6 +5150,9 @@ export default function App() {
                   <div className="pause-actions">
                     <button className="primary" type="button" onClick={togglePaused}>
                       Resume
+                    </button>
+                    <button className="ghost" type="button" onClick={handleQuitPicross}>
+                      Quit
                     </button>
                   </div>
                 </div>
