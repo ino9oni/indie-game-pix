@@ -662,7 +662,7 @@
   - 変更後の仕様：
     - 背景・目的に準ずる
     
-- MIDDLEの分岐をやめて、PRACTICE-＞EASY-＞MIDDLE-＞HARD->ULTIMATEの順番にする
+- [done] MIDDLEの分岐をやめて、PRACTICE-＞EASY-＞MIDDLE-＞HARD->ULTIMATEの順番にする
   - 背景・目的
     - 分岐に意味と意義が見いだせなかったため廃止
     - 分岐することで楽しめる要素を検討してから将来的に追加
