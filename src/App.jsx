@@ -375,6 +375,7 @@ const COMBO_STAGE_DEFS = [
   { id: "stage4", threshold: 25 },
   { id: "overdrive", threshold: 30 },
 ];
+const ENEMY_SPELL_STAGE_IDS = new Set(["stage1", "stage2", "stage3"]);
 
 const ENDLESS_INITIAL_BATCH = 30;
 const ENDLESS_REFILL_BATCH = 15;
@@ -3511,22 +3512,20 @@ export default function App() {
 
   useEffect(() => {
     if (screen !== "picross") return undefined;
-    if (!enemyReadyStages.length) return undefined;
-    const ordered = enemyReadyStages
+    const availableStages = enemyReadyStages.filter((stageId) =>
+      ENEMY_SPELL_STAGE_IDS.has(stageId),
+    );
+    if (!availableStages.length) return undefined;
+    const ordered = availableStages
       .slice()
       .sort((a, b) => getStageThreshold(b) - getStageThreshold(a));
     const stageId = ordered[0];
     if (!stageId) return undefined;
     if (enemyCastingRef.current) return undefined;
     const enemyConfig = battleNode ? getEnemyAiConfig(battleNode) : DEFAULT_ENEMY_CONFIG;
-    const spellChance = enemyConfig.spellChance ?? 1;
     const maxDelay = enemyConfig.spellMaxDelay ?? 2500;
     const minDelay = enemyConfig.spellMinDelay ?? 1500;
     const delay = Math.max(minDelay, Math.min(maxDelay, minDelay + Math.random() * (maxDelay - minDelay)));
-    const roll = Math.random();
-    if (roll > spellChance) {
-      return undefined;
-    }
     enemyCastingRef.current = true;
     if (enemyStageCooldownRef.current) {
       clearTimeout(enemyStageCooldownRef.current);
@@ -3654,6 +3653,9 @@ export default function App() {
           setEnemyGrid(next);
           enemyProgressRef.current.filled += filled.length;
           enemyGridRef.current = next;
+          if (filled.length) {
+            incrementCombo("enemy");
+          }
           enemyOrderRef.current = { list: buildEnemyOrder(next, enemySolution), index: 0 };
           const completion = applyLineCompletions(next, enemySolution);
           if (completion.changed) {
@@ -3873,9 +3875,11 @@ export default function App() {
         enemySolverRef.current = setTimeout(tick, nextDelay());
         return;
       }
-      if (placed && intendedValue === 1) {
+      if (placed && shouldFill && (intendedValue === 1 || intendedValue === 2)) {
         incrementCombo("enemy");
-        enemyProgressRef.current.filled += 1;
+        if (intendedValue === 1) {
+          enemyProgressRef.current.filled += 1;
+        }
         enemyStallCountRef.current = 0;
       }
       const completionAfterGuess = applyLineCompletions(enemyGridRef.current, enemySolution);
@@ -4697,7 +4701,7 @@ export default function App() {
             onClick={togglePaused}
             disabled={screen !== "picross"}
           >
-            {paused ? "Resume" : "Pause"}
+            {paused ? "Resume" : "Pause/Quit"}
           </button>
           <button
             className={`ghost bgm ${soundOn ? "on" : "off"}`}
@@ -5005,20 +5009,7 @@ export default function App() {
                 Puzzle {displayPuzzleStep} / {puzzleGoal}
               </div>
             </div>
-            <div className="top-right hud-actions">
-              <button
-                className="ghost"
-                onClick={() => setGrid(emptyGrid(size))}
-              >
-                Reset
-              </button>
-              <button className="ghost" onClick={handleQuitPicross}>
-                Quit
-              </button>
-              <button className="primary" onClick={handleSubmit}>
-                Submit
-              </button>
-            </div>
+            <div className="top-right hud-actions" />
           </div>
           <div className="game-center">
             <div className="battle-panels">
@@ -5163,6 +5154,9 @@ export default function App() {
                   <div className="pause-actions">
                     <button className="primary" type="button" onClick={togglePaused}>
                       Resume
+                    </button>
+                    <button className="ghost" type="button" onClick={handleQuitPicross}>
+                      Quit
                     </button>
                   </div>
                 </div>
