@@ -142,21 +142,40 @@ Execute in order:
 ## 5. TASKLIST Protocol (Global) + tasklist.md (Custom Command)
 
 TASKLIST protocol is the canonical development flow.
-The custom command `tasklist.md` is the main entrypoint and MUST follow:
+The custom command `tasklist.md` is the main entrypoint and MUST follow.
 
-For each TASK in `TASKLIST.md` (or the selected `$1` task):
-1. **Create a task worktree** for this task if not already present.
+### Single-task mode (legacy)
+If `tasklist.md` is called with a single argument (e.g., `$1`):
+- Treat it as **one TASK**
+- Execute the per-task workflow below
+
+### Multi-task mode (recommended)
+If `tasklist.md` is called with multiple arguments (e.g., `$@`):
+- Treat it as **TASKS = all provided tasks**
+- Execute the per-task workflow below **for each TASK**
+- Tasks MUST be isolated:
+  - **One task worktree per TASK**
+  - **One design staging file per TASK**
+- The agent MUST NOT merge tasks into the same branch/worktree.
+
+---
+
+### Per-task workflow (applies to both single/multi modes)
+
+For each TASK in `TASKLIST.md` (or the selected task(s)):
+
+1. **Create a task worktree** for this TASK if not already present.
 2. Read the task and extract a clear “タスク仕様”.
-3. Copy `GAMEDESIGN.md` → `GAMEDESIGN-new.md`
-4. Merge “タスク仕様” into `GAMEDESIGN-new.md`
+3. Copy `GAMEDESIGN.md` → `GAMEDESIGN-new-<TASK>.md` (IMPORTANT: per-task file)
+4. Merge “タスク仕様” into `GAMEDESIGN-new-<TASK>.md`
 5. Run “タスク仕様確認処理”:
    - No conflicts/batting with existing specs
    - No contradictions
    - No excessive ambiguity that cannot be resolved
-6. Show `GAMEDESIGN.md` vs `GAMEDESIGN-new.md` DIFF and **require approval**
+6. Show `GAMEDESIGN.md` vs `GAMEDESIGN-new-<TASK>.md` DIFF and **require approval**
 7. On approval:
    - Create a GitHub issue for the task spec using `gh` (include “タスク仕様”)
-   - Regenerate app sources/config/assets from `GAMEDESIGN-new.md`
+   - Regenerate app sources/config/assets from `GAMEDESIGN-new-<TASK>.md`
    - Leave human-readable 1-line intent comments where possible
 8. Show code/config/assets DIFF:
    - Provide file list + diff summary
@@ -168,13 +187,23 @@ For each TASK in `TASKLIST.md` (or the selected `$1` task):
    - Close the issue
    - Mark `[done]` in `TASKLIST.md`
 10. If not approved at any approval gate:
-   - Incorporate user feedback into `GAMEDESIGN-new.md`
+   - Incorporate user feedback into `GAMEDESIGN-new-<TASK>.md`
    - Re-run from the appropriate validation step
 
-### Merging back to GAMEDESIGN.md
-After tasks complete:
-- Apply the diff between `GAMEDESIGN-new.md` and `GAMEDESIGN.md` into `GAMEDESIGN.md`
-- Show diff and request approval before committing
+---
+
+### Consolidating design back to GAMEDESIGN.md (Batch-safe)
+
+Because multi-task mode produces multiple design staging files, consolidation MUST be explicit.
+
+After one or more tasks complete:
+- Consolidate the diff(s) from `GAMEDESIGN-new-<TASK>.md` into `GAMEDESIGN.md`
+- Show a single consolidated diff and request approval before committing
+
+Rules:
+- Do not overwrite `GAMEDESIGN.md` silently.
+- If multiple tasks introduce conflicting design edits, report the conflict and request user direction.
+- Consolidation is the only step that changes the shared contract (`GAMEDESIGN.md`).
 
 ---
 
@@ -225,13 +254,19 @@ When presenting for approval, output:
 - Task:
 - Worktree + branch:
 - Design changes summary:
-- `GAMEDESIGN.md` ↔ `GAMEDESIGN-new.md` diff
+- `GAMEDESIGN.md` ↔ `GAMEDESIGN-new-<TASK>.md` diff
 
 ### Implementation DIFF approval request
 - Changed files list:
 - 1-line summary per change:
 - How to test (`make dev`, `make test`, etc.)
 - Risks / rollback notes
+
+### Multi-task progress report (when applicable)
+- Tasks queued:
+- Tasks in progress (worktree/branch per task):
+- Tasks completed:
+- Conflicts/blocked items (if any) and what decision is needed:
 
 ---
 
@@ -253,3 +288,4 @@ At minimum:
 ## 10. If Unclear
 Do not guess and do not modify shared state.
 Default to read-only inspection, then ask for user direction.
+
