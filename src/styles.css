@@ -4511,6 +4511,11 @@ button:focus-visible {
   width: min(168px, 92%);
 }
 
+.slot-shape--hidden,
+.slot-meaning--hidden {
+  visibility: hidden;
+}
+
 .slot-cell {
   width: 100%;
   aspect-ratio: 1;
