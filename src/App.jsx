@@ -4865,7 +4865,7 @@ export default function App() {
       )}
 
       {screen === "route" && (
-        <div className="route-layout">
+        <div className={`route-layout ${showRouteStory ? "" : "story-hidden"}`}>
           <div className="route-main">
             <RouteMap
               graph={ROUTE}
@@ -4899,18 +4899,18 @@ export default function App() {
           }}
         />
           </div>
-          <aside className={`route-story-panel ${showRouteStory ? "" : "collapsed"}`}>
-            <div className="route-story-header">
-              <div className="route-story-title">ここまでのストーリー</div>
-              <button
-                type="button"
-                className="route-story-toggle"
-                onClick={() => setShowRouteStory((v) => !v)}
-              >
-                {showRouteStory ? "非表示" : "表示"}
-              </button>
-            </div>
-            {showRouteStory ? (
+          {showRouteStory ? (
+            <aside className="route-story-panel">
+              <div className="route-story-header">
+                <div className="route-story-title">ここまでのストーリー</div>
+                <button
+                  type="button"
+                  className="route-story-toggle"
+                  onClick={() => setShowRouteStory(false)}
+                >
+                  非表示
+                </button>
+              </div>
               <div className="route-story-list" ref={routeStoryListRef}>
                 {storyEntries.map((entry, idx) => {
                   const isLatest = idx === storyEntries.length - 1;
@@ -4977,8 +4977,16 @@ export default function App() {
                   );
                 })}
               </div>
-            ) : null}
-          </aside>
+            </aside>
+          ) : (
+            <button
+              type="button"
+              className="route-story-bookmark"
+              onClick={() => setShowRouteStory(true)}
+            >
+              ストーリー
+            </button>
+          )}
         </div>
       )}
 
