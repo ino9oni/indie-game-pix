@@ -2,9 +2,20 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: v9.5.0
+Current release: v9.6.0
 
-## Release Highlights (v9.5.0)
+## Release Highlights (v9.6.0)
+
+前回リリース (v9.5.0) からの主な変更:
+
+- 勝利画面のコレクション枠を実数に合わせ、未解放は枠のみ表示して進捗の整合性を改善。
+- プロローグ画面では共通ヘッダーを非表示にし、演出とBGM操作の一貫性を確保。
+- マップモードのノードとエッジを拡大して視認性を向上。
+- ENEMYスペルの発動が安定するよう調整。
+- Reset/Submit/Quit ボタンを非表示化。
+- エピローグに Special Thanks を追加。
+
+## Previous Release Highlights (v9.5.0)
 
 前回リリース (v9.4.0) からの主な変更:
 
