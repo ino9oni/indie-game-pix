@@ -12,7 +12,7 @@ const EDGE_SLOPE = Math.tan((EDGE_ANGLE_DEG * Math.PI) / 180);
 const HERO_TRAVEL_MIN_MS = 600;
 const HERO_TRAVEL_MAX_MS = 2000;
 const START_VERTICAL_RATIO = 0.78;
-const HORIZONTAL_STEP_SCALE = 0.25;
+const HORIZONTAL_STEP_SCALE = 0.2;
 
 const ENCOUNTER_SHARDS = [
   { key: "shard-1", rotate: -18, tx: "-22%", ty: "-10%", delay: "60ms" },
@@ -181,7 +181,7 @@ export default function RouteMap({
       maxDepth > 0 ? innerWidth / maxDepth : innerWidth / 2;
     const horizontalStep = Math.max(
       baseStep * HORIZONTAL_STEP_SCALE,
-      innerWidth * 0.12,
+      innerWidth * 0.1,
     );
     const slopeStep = horizontalStep * EDGE_SLOPE;
 
