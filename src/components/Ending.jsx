@@ -34,6 +34,9 @@ export default function Ending({ heroName = "主人公", endingNode = "elf-true-
       { role: "Illustration", name: "Stable Diffusion Automatic" },
       { role: "Scenario", name: "ChatGPT / gpt-5" },
       { role: "Programmer", name: "ChatGPT / codex-gpt-5" },
+      // Special Thanks section
+      { role: "Special Thanks", name: "" },
+      { role: "TestPlayer", name: "sideofall" },
     ],
     [],
   );
