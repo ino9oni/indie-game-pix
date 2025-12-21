@@ -31,6 +31,11 @@ const NODE_SHADOW_OFFSET_X = 6 * NODE_SCALE;
 const NODE_SHADOW_OFFSET_Y = 6 * NODE_SCALE;
 const NODE_SHADOW_RX = NODE_HALF_WIDTH + 6 * NODE_SCALE;
 const NODE_SHADOW_RY = NODE_HALF_HEIGHT * 0.8;
+const HERO_SPRITE_SCALE = 4;
+const HERO_SPRITE_WIDTH = 20 * HERO_SPRITE_SCALE;
+const HERO_SPRITE_HEIGHT = 60 * HERO_SPRITE_SCALE;
+const HERO_SPRITE_OFFSET_X = HERO_SPRITE_WIDTH / 2;
+const HERO_SPRITE_OFFSET_Y = HERO_SPRITE_HEIGHT / 2;
 
 const NODE_VARIANTS = {
   normal: {
@@ -546,8 +551,8 @@ export default function RouteMap({
               <stop offset="100%" stopColor="rgba(90, 86, 224, 0.85)" />
             </linearGradient>
             <linearGradient id="route-edge-gradient" x1="0%" y1="50%" x2="100%" y2="50%">
-              <stop offset="0%" stopColor="var(--accent-primary-strong)" />
-              <stop offset="100%" stopColor="var(--accent-secondary-strong)" />
+              <stop offset="0%" stopColor="#b98952" />
+              <stop offset="100%" stopColor="#8b5a2b" />
             </linearGradient>
           </defs>
 
@@ -762,10 +767,10 @@ export default function RouteMap({
             return (
               <image
                 href={heroImg}
-                x={p.x - 10}
-                y={p.y - 30}
-                width="20"
-                height="60"
+                x={p.x - HERO_SPRITE_OFFSET_X}
+                y={p.y - HERO_SPRITE_OFFSET_Y}
+                width={HERO_SPRITE_WIDTH}
+                height={HERO_SPRITE_HEIGHT}
                 preserveAspectRatio="xMidYMid meet"
               />
             );

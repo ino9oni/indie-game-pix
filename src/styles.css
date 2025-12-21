@@ -3540,37 +3540,37 @@ button:focus-visible {
 }
 
 .route-edge-shadow {
-  stroke: rgba(15, 23, 42, 0.35);
-  stroke-width: 6px;
-  opacity: 0.45;
+  stroke: rgba(55, 34, 18, 0.45);
+  stroke-width: 12px;
+  opacity: 0.5;
   filter: blur(1.2px);
 }
 
 .route-edge-shadow--visited {
-  stroke: rgba(59, 130, 246, 0.35);
-  opacity: 0.6;
+  stroke: rgba(139, 90, 43, 0.5);
+  opacity: 0.7;
 }
 
 .route-edge {
   stroke: url(#route-edge-gradient);
-  stroke-width: 6px;
+  stroke-width: 10px;
   stroke-linecap: round;
   opacity: 0.85;
 }
 
 .route-edge--visited {
-  stroke: rgba(96, 165, 250, 0.65);
-  opacity: 0.9;
+  stroke: rgba(175, 120, 70, 0.9);
+  opacity: 0.95;
 }
 
 .route-edge-glow {
-  stroke: #5ee7ff;
-  stroke-width: 10px;
+  stroke: #d9b07c;
+  stroke-width: 14px;
   stroke-linecap: round;
   stroke-dasharray: 1 12;
   stroke-dashoffset: 0;
   animation: route-edge-glow 180ms linear infinite;
-  filter: drop-shadow(0 0 10px rgba(94, 231, 255, 0.7));
+  filter: drop-shadow(0 0 10px rgba(217, 176, 124, 0.65));
 }
 
 @keyframes route-edge-glow {
