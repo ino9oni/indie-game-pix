@@ -3515,9 +3515,9 @@ button:focus-visible {
 
 .route-edge-shadow {
   stroke: rgba(15, 23, 42, 0.35);
-  stroke-width: 3px;
+  stroke-width: 6px;
   opacity: 0.45;
-  filter: blur(0.6px);
+  filter: blur(1.2px);
 }
 
 .route-edge-shadow--visited {
@@ -3527,7 +3527,7 @@ button:focus-visible {
 
 .route-edge {
   stroke: url(#route-edge-gradient);
-  stroke-width: 3px;
+  stroke-width: 6px;
   stroke-linecap: round;
   opacity: 0.85;
 }
@@ -3539,12 +3539,12 @@ button:focus-visible {
 
 .route-edge-glow {
   stroke: #5ee7ff;
-  stroke-width: 5px;
+  stroke-width: 10px;
   stroke-linecap: round;
   stroke-dasharray: 1 12;
   stroke-dashoffset: 0;
   animation: route-edge-glow 180ms linear infinite;
-  filter: drop-shadow(0 0 6px rgba(94, 231, 255, 0.7));
+  filter: drop-shadow(0 0 10px rgba(94, 231, 255, 0.7));
 }
 
 @keyframes route-edge-glow {
@@ -3597,14 +3597,14 @@ button:focus-visible {
 
 .route-node-highlight {
   stroke: rgba(255, 255, 255, 0.35);
-  stroke-width: 1.2px;
+  stroke-width: 2.4px;
   stroke-linecap: round;
   opacity: 0;
   transition: opacity 160ms ease;
 }
 
 .route-node-highlight-front {
-  stroke-width: 1.4px;
+  stroke-width: 2.8px;
 }
 
 .route-node-highlight-back {
