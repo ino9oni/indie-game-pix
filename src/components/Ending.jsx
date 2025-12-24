@@ -31,7 +31,7 @@ export default function Ending({ heroName = "主人公", endingNode = "elf-true-
   const credits = useMemo(
     () => [
       { role: "Sound Design", name: "ino9" },
-      { role: "Illustration", name: "Stable Diffusion Automatic" },
+      { role: "Illustration", name: "ChatGPT" },
       { role: "Scenario", name: "ChatGPT / gpt-5" },
       { role: "Programmer", name: "ChatGPT / codex-gpt-5" },
       // Special Thanks section

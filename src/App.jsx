@@ -23,6 +23,7 @@ import audio from "./audio/AudioManager.js";
 import bgm from "./audio/BgmPlayer.js";
 import { TRACKS } from "./audio/tracks.js";
 import { assetPath } from "./utils/assetPath.js";
+import { preloadAssets } from "./utils/preload_assets.js";
 import { DEFAULT_HERO_NAME } from "./constants/heroName.js";
 
 const GAME_SECONDS = 30 * 60; // 30 minutes
@@ -2135,6 +2136,29 @@ export default function App() {
     } catch {}
   }, [fontScale]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    let cancelled = false;
+    const kickoff = () => {
+      if (cancelled) return;
+      preloadAssets().catch(() => {});
+    };
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(kickoff, { timeout: 2000 });
+      return () => {
+        cancelled = true;
+        if ("cancelIdleCallback" in window) {
+          window.cancelIdleCallback(idleId);
+        }
+      };
+    }
+    const timer = setTimeout(kickoff, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, []);
+
   const stopEnemyScoreAnimation = useCallback((nextValue) => {
     if (enemyScoreAnimTimerRef.current) {
       clearInterval(enemyScoreAnimTimerRef.current);
@@ -3442,10 +3466,7 @@ export default function App() {
 
   useEffect(() => {
     if (screen !== "route") return;
-    const hasProgress = eligibleStorySceneIds.length > 0;
-    const baseIds = hasProgress
-      ? ROUTE_STORY_BASE_IDS.filter((id) => ROUTE_STORY_SCENE_BY_ID.has(id))
-      : [];
+    const baseIds = ROUTE_STORY_BASE_IDS.filter((id) => ROUTE_STORY_SCENE_BY_ID.has(id));
     const next = [...baseIds, ...eligibleStorySceneIds.filter((id) => ROUTE_STORY_SCENE_BY_ID.has(id))];
     const previous = routeStoryLog || [];
     const previousSet = new Set(previous);
