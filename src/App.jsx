@@ -23,6 +23,7 @@ import audio from "./audio/AudioManager.js";
 import bgm from "./audio/BgmPlayer.js";
 import { TRACKS } from "./audio/tracks.js";
 import { assetPath } from "./utils/assetPath.js";
+import { preloadAssets } from "./utils/preload_assets.js";
 import { DEFAULT_HERO_NAME } from "./constants/heroName.js";
 
 const GAME_SECONDS = 30 * 60; // 30 minutes
@@ -2134,6 +2135,29 @@ export default function App() {
       localStorage.setItem("fontScale", String(fontScale));
     } catch {}
   }, [fontScale]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    let cancelled = false;
+    const kickoff = () => {
+      if (cancelled) return;
+      preloadAssets().catch(() => {});
+    };
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(kickoff, { timeout: 2000 });
+      return () => {
+        cancelled = true;
+        if ("cancelIdleCallback" in window) {
+          window.cancelIdleCallback(idleId);
+        }
+      };
+    }
+    const timer = setTimeout(kickoff, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, []);
 
   const stopEnemyScoreAnimation = useCallback((nextValue) => {
     if (enemyScoreAnimTimerRef.current) {
