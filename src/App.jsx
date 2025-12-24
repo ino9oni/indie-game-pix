@@ -3442,10 +3442,7 @@ export default function App() {
 
   useEffect(() => {
     if (screen !== "route") return;
-    const hasProgress = eligibleStorySceneIds.length > 0;
-    const baseIds = hasProgress
-      ? ROUTE_STORY_BASE_IDS.filter((id) => ROUTE_STORY_SCENE_BY_ID.has(id))
-      : [];
+    const baseIds = ROUTE_STORY_BASE_IDS.filter((id) => ROUTE_STORY_SCENE_BY_ID.has(id));
     const next = [...baseIds, ...eligibleStorySceneIds.filter((id) => ROUTE_STORY_SCENE_BY_ID.has(id))];
     const previous = routeStoryLog || [];
     const previousSet = new Set(previous);
