@@ -2,9 +2,18 @@
 
 Stylish, colorful Picross (nonogram) game built with React + Vite.
 
-Current release: v9.6.0
+Current release: v9.7.0
 
-## Release Highlights (v9.6.0)
+## Release Highlights (v9.7.0)
+
+前回リリース (v9.6.0) からの主な変更:
+
+- ヘッダメニューの上余白を追加し、トップ領域の詰まり感を解消。
+- エンディングのイラストクレジット表記を「ChatGPT」に統一。
+- マップ初期表示でプロローグ/スタート直後ストーリーを事前表示。
+- 画像・音楽アセットを起動時にプリロードし、キャッシュから高速化。
+
+## Previous Release Highlights (v9.6.0)
 
 前回リリース (v9.5.0) からの主な変更:
 
@@ -14,7 +23,6 @@ Current release: v9.6.0
 - ENEMYスペルの発動が安定するよう調整。
 - Reset/Submit/Quit ボタンを非表示化。
 - エピローグに Special Thanks を追加。
-
 ## Previous Release Highlights (v9.5.0)
 
 前回リリース (v9.4.0) からの主な変更:
