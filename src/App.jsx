@@ -107,17 +107,33 @@ const SPELL_THEME_MAP = {
   ultra: "inferno",
 };
 
-const createEffectDataUri = (from, to) => {
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 900'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='${from}' stop-opacity='0.95'/><stop offset='100%' stop-color='${to}' stop-opacity='0.75'/></linearGradient></defs><rect width='1400' height='900' fill='url(%23g)'/><circle cx='320' cy='220' r='180' fill='${from}' fill-opacity='0.35'/><circle cx='1080' cy='640' r='220' fill='${to}' fill-opacity='0.28'/><path d='M160 520 Q420 360 720 440 T1280 360' stroke='${from}' stroke-width='48' stroke-opacity='0.32' fill='none' stroke-linecap='round'/><path d='M160 600 Q420 740 720 660 T1280 740' stroke='${to}' stroke-width='38' stroke-opacity='0.28' fill='none' stroke-linecap='round'/></svg>`;
+const createEffectDataUri = (from, to, direction = "ltr") => {
+  const isRtl = direction === "rtl";
+  const orbPrimaryX = isRtl ? 1080 : 320;
+  const orbSecondaryX = isRtl ? 320 : 1080;
+  const circles = `<circle cx='${orbPrimaryX}' cy='220' r='180' fill='${from}' fill-opacity='0.35'/><circle cx='${orbSecondaryX}' cy='640' r='220' fill='${to}' fill-opacity='0.28'/>`;
+  const armPaths = `<path d='M160 520 Q420 360 720 440 T1280 360' stroke='${from}' stroke-width='48' stroke-opacity='0.32' fill='none' stroke-linecap='round'/><path d='M160 600 Q420 740 720 660 T1280 740' stroke='${to}' stroke-width='38' stroke-opacity='0.28' fill='none' stroke-linecap='round'/>`;
+  const armGroup = isRtl
+    ? `<g transform='translate(1400 0) scale(-1 1)'>${armPaths}</g>`
+    : armPaths;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 900'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='${from}' stop-opacity='0.95'/><stop offset='100%' stop-color='${to}' stop-opacity='0.75'/></linearGradient></defs><rect width='1400' height='900' fill='url(%23g)'/>${circles}${armGroup}</svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
 const SPELL_EFFECT_IMAGES = {
-  radiant: createEffectDataUri("#3fe7ff", "#19e5c2"),
-  tide: createEffectDataUri("#4cc4ff", "#6f8dff"),
-  quake: createEffectDataUri("#cda37a", "#8c6239"),
-  venom: createEffectDataUri("#7d5cff", "#e75378"),
-  inferno: createEffectDataUri("#ff9c3f", "#ff3f6c"),
+  radiant: createEffectDataUri("#3fe7ff", "#19e5c2", "ltr"),
+  tide: createEffectDataUri("#4cc4ff", "#6f8dff", "ltr"),
+  quake: createEffectDataUri("#cda37a", "#8c6239", "ltr"),
+  venom: createEffectDataUri("#7d5cff", "#e75378", "ltr"),
+  inferno: createEffectDataUri("#ff9c3f", "#ff3f6c", "ltr"),
+};
+
+const SPELL_EFFECT_IMAGES_ENEMY = {
+  radiant: createEffectDataUri("#3fe7ff", "#19e5c2", "rtl"),
+  tide: createEffectDataUri("#4cc4ff", "#6f8dff", "rtl"),
+  quake: createEffectDataUri("#cda37a", "#8c6239", "rtl"),
+  venom: createEffectDataUri("#7d5cff", "#e75378", "rtl"),
+  inferno: createEffectDataUri("#ff9c3f", "#ff3f6c", "rtl"),
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -1630,7 +1646,10 @@ export default function App() {
           : CHARACTERS[battleNode]?.images?.angry || HERO_IMAGES.angry);
       const nodeDifficulty = CHARACTERS[battleNode]?.difficulty || level;
       const theme = resolveSpellTheme(nodeDifficulty);
-      const effectImage = payload?.effectImage || SPELL_EFFECT_IMAGES[theme] || null;
+      const baseEffect = SPELL_EFFECT_IMAGES[theme] || null;
+      const enemyEffect = SPELL_EFFECT_IMAGES_ENEMY[theme] || baseEffect;
+      const effectImage =
+        payload?.effectImage || (caster === "enemy" ? enemyEffect : baseEffect) || null;
       const impactCells = Array.isArray(payload?.impactCells) ? payload.impactCells : [];
       const boardSize = payload?.boardSize || 10;
       // Expand impact cells to a small halo so近傍セルも光る
