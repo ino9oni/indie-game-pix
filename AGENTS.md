@@ -226,32 +226,27 @@ Rules:
 
 ### Main merge rule
 Before/after release:
-- Confirm commit diffs between the feature branch (e.g. `feature/rewrite-from-gamedesign`) and `main`
-- Create PR, get approval, merge to `main`
+- Confirm commit diffs between task branches and `main`
+- Get user approval, merge to `main`
 - Release must not run from random task worktrees.
 
-### Sequential merge flow (worktrees -> feature -> main)
+### Sequential merge flow (worktrees -> main)
 Use this sequence whenever multiple task worktrees exist:
-1) **Merge task branches into the feature branch**
-   - Work in the **feature worktree** (not a task worktree).
-   - `git fetch`, then `git pull --ff-only` on `feature/rewrite-from-gamedesign`.
-   - Merge each task branch (merge commit preferred):  
+1) **Prepare main merge worktree**
+   - Work in a **main worktree** (not a task worktree).
+   - `git fetch`, then `git pull --ff-only` on `main`.
+2) **Merge task branches into main**
+   - Merge each task branch:  
      `git merge --no-ff task/<TASK>`  
-   - Resolve conflicts in the feature worktree only, commit the merge.
-   - Push: `git push origin feature/rewrite-from-gamedesign`.
-2) **Merge feature into main**
-   - Create a temporary merge branch from `origin/main`:  
-     `git switch -c merge-main origin/main`
-   - Merge feature:  
-     `git merge --no-ff feature/rewrite-from-gamedesign`
-   - Push to main: `git push origin HEAD:main`
+   - Resolve conflicts in the main merge worktree only.
+   - Show diff summary and require user approval before pushing.
+   - Push: `git push origin main`.
 3) **Update local branches/worktrees after merge**
-   - In `main` worktree: `git checkout main && git pull`
-   - In feature worktree: `git checkout feature/rewrite-from-gamedesign && git pull`
+   - In `main` worktree: `git pull` (only if clean).
    - For completed task worktrees: either `git pull --ff-only` to sync or remove the worktree per policy.
 Notes:
-- Never merge *from* a task worktree; always merge *into* feature in the feature worktree.
-- Keep task worktrees isolated; only the feature worktree handles conflict resolution.
+- Never merge *from* a task worktree; always merge *into* main in the main merge worktree.
+- `feature/rewrite-from-gamedesign` is deprecated and should not be used.
 
 ---
 
