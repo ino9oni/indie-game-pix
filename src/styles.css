@@ -3075,7 +3075,12 @@ button:focus-visible {
   padding: var(--route-pad);
 }
 .route-canvas {
-  background: linear-gradient(135deg, rgba(6, 12, 26, 0.86), rgba(12, 22, 44, 0.82));
+  background:
+    linear-gradient(135deg, rgba(6, 12, 26, 0.28), rgba(12, 22, 44, 0.34)),
+    url("/assets/img/background/map.png");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
   border: 1px solid var(--surface-border);
   border-radius: 18px;
   position: relative;
@@ -3555,8 +3560,13 @@ button:focus-visible {
 }
 
 .route-edge-shadow--visited {
-  stroke: rgba(139, 90, 43, 0.5);
+  stroke: rgba(85, 55, 30, 0.6);
   opacity: 0.7;
+}
+
+.route-edge-shadow--end {
+  stroke: rgba(85, 55, 30, 0.72);
+  opacity: 0.8;
 }
 
 .route-edge {
@@ -3567,8 +3577,13 @@ button:focus-visible {
 }
 
 .route-edge--visited {
-  stroke: rgba(175, 120, 70, 0.9);
-  opacity: 0.95;
+  stroke: #8b5a2b;
+  opacity: 0.92;
+}
+
+.route-edge--end {
+  stroke: #8b5a2b;
+  opacity: 0.92;
 }
 
 .route-edge-glow {

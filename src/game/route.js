@@ -2,14 +2,21 @@
 import { assetPath } from "../utils/assetPath.js";
 
 export const ROUTE = {
+  layout: "fixed",
+  bounds: {
+    minX: 0,
+    maxX: 1536,
+    minY: 0,
+    maxY: 1024,
+  },
   nodes: {
-    start: { x: 100, y: 320, type: "start", label: "Start" },
-    "elf-practice": { x: 240, y: 270, type: "elf", label: "翠緑の門" },
-    "elf-easy": { x: 380, y: 220, type: "elf", label: "木漏れ日の小径" },
-    "elf-middle": { x: 520, y: 170, type: "elf", label: "刻印の広間" },
-    "elf-hard": { x: 660, y: 120, type: "elf", label: "精霊の花園" },
-    "elf-ultra": { x: 800, y: 70, type: "elf", label: "森羅の社" },
-    "elf-true-ending": { x: 940, y: 20, type: "end", label: "黎明の庭" },
+    start: { x: 150, y: 940, type: "start", label: "Start" },
+    "elf-practice": { x: 400, y: 850, type: "elf", label: "翠緑の門" },
+    "elf-easy": { x: 1050, y: 760, type: "elf", label: "木漏れ日の小径" },
+    "elf-middle": { x: 320, y: 320, type: "elf", label: "刻印の広間" },
+    "elf-hard": { x: 760, y: 360, type: "elf", label: "精霊の花園" },
+    "elf-ultra": { x: 1160, y: 300, type: "elf", label: "森羅の社" },
+    "elf-true-ending": { x: 1110, y: 60, type: "end", label: "黎明の庭" },
   },
   edges: [
     { from: "start", to: "elf-practice" },
