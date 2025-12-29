@@ -117,7 +117,7 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   padding: clamp(12px, 2vw, 20px) clamp(16px, 3vw, 28px);
-  margin: 0 clamp(12px, 3vw, 32px);
+  margin: 10px;
   border-radius: 20px;
   background: linear-gradient(125deg, rgba(6, 13, 30, 0.92), rgba(16, 30, 64, 0.78));
   border: 1px solid var(--surface-border);
