@@ -3553,8 +3553,13 @@ button:focus-visible {
 }
 
 .route-edge-shadow--visited {
-  stroke: rgba(139, 90, 43, 0.5);
+  stroke: rgba(85, 55, 30, 0.6);
   opacity: 0.7;
+}
+
+.route-edge-shadow--end {
+  stroke: rgba(85, 55, 30, 0.72);
+  opacity: 0.8;
 }
 
 .route-edge {
@@ -3565,8 +3570,13 @@ button:focus-visible {
 }
 
 .route-edge--visited {
-  stroke: rgba(175, 120, 70, 0.9);
-  opacity: 0.95;
+  stroke: #8b5a2b;
+  opacity: 0.92;
+}
+
+.route-edge--end {
+  stroke: #8b5a2b;
+  opacity: 0.92;
 }
 
 .route-edge-glow {

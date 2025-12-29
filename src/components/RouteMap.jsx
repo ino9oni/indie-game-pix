@@ -586,6 +586,8 @@ export default function RouteMap({
               const key = `${e.from}-${e.to}`;
               const edgeKey = e.from < e.to ? `${e.from}__${e.to}` : `${e.to}__${e.from}`;
               const isVisited = visitedEdges.has(edgeKey);
+              const isEndEdge =
+                nodes[e.from]?.type === "end" || nodes[e.to]?.type === "end";
               const isActive =
                 !!activeEdge &&
                 ((activeEdge.from === e.from && activeEdge.to === e.to) ||
@@ -593,13 +595,17 @@ export default function RouteMap({
               return (
                 <g key={key} className="route-edge-group">
                   <path
-                    className={`route-edge-shadow${isVisited ? " route-edge-shadow--visited" : ""}`}
+                    className={`route-edge-shadow${isVisited ? " route-edge-shadow--visited" : ""}${
+                      isEndEdge ? " route-edge-shadow--end" : ""
+                    }`}
                     d={d}
                     transform="translate(4 -4)"
                     fill="none"
                   />
                   <path
-                    className={`route-edge${isVisited ? " route-edge--visited" : ""}`}
+                    className={`route-edge${isVisited ? " route-edge--visited" : ""}${
+                      isEndEdge ? " route-edge--end" : ""
+                    }`}
                     d={d}
                     fill="none"
                   />
