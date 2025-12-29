@@ -3095,7 +3095,8 @@ button:focus-visible {
 
 .route-layout {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(320px, 1fr) minmax(0, 3fr);
+  grid-template-areas: "story main";
   grid-template-rows: 1fr;
   gap: 18px;
   width: 100%;
@@ -3107,10 +3108,12 @@ button:focus-visible {
 
 .route-layout.story-hidden {
   grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "main";
   gap: 0;
 }
 
 .route-main {
+  grid-area: main;
   min-width: 0;
   min-height: 0;
 }
@@ -3125,6 +3128,7 @@ button:focus-visible {
 }
 
 .route-story-panel {
+  grid-area: story;
   position: relative;
   background:
     linear-gradient(180deg, rgba(20, 44, 34, 0.94), rgba(10, 26, 20, 0.96));
@@ -3215,7 +3219,7 @@ button:focus-visible {
 .route-story-bookmark {
   position: absolute;
   top: 24px;
-  right: 10px;
+  left: 10px;
   writing-mode: vertical-rl;
   text-orientation: mixed;
   padding: 12px 8px;
@@ -3378,6 +3382,9 @@ button:focus-visible {
   .route-layout {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "main"
+      "story";
     height: 100%;
   }
   .route-story-panel {
