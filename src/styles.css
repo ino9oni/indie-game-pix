@@ -3075,7 +3075,12 @@ button:focus-visible {
   padding: var(--route-pad);
 }
 .route-canvas {
-  background: linear-gradient(135deg, rgba(6, 12, 26, 0.86), rgba(12, 22, 44, 0.82));
+  background:
+    linear-gradient(135deg, rgba(6, 12, 26, 0.28), rgba(12, 22, 44, 0.34)),
+    url("/assets/img/background/map.png");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
   border: 1px solid var(--surface-border);
   border-radius: 18px;
   position: relative;

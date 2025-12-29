@@ -73,6 +73,8 @@ export default function RouteMap({
   const rawNodes = graph?.nodes ?? {};
   const edges = graph?.edges ?? [];
   const parents = graph?.parents ?? {};
+  const bounds = graph?.bounds;
+  const useFixedLayout = graph?.layout === "fixed";
   const heroImg = assetPath("assets/img/character/hero/00083-826608146.png");
 
   const canvasRef = useRef(null);
@@ -135,21 +137,27 @@ export default function RouteMap({
       entries.find(([id]) => !parents[id])?.[0] ||
       (Object.prototype.hasOwnProperty.call(rawNodes, "start") ? "start" : entries[0][0]);
 
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
+    let minX = Number.isFinite(bounds?.minX) ? bounds.minX : Infinity;
+    let maxX = Number.isFinite(bounds?.maxX) ? bounds.maxX : -Infinity;
+    let minY = Number.isFinite(bounds?.minY) ? bounds.minY : Infinity;
+    let maxY = Number.isFinite(bounds?.maxY) ? bounds.maxY : -Infinity;
 
-    entries.forEach(([, node]) => {
-      if (Number.isFinite(node?.x)) {
-        minX = Math.min(minX, node.x);
-        maxX = Math.max(maxX, node.x);
-      }
-      if (Number.isFinite(node?.y)) {
-        minY = Math.min(minY, node.y);
-        maxY = Math.max(maxY, node.y);
-      }
-    });
+    if (!Number.isFinite(bounds?.minX) || !Number.isFinite(bounds?.maxX)) {
+      entries.forEach(([, node]) => {
+        if (Number.isFinite(node?.x)) {
+          minX = Math.min(minX, node.x);
+          maxX = Math.max(maxX, node.x);
+        }
+      });
+    }
+    if (!Number.isFinite(bounds?.minY) || !Number.isFinite(bounds?.maxY)) {
+      entries.forEach(([, node]) => {
+        if (Number.isFinite(node?.y)) {
+          minY = Math.min(minY, node.y);
+          maxY = Math.max(maxY, node.y);
+        }
+      });
+    }
 
     if (!Number.isFinite(minX)) minX = 0;
     if (!Number.isFinite(maxX)) maxX = Object.keys(rawNodes).length;
@@ -167,6 +175,21 @@ export default function RouteMap({
       1,
       canvasSize.height - INNER_PADDING_Y * 2,
     );
+
+    if (useFixedLayout) {
+      const positioned = {};
+      entries.forEach(([id, node]) => {
+        if (!node) return;
+        const nx = (node.x - minX) / spanX;
+        const ny = (node.y - minY) / spanY;
+        positioned[id] = {
+          ...node,
+          x: INNER_PADDING_X + nx * innerWidth,
+          y: INNER_PADDING_Y + ny * innerHeight,
+        };
+      });
+      return positioned;
+    }
 
     const depthMap = {};
     const queue = [rootId];
