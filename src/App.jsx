@@ -3111,7 +3111,10 @@ export default function App() {
         nextAction = { type: "route", node: clearedNode };
         setEndingNode(null);
       }
-      setLastNode(currentNode);
+      const normalizedCurrent = normalizeNodeId(currentNode);
+      if (normalizedCurrent !== clearedNode) {
+        setLastNode(normalizedCurrent);
+      }
       setCurrentNode(clearedNode);
       localStorage.setItem("routeNode", clearedNode);
       setPendingNode(null);
@@ -4923,6 +4926,14 @@ export default function App() {
           onArrive={async (id) => {
             const normalized = normalizeNodeId(id);
             if (CHARACTERS[normalized]) {
+              const normalizedCurrent = normalizeNodeId(currentNode);
+              if (normalized !== normalizedCurrent) {
+                setLastNode(normalizedCurrent);
+                setCurrentNode(normalized);
+                try {
+                  localStorage.setItem("routeNode", normalized);
+                } catch {}
+              }
               if (soundOn) {
                 try {
                       await audio.playEnemyEncounter();
