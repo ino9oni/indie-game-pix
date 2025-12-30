@@ -76,7 +76,7 @@ Changes to Layer 1 must be explicitly diffed and approved.
 
 ### Commits / PRs
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `perf:`
-- Branches: `feature/...`, `fix/...`, `chore/...` (worktree branches may also use `task/...`, see below)
+- Branches: `feature/...`, `fix/...`, `chore/...`; task worktrees **must** use `task/<TASK>`
 - PR: concise title/description, linked issues (`Closes #123`), screenshots for UI, risks/rollout, CI passing
 
 ### Security
@@ -96,15 +96,16 @@ We use `git worktree` to run tasks in parallel while maintaining consistency via
 - Each task runs only inside its worktree.
 - Avoid editing multiple worktrees in one “implementation pass”.
 
-### Recommended naming
-Worktree dirs (examples):
+### Required naming
+Worktree dirs:
 - `../repo-wt-task-<TASK>`
 - `../repo-wt-design`
 - `../repo-wt-release`
 
-Branch naming (choose one style consistently):
-- Option A (aligned with existing): `feature/<TASK>`, `fix/<TASK>`, `chore/<TASK>`
-- Option B (explicit parallel): `task/<TASK>`, `design/<TOPIC>`, `release/<VERSION>`
+Branch naming:
+- Tasks: `task/<TASK>`
+- Design/RFC: `design/<TOPIC>`
+- Release: `release/<VERSION>`
 
 ### Required checks before doing any work
 At the start of any command execution:
@@ -116,6 +117,7 @@ If not in the intended worktree, stop and `cd` to the correct directory.
 ### Worktree lifecycle
 - Create: `git worktree add <path> -b <branch> <start-point>`
 - Remove safely: `git worktree remove <path>` then `git worktree prune`
+  - After a task is merged into `main`, remove its task worktree to keep the repo tidy
 Never delete worktree folders manually.
 
 ---
@@ -166,28 +168,34 @@ For each TASK in `TASKLIST.md` (or the selected task(s)):
 
 1. **Create a task worktree** for this TASK if not already present.
 2. Read the task and extract a clear “タスク仕様”.
-3. Copy `GAMEDESIGN.md` → `GAMEDESIGN-new-<TASK>.md` (IMPORTANT: per-task file)
-4. Merge “タスク仕様” into `GAMEDESIGN-new-<TASK>.md`
-5. Run “タスク仕様確認処理”:
+3. Copy `GAMEDESIGN.md` → `docs/task_specs/archive/GAMEDESIGN-new-<TASK>.md` (IMPORTANT: per-task file, keep root clean)
+4. Add a **Task Spec Summary** header block at the top of `docs/task_specs/archive/GAMEDESIGN-new-<TASK>.md`:
+   - Objective
+   - Non-goals
+   - Affected files
+5. Merge “タスク仕様” into `docs/task_specs/archive/GAMEDESIGN-new-<TASK>.md`
+6. Run “タスク仕様確認処理”:
    - No conflicts/batting with existing specs
    - No contradictions
    - No excessive ambiguity that cannot be resolved
-6. Show `GAMEDESIGN.md` vs `GAMEDESIGN-new-<TASK>.md` DIFF and **require approval**
-7. On approval:
+7. Show `GAMEDESIGN.md` vs `docs/task_specs/archive/GAMEDESIGN-new-<TASK>.md` DIFF and **require approval**
+8. On approval:
    - Create a GitHub issue for the task spec using `gh` (include “タスク仕様”)
-   - Regenerate app sources/config/assets from `GAMEDESIGN-new-<TASK>.md`
+   - Regenerate app sources/config/assets from `docs/task_specs/archive/GAMEDESIGN-new-<TASK>.md`
    - Leave human-readable 1-line intent comments where possible
-8. Show code/config/assets DIFF:
+9. Show code/config/assets DIFF:
    - Provide file list + diff summary
    - **Require approval**
-9. On approval:
+10. On approval:
    - Reload dev server (`make dev` running state) so changes are reflected
    - Commit/push
    - Update the GitHub issue with commit SHA + log
    - Close the issue
    - Mark `[done]` in `TASKLIST.md`
-10. If not approved at any approval gate:
-   - Incorporate user feedback into `GAMEDESIGN-new-<TASK>.md`
+   - Move completed tasks into `TASKLIST-DONE.md` under a date header (`## YYYY-MM-DD`) and remove them from `TASKLIST.md`
+   - Keep `TASKLIST.md` **active-only** (no completed tasks remain there)
+11. If not approved at any approval gate:
+   - Incorporate user feedback into `docs/task_specs/archive/GAMEDESIGN-new-<TASK>.md`
    - Re-run from the appropriate validation step
 
 ---
@@ -197,7 +205,7 @@ For each TASK in `TASKLIST.md` (or the selected task(s)):
 Because multi-task mode produces multiple design staging files, consolidation MUST be explicit.
 
 After one or more tasks complete:
-- Consolidate the diff(s) from `GAMEDESIGN-new-<TASK>.md` into `GAMEDESIGN.md`
+- Consolidate the diff(s) from `docs/task_specs/archive/GAMEDESIGN-new-<TASK>.md` into `GAMEDESIGN.md`
 - Show a single consolidated diff and request approval before committing
 
 Rules:
