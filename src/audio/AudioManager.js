@@ -1,5 +1,6 @@
 // Simple Web Audio manager for SFX/BGM without external assets
 const VICTORY_FANFARE_URL = "./assets/bgm/indie-game-fanfare.wav"; // Picross victory SE (single-shot)
+const GAME_OVER_SE_URL = "./assets/bgm/indie-game-pix-ending.wav";
 const COLLECTION_UNLOCK_URL = "./assets/se/collection_unlock.wav";
 
 class AudioManager {
@@ -459,8 +460,18 @@ class AudioManager {
     await this.playStageClear();
   }
 
-  playGameOver() {
-    if (!this.enabled || !this.ctx) return;
+  async playGameOver() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const buffer = await this._loadSample("game_over_se", GAME_OVER_SE_URL);
+      await this._playBuffer(buffer, 0.85);
+      return;
+    } catch (_) {
+      /* fall back to synthetic game over */
+    }
+    if (!this.ctx) return;
     // Gentle descending closure
     const t0 = this.ctx.currentTime + 0.02;
     const seq = [784, 659, 523, 392]; // G5 E5 C5 G4

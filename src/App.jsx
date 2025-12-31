@@ -5251,6 +5251,7 @@ export default function App() {
 
       {screen === "gameover" && (
         <GameOver
+          heroName={heroName || "主人公"}
           onContinue={() => {
             if (battleNode) beginPicrossForNode(battleNode);
           }}
