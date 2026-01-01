@@ -2373,7 +2373,10 @@ export default function App() {
         track = TRACKS.ending || track;
         break;
       case "gameover":
-        track = TRACKS.route || track;
+        track = null;
+        break;
+      case "enemy-victory":
+        track = null;
         break;
       default:
         track = TRACKS.route || track;
@@ -2507,12 +2510,19 @@ export default function App() {
   }, [screen, soundOn]);
 
   useEffect(() => {
-    const handler = async () => {
+    const handler = async (event) => {
       if (resumeOnceRef.current) return;
+      if (
+        event?.type === "keydown" &&
+        ["Control", "Shift", "Alt", "Meta"].includes(event.key)
+      ) {
+        return;
+      }
       resumeOnceRef.current = true;
       try {
         await audio.enable();
       } catch {}
+      if (screen === "gameover" || screen === "enemy-victory") return;
       try {
         await bgm.resume();
       } catch {}
@@ -2523,7 +2533,7 @@ export default function App() {
       window.removeEventListener("pointerdown", handler);
       window.removeEventListener("keydown", handler);
     };
-  }, []);
+  }, [screen]);
 
   useEffect(() => {
     spedUpRef.current = false;
@@ -5242,6 +5252,7 @@ export default function App() {
       {screen === "enemy-victory" && (
         <EnemyVictory
           heroName={heroName || "主人公"}
+          soundOn={soundOn}
           onContinue={() => {
             if (battleNode) beginPicrossForNode(battleNode);
           }}
@@ -5252,6 +5263,7 @@ export default function App() {
       {screen === "gameover" && (
         <GameOver
           heroName={heroName || "主人公"}
+          soundOn={soundOn}
           onContinue={() => {
             if (battleNode) beginPicrossForNode(battleNode);
           }}

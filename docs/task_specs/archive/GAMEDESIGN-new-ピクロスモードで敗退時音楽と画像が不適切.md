@@ -1,7 +1,7 @@
 # Task Spec Summary
 - Objective: Show the HERO LOSE screen for all picross defeat cases and replace the defeat SFX with a game-over tone.
 - Non-goals: Redesigning time-out UX (tips/Again/Quit), or changing victory flow/score logic.
-- Affected files: src/components/GameOver.jsx, src/App.jsx, src/audio/AudioManager.js
+- Affected files: src/App.jsx, src/audio/AudioManager.js, src/components/EnemyVictory.jsx, src/components/GameOver.jsx
 
 # Role
 
@@ -999,10 +999,21 @@
   - HEROの敗北を強調しつつ、再挑戦または撤退を促す。
 - 表示
   - 背景はゲームオーバーモードと同様に暗転させ、中央に `public/assets/img/character/hero/hero_lose.png` を表示する。
-  - 見出しに `"${HERO_NAME} LOSE"` を表示し、サブテキストで敵の勝利を明示する（例："敵がすべてのお題を解き明かした！"）。
+  - 見出しに `"GAMEISOVER"` を表示し、サブテキストで敵の勝利を明示する（例："敵がすべてのお題を解き明かした！"）。
   - ボタン配置・スタイルはゲームオーバーモードと統一する。
-- サウンド
   - 遷移時にバトルBGMをフェードアウトし、`audio.playGameOver()` を呼び出して敗北感のある効果音を再生する。
+  - 敗北SEは**約4秒**鳴らし、未完結の物語を想起させる寂寥感のある和音進行＋メロディを含める。
+    - 低音・中音・高音の3レイヤー構成で、低音は沈むベース、中音は和音の厚み、高音は短い旋律で緩急を付ける。
+    - 中音は暗めで重い音色に寄せ、落胆感を強調する。
+    - 音色はクラシック寄り（弦・木管・オルガン系）に寄せる。
+    - 例：Aマイナー系で **Dm（サブドミナント）→ E（ドミナント）→ Am（トニック）→ F（サブドミナント）→ E（ドミナント）→ Am（トニック）** の順に鳴らし、最後はドミナントからトニックへ着地する。
+    - 旋律は低い音域から始め、最後に向かって高まる上昇ラインにする。
+    - レイヤーの出現順は「低音 → 高音 → 中音」を意識して流す。
+    - 速度（Velocity）は強・中・弱を織り交ぜて抑揚を付ける。
+    - ビブラートは中音レイヤーにのみ薄く加える。
+    - デバッグメニューの開閉などのキー入力で敗北SEを再トリガーしない。
+  - 画面表示中はBGMを再開せず、Continue / Quit 後に遷移先のBGMを再生する。
+  - Continue / Quit 押下時に敗北SEの再生を停止する。
 - 操作
   - **Continue**：現在のノードに対して再挑戦を開始する（`beginPicrossForNode` を再呼び出し、進行状況を初期化）。
   - **Quit**：オープニングへ戻り、BGMは `assets/bgm/indie-game-pix-opening.wav` を再生状態に戻す。
@@ -1015,11 +1026,21 @@
   - ENEMY勝利時と同様に HERO LOSE 画面を表示する。
 - 表示
   - 背景は暗転し、中央に `public/assets/img/character/hero/hero_lose.png` を表示する。
-  - 見出しに `"${HERO_NAME} LOSE"` を表示し、敗北理由を短いテキストで補足する（例："時間切れ、または解答が一致しませんでした。"）。
+  - 見出しに `"GAMEISOVER"` を表示し、敗北理由を短いテキストで補足する（例："時間切れ、または解答が一致しませんでした。"）。
   - ボタン配置・スタイルは ENEMY勝利モードと統一する。
-- サウンド
   - 遷移時にバトルBGMを停止し、`audio.playGameOver()` を呼び出して敗北SEを再生する。
-  - 敗北SEは `./assets/bgm/indie-game-pix-ending.wav` を単発再生する。
+  - 敗北SEは**約4秒**鳴らし、未完結の物語を想起させる寂寥感のある和音進行＋メロディを含める。
+    - 低音・中音・高音の3レイヤー構成で、低音は沈むベース、中音は和音の厚み、高音は短い旋律で緩急を付ける。
+    - 中音は暗めで重い音色に寄せ、落胆感を強調する。
+    - 音色はクラシック寄り（弦・木管・オルガン系）に寄せる。
+    - 例：Aマイナー系で **Dm（サブドミナント）→ E（ドミナント）→ Am（トニック）→ F（サブドミナント）→ E（ドミナント）→ Am（トニック）** の順に鳴らし、最後はドミナントからトニックへ着地する。
+    - 旋律は低い音域から始め、最後に向かって高まる上昇ラインにする。
+    - レイヤーの出現順は「低音 → 高音 → 中音」を意識して流す。
+    - 速度（Velocity）は強・中・弱を織り交ぜて抑揚を付ける。
+    - ビブラートは中音レイヤーにのみ薄く加える。
+    - デバッグメニューの開閉などのキー入力で敗北SEを再トリガーしない。
+  - 画面表示中はBGMを再開せず、Continue / Quit 後に遷移先のBGMを再生する。
+  - Continue / Quit 押下時に敗北SEの再生を停止する。
 
 ### エンディングモード
 

@@ -1,6 +1,5 @@
 // Simple Web Audio manager for SFX/BGM without external assets
 const VICTORY_FANFARE_URL = "./assets/bgm/indie-game-fanfare.wav"; // Picross victory SE (single-shot)
-const GAME_OVER_SE_URL = "./assets/bgm/indie-game-pix-ending.wav";
 const COLLECTION_UNLOCK_URL = "./assets/se/collection_unlock.wav";
 
 class AudioManager {
@@ -19,6 +18,7 @@ class AudioManager {
     this._fanfareSource = null;
     this._celebrationGain = null;
     this._scoreSource = null;
+    this._gameOverSources = [];
   }
 
   init() {
@@ -460,22 +460,158 @@ class AudioManager {
     await this.playStageClear();
   }
 
-  async playGameOver() {
+  stopGameOver() {
+    if (!this._gameOverSources?.length) return;
+    const sources = this._gameOverSources;
+    this._gameOverSources = [];
+    sources.forEach(({ osc, gain }) => {
+      try {
+        osc.stop();
+      } catch {}
+      try {
+        osc.disconnect();
+      } catch {}
+      try {
+        gain.disconnect();
+      } catch {}
+    });
+  }
+
+  _playGameOverChord(freqs, startAt, duration, gainValue) {
+    const { ctx, sfxGain } = this;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.linearRampToValueAtTime(gainValue, startAt + 0.06);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+    gain.connect(sfxGain);
+    freqs.forEach((freq) => {
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, startAt);
+      osc.connect(gain);
+      osc.start(startAt);
+      osc.stop(startAt + duration + 0.05);
+      osc.onended = () => {
+        try {
+          osc.disconnect();
+        } catch {}
+      };
+      this._gameOverSources.push({ osc, gain });
+    });
+  }
+
+  _playGameOverNote(freq, startAt, duration, gainValue, type = "sine") {
+    const { ctx, sfxGain } = this;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.linearRampToValueAtTime(gainValue, startAt + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+    gain.connect(sfxGain);
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startAt);
+    osc.connect(gain);
+    osc.start(startAt);
+    osc.stop(startAt + duration + 0.05);
+    osc.onended = () => {
+      try {
+        osc.disconnect();
+      } catch {}
+    };
+    this._gameOverSources.push({ osc, gain });
+  }
+
+  _playGameOverOrgan(freq, startAt, duration, gainValue, vibrato = false) {
+    const { ctx, sfxGain } = this;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.linearRampToValueAtTime(gainValue, startAt + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+    gain.connect(sfxGain);
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    osc1.type = "sine";
+    osc2.type = "sine";
+    osc1.frequency.setValueAtTime(freq, startAt);
+    osc2.frequency.setValueAtTime(freq * 0.5, startAt);
+    let lfo = null;
+    let lfoGain = null;
+    if (vibrato) {
+      lfo = ctx.createOscillator();
+      lfo.type = "sine";
+      lfo.frequency.setValueAtTime(5.2, startAt);
+      lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(7, startAt); // cents
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc1.detune);
+      lfoGain.connect(osc2.detune);
+      lfo.start(startAt);
+      lfo.stop(startAt + duration + 0.05);
+    }
+    osc1.connect(gain);
+    osc2.connect(gain);
+    osc1.start(startAt);
+    osc2.start(startAt);
+    osc1.stop(startAt + duration + 0.05);
+    osc2.stop(startAt + duration + 0.05);
+    osc1.onended = () => {
+      try {
+        osc1.disconnect();
+      } catch {}
+      try {
+        osc2.disconnect();
+      } catch {}
+      try {
+        lfo?.disconnect();
+      } catch {}
+      try {
+        lfoGain?.disconnect();
+      } catch {}
+    };
+    this._gameOverSources.push({ osc: osc1, gain });
+    this._gameOverSources.push({ osc: osc2, gain });
+    if (lfo) {
+      this._gameOverSources.push({ osc: lfo, gain: lfoGain });
+    }
+  }
+
+  playGameOver() {
     if (!this.enabled) return;
     this.init();
     if (!this.ctx) return;
-    try {
-      const buffer = await this._loadSample("game_over_se", GAME_OVER_SE_URL);
-      await this._playBuffer(buffer, 0.85);
-      return;
-    } catch (_) {
-      /* fall back to synthetic game over */
-    }
-    if (!this.ctx) return;
-    // Gentle descending closure
+    this.stopGameOver();
     const t0 = this.ctx.currentTime + 0.02;
-    const seq = [784, 659, 523, 392]; // G5 E5 C5 G4
-    seq.forEach((f, i) => this._note(f, t0 + i * 0.22, 0.18, 0.01, 0.6));
+    // Subdominant -> Dominant -> Tonic -> Subdominant -> Dominant -> Tonic (A minor)
+    this._playGameOverChord([293.66, 349.23, 440.0], t0, 0.55, 0.28); // D-F-A (weak)
+    this._playGameOverChord([329.63, 392.0, 493.88], t0 + 0.5, 0.55, 0.3); // E-G#-B (mid)
+    this._playGameOverChord([220.0, 261.63, 329.63], t0 + 1.0, 0.6, 0.26); // A-C-E (weak)
+    this._playGameOverChord([349.23, 440.0, 523.25], t0 + 1.6, 0.5, 0.24); // F-A-C (weak)
+    this._playGameOverChord([329.63, 392.0, 493.88], t0 + 2.05, 0.5, 0.28); // E-G#-B (mid)
+    this._playGameOverChord([220.0, 261.63, 329.63], t0 + 2.5, 0.9, 0.34); // A-C-E (strong)
+    // Low layer (bass, string-like) - leads
+    this._playGameOverNote(73.42, t0 + 0.02, 0.55, 0.06, "sine"); // D2 (weak)
+    this._playGameOverNote(82.41, t0 + 0.5, 0.55, 0.07, "sine"); // E2 (mid)
+    this._playGameOverNote(55.0, t0 + 1.0, 0.6, 0.09, "sine"); // A1 (strong)
+    this._playGameOverNote(87.31, t0 + 1.6, 0.5, 0.06, "sine"); // F2 (weak)
+    this._playGameOverNote(82.41, t0 + 2.05, 0.5, 0.06, "sine"); // E2 (weak)
+    this._playGameOverNote(55.0, t0 + 2.5, 1.1, 0.1, "sine"); // A1 (strong)
+    // High melody (woodwind-like, ascending) - second layer
+    this._playGameOverNote(220.0, t0 + 0.4, 0.28, 0.09, "triangle"); // A3 (weak)
+    this._playGameOverNote(246.94, t0 + 0.62, 0.26, 0.1, "triangle"); // B3 (mid)
+    this._playGameOverNote(261.63, t0 + 0.84, 0.26, 0.09, "triangle"); // C4 (weak)
+    this._playGameOverNote(293.66, t0 + 1.06, 0.26, 0.11, "triangle"); // D4 (mid)
+    this._playGameOverNote(329.63, t0 + 1.3, 0.28, 0.12, "triangle"); // E4 (mid)
+    this._playGameOverNote(392.0, t0 + 1.56, 0.28, 0.1, "triangle"); // G4 (weak)
+    this._playGameOverNote(440.0, t0 + 1.84, 0.3, 0.12, "triangle"); // A4 (mid)
+    this._playGameOverNote(523.25, t0 + 2.1, 0.3, 0.13, "triangle"); // C5 (mid)
+    this._playGameOverNote(659.25, t0 + 2.38, 0.6, 0.16, "triangle"); // E5 (strong)
+    // Mid layer (dark organ) - last layer
+    this._playGameOverOrgan(146.83, t0 + 1.1, 0.5, 0.05, true); // D3 (mid)
+    this._playGameOverOrgan(164.81, t0 + 1.65, 0.5, 0.05, true); // E3 (mid)
+    this._playGameOverOrgan(130.81, t0 + 2.05, 0.6, 0.055, true); // C3 (mid)
+    this._playGameOverOrgan(174.61, t0 + 2.45, 0.5, 0.045, true); // F3 (weak)
+    this._playGameOverOrgan(164.81, t0 + 2.85, 0.5, 0.045, true); // E3 (weak)
+    this._playGameOverOrgan(110.0, t0 + 3.2, 1.0, 0.06, true); // A2 (strong)
   }
 
   startPlayMusic() {
