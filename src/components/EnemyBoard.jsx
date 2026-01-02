@@ -34,7 +34,14 @@ export default function EnemyBoard({
     return () => window.removeEventListener("resize", computeCellSize);
   }, [computeCellSize]);
 
-  const wrapStyle = { "--cell": `${cellPx}px` };
+  const maxHints = Math.ceil(size / 2);
+  const hintPad = 6;
+  const hintPx = cellPx * maxHints + hintPad;
+  const wrapStyle = {
+    "--cell": `${cellPx}px`,
+    "--hint-col-size": `${hintPx}px`,
+    "--hint-row-size": `${hintPx}px`,
+  };
   const fadedSet = useMemo(() => new Set(fadedCells), [fadedCells]);
   const renderClues = useMemo(
     () => (

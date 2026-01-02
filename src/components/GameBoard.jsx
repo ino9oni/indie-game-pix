@@ -140,7 +140,16 @@ export default function GameBoard({
     else audio.playMark();
   }
 
-  const wrapStyle = cellPx ? { "--cell": `${cellPx}px` } : undefined;
+  const maxHints = Math.ceil(size / 2);
+  const hintPad = 6;
+  const hintPx = cellPx ? cellPx * maxHints + hintPad : null;
+  const wrapStyle = cellPx
+    ? {
+        "--cell": `${cellPx}px`,
+        "--hint-col-size": `${hintPx}px`,
+        "--hint-row-size": `${hintPx}px`,
+      }
+    : undefined;
   const fadedSet = useMemo(() => new Set(fadedCells), [fadedCells]);
   const renderClues = useMemo(
     () => (
